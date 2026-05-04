@@ -6,30 +6,67 @@ import (
 	"strings"
 )
 
-// Load loads configuration into T from multiple sources.
-// Sources are evaluated left-to-right; later sources override earlier ones.
 func Load[T any](sources ...Source) (T, error) {
+	options := make([]Option, 0, len(sources))
+	for _, src := range sources {
+		options = append(options, WithSource(src))
+	}
+	return LoadWithOptions[T](options...)
+}
+
+func LoadWithOptions[T any](options ...Option) (T, error) {
 	var cfg T
 
 	fields := ScanFields(cfg)
 	report := &ErrorReport{}
 	parser := NewParser()
+
+	config := &LoadConfig{
+		Sources:          make([]Source, 0),
+		Validators:       make(map[string]CustomValidatorFunc),
+		Middleware:       make([]MiddlewareFunc, 0),
+		InterpolationMax: 10,
+	}
+
+	for _, opt := range options {
+		opt.apply(config)
+	}
+
 	validator := NewValidator()
-	resolver := NewInterpolationResolver(10)
+	for name, fn := range config.Validators {
+		validator.LocalValidators[name] = fn
+	}
+
+	resolver := NewInterpolationResolver(config.InterpolationMax)
 
 	fieldValues := make(map[string]any)
 	fieldSources := make(map[string]string)
 
 	for _, field := range fields {
 		var sourceErr error
-		for _, source := range sources {
+		for _, source := range config.Sources {
 			value, ok, err := source.Lookup(&field)
 			if err != nil {
 				sourceErr = err
 				continue
 			}
 			if ok {
-				fieldValues[field.Path] = value
+				strVal := anyToString(value)
+
+				for _, mw := range config.Middleware {
+					transformed, err := mw(field, strVal)
+					if err != nil {
+						report.AddError(FieldError{
+							Path:    field.Path,
+							Kind:    ErrorKindValidation,
+							Message: err.Error(),
+						})
+						continue
+					}
+					strVal = transformed
+				}
+
+				fieldValues[field.Path] = strVal
 				fieldSources[field.Path] = source.Name()
 			}
 		}

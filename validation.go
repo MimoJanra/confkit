@@ -21,10 +21,14 @@ func RegisterValidator(name string, fn CustomValidatorFunc) {
 	customValidators[name] = fn
 }
 
-type Validator struct{}
+type Validator struct {
+	LocalValidators map[string]CustomValidatorFunc
+}
 
 func NewValidator() *Validator {
-	return &Validator{}
+	return &Validator{
+		LocalValidators: make(map[string]CustomValidatorFunc),
+	}
 }
 
 func (v *Validator) ValidateConfig(cfg any, fields []FieldInfo) *ErrorReport {
@@ -163,6 +167,21 @@ func (v *Validator) validateField(fieldVal reflect.Value, field FieldInfo, rule 
 	case "oneof":
 		return v.validateOneOf(fieldVal, field, rule)
 	default:
+		if customFn, exists := v.LocalValidators[rule.Name]; exists {
+			if err := customFn(fieldVal); err != nil {
+				return FieldError{
+					Path:    field.Path,
+					Kind:    ErrorKindValidation,
+					Rule:    rule.Name,
+					Secret:  field.IsSecret,
+					Value:   fieldValueToString(fieldVal, field.IsSecret),
+					Source:  "validation",
+					Message: err.Error(),
+				}
+			}
+			return FieldError{}
+		}
+
 		validatorMutex.RLock()
 		customFn, exists := customValidators[rule.Name]
 		validatorMutex.RUnlock()
@@ -179,7 +198,7 @@ func (v *Validator) validateField(fieldVal reflect.Value, field FieldInfo, rule 
 				}
 			}
 		}
-		return FieldError{} // unknown rule - skip
+		return FieldError{}
 	}
 }
 
