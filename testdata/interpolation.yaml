@@ -1,0 +1,3 @@
+Host: db.example.com
+Port: 5432
+ConnectionString: postgres://user:pass@${Host}:${Port}/mydb

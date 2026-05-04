@@ -15,6 +15,7 @@ func Load[T any](sources ...Source) (T, error) {
 	report := &ErrorReport{}
 	parser := NewParser()
 	validator := NewValidator()
+	resolver := NewInterpolationResolver(10)
 
 	fieldValues := make(map[string]any)
 	fieldSources := make(map[string]string)
@@ -48,6 +49,12 @@ func Load[T any](sources ...Source) (T, error) {
 		}
 	}
 
+	// Perform interpolation on all field values
+	interpolationErrors := performInterpolation(fieldValues, resolver, report)
+	if !interpolationErrors {
+		return cfg, report
+	}
+
 	val := reflect.ValueOf(&cfg).Elem()
 	setStructFields(val, fields, fieldValues, fieldSources, parser, report)
 
@@ -65,6 +72,42 @@ func Load[T any](sources ...Source) (T, error) {
 	}
 
 	return cfg, nil
+}
+
+func performInterpolation(fieldValues map[string]any, resolver *InterpolationResolver, report *ErrorReport) bool {
+	for path, rawVal := range fieldValues {
+		if rawVal == nil {
+			continue
+		}
+		strVal := anyToString(rawVal)
+		resolver.SetConfigValue(path, strVal)
+	}
+
+	resolvedValues := make(map[string]string)
+
+	for path, rawVal := range fieldValues {
+		if rawVal == nil {
+			continue
+		}
+		strVal := anyToString(rawVal)
+
+		resolved, err := resolver.Resolve(strVal, path)
+		if err != nil {
+			report.AddError(FieldError{
+				Path:    path,
+				Kind:    ErrorKindValidation,
+				Message: err.Error(),
+			})
+			return false
+		}
+		resolvedValues[path] = resolved
+	}
+
+	for path, resolved := range resolvedValues {
+		fieldValues[path] = resolved
+	}
+
+	return true
 }
 
 func setStructFields(val reflect.Value, fields []FieldInfo, values map[string]any, sources map[string]string, parser *Parser, report *ErrorReport) {

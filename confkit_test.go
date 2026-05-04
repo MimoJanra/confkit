@@ -1109,3 +1109,64 @@ func TestEnvPrefixOverride(t *testing.T) {
 		t.Errorf("expected Logger.Level=debug, got %q", cfg.Logger.Level)
 	}
 }
+
+func TestInterpolationInDefaults(t *testing.T) {
+	t.Setenv("HOST", "localhost")
+	t.Setenv("PORT", "8080")
+
+	type Config struct {
+		Host    string `env:"HOST"`
+		Port    int    `env:"PORT"`
+		BaseURL string `default:"http://${HOST}:${PORT}"`
+	}
+
+	cfg, err := Load[Config](FromEnv())
+	if err != nil {
+		t.Fatalf("Load failed: %v", err)
+	}
+	if cfg.BaseURL != "http://localhost:8080" {
+		t.Errorf("Expected 'http://localhost:8080', got '%s'", cfg.BaseURL)
+	}
+}
+
+func TestInterpolationFromSourceValues(t *testing.T) {
+	type Config struct {
+		Host               string `yaml:"Host"`
+		Port               int    `yaml:"Port"`
+		ConnectionString   string `yaml:"ConnectionString"`
+	}
+
+	cfg, err := Load[Config](FromYAML("testdata/interpolation.yaml"))
+	if err != nil {
+		t.Fatalf("Load failed: %v", err)
+	}
+	if cfg.ConnectionString != "postgres://user:pass@db.example.com:5432/mydb" {
+		t.Errorf("Expected interpolated connection string, got '%s'", cfg.ConnectionString)
+	}
+}
+
+func TestInterpolationWithDefaultFallback(t *testing.T) {
+	// DB_HOST is not set, so fallback should be used
+	type Config struct {
+		Database string `default:"${DB_HOST|localhost}"`
+	}
+
+	cfg, err := Load[Config](FromEnv())
+	if err != nil {
+		t.Fatalf("Load failed: %v", err)
+	}
+	if cfg.Database != "localhost" {
+		t.Errorf("Expected 'localhost', got '%s'", cfg.Database)
+	}
+}
+
+func TestInterpolationUndefinedError(t *testing.T) {
+	type Config struct {
+		Value string `default:"${UNDEFINED_VAR}"`
+	}
+
+	_, err := Load[Config](FromEnv())
+	if err == nil {
+		t.Fatal("Expected error for undefined variable in interpolation")
+	}
+}
