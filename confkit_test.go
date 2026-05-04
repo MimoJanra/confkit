@@ -2,6 +2,7 @@ package confkit
 
 import (
 	"fmt"
+	"os"
 	"reflect"
 	"strings"
 	"testing"
@@ -1000,5 +1001,111 @@ func TestParseUintTypes(t *testing.T) {
 		if err == nil && result != tc.expected {
 			t.Errorf("Parse(%q, %v): expected %v, got %v", tc.input, tc.typ, tc.expected, result)
 		}
+	}
+}
+
+func TestEnvPrefixSimple(t *testing.T) {
+	type Server struct {
+		Port int `env:"PORT"`
+	}
+	type Config struct {
+		Server Server `prefix:"APP_"`
+	}
+
+	t.Setenv("APP_PORT", "9000")
+	cfg, err := Load[Config](FromEnv())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if cfg.Server.Port != 9000 {
+		t.Errorf("expected Server.Port=9000, got %d", cfg.Server.Port)
+	}
+}
+
+func TestEnvPrefixHierarchical(t *testing.T) {
+	type Database struct {
+		Host string `env:"HOST"`
+		Port int    `env:"PORT"`
+	}
+	type Config struct {
+		Database Database `prefix:"DB_"`
+	}
+
+	t.Setenv("DB_HOST", "localhost")
+	t.Setenv("DB_PORT", "5432")
+	cfg, err := Load[Config](FromEnv())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if cfg.Database.Host != "localhost" {
+		t.Errorf("expected Database.Host=localhost, got %q", cfg.Database.Host)
+	}
+	if cfg.Database.Port != 5432 {
+		t.Errorf("expected Database.Port=5432, got %d", cfg.Database.Port)
+	}
+}
+
+func TestEnvPrefixMultiLevel(t *testing.T) {
+	type Cache struct {
+		TTL int `env:"TTL"`
+	}
+	type Database struct {
+		Host  string `env:"HOST"`
+		Cache Cache  `prefix:"CACHE_"`
+	}
+	type Config struct {
+		Database Database `prefix:"DB_"`
+	}
+
+	t.Setenv("DB_HOST", "postgres.local")
+	t.Setenv("DB_CACHE_TTL", "3600")
+	cfg, err := Load[Config](FromEnv())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if cfg.Database.Host != "postgres.local" {
+		t.Errorf("expected Database.Host=postgres.local, got %q", cfg.Database.Host)
+	}
+	if cfg.Database.Cache.TTL != 3600 {
+		t.Errorf("expected Database.Cache.TTL=3600, got %d", cfg.Database.Cache.TTL)
+	}
+}
+
+func TestEnvPrefixWithDefault(t *testing.T) {
+	type Server struct {
+		Timeout int `env:"TIMEOUT" default:"30"`
+	}
+	type Config struct {
+		Server Server `prefix:"APP_"`
+	}
+
+	if _, ok := os.LookupEnv("APP_TIMEOUT"); ok {
+		t.Skip("APP_TIMEOUT already set")
+	}
+
+	cfg, err := Load[Config](FromEnv())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if cfg.Server.Timeout != 30 {
+		t.Errorf("expected Server.Timeout=30 (default), got %d", cfg.Server.Timeout)
+	}
+}
+
+func TestEnvPrefixOverride(t *testing.T) {
+	type Logger struct {
+		Level string `env:"LOG_LEVEL" default:"info"`
+	}
+	type Config struct {
+		Logger Logger `prefix:"APP_"`
+	}
+
+	t.Setenv("APP_LOG_LEVEL", "debug")
+	cfg, err := Load[Config](FromEnv())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if cfg.Logger.Level != "debug" {
+		t.Errorf("expected Logger.Level=debug, got %q", cfg.Logger.Level)
 	}
 }

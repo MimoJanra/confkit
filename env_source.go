@@ -1,6 +1,9 @@
 package confkit
 
-import "os"
+import (
+	"os"
+	"strings"
+)
 
 func FromEnv() Source {
 	return &envSource{}
@@ -17,8 +20,25 @@ func (e *envSource) Lookup(field *FieldInfo) (any, bool, error) {
 	if envName == "" {
 		return "", false, nil
 	}
-	value, ok := os.LookupEnv(envName)
+
+	prefix := buildEnvPrefix(field.AncestorTags)
+	if p := field.Tags["prefix"]; p != "" {
+		prefix += p
+	}
+	fullName := prefix + envName
+
+	value, ok := os.LookupEnv(fullName)
 	return value, ok, nil
+}
+
+func buildEnvPrefix(ancestorTags []map[string]string) string {
+	var prefixes []string
+	for _, tags := range ancestorTags {
+		if p := tags["prefix"]; p != "" {
+			prefixes = append(prefixes, p)
+		}
+	}
+	return strings.Join(prefixes, "")
 }
 
 type errorSource struct {

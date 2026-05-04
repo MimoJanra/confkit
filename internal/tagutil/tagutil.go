@@ -22,7 +22,7 @@ func IsSpecialType(typ reflect.Type) bool {
 
 func ParseStructTags(tag reflect.StructTag) map[string]string {
 	result := make(map[string]string)
-	for _, name := range []string{"env", "flag", "yaml", "json", "toml", "default", "validate", "secret", "desc"} {
+	for _, name := range []string{"env", "flag", "yaml", "json", "toml", "default", "validate", "secret", "desc", "prefix"} {
 		if val, ok := tag.Lookup(name); ok {
 			if name == "yaml" || name == "json" || name == "toml" {
 				val = strings.Split(val, ",")[0]
