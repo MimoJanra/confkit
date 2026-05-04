@@ -1170,3 +1170,43 @@ func TestInterpolationUndefinedError(t *testing.T) {
 		t.Fatal("Expected error for undefined variable in interpolation")
 	}
 }
+
+func TestLoadWithWatcher(t *testing.T) {
+	yamlContent := `Port: 8080
+Host: localhost`
+	tmpFile := writeTempYAML(t, yamlContent)
+	defer os.Remove(tmpFile)
+
+	type Config struct {
+		Port int    `yaml:"Port"`
+		Host string `yaml:"Host"`
+	}
+
+	cfg, watcher, err := LoadWithWatcher[Config](tmpFile, FromYAML(tmpFile))
+	if err != nil {
+		t.Fatalf("LoadWithWatcher failed: %v", err)
+	}
+
+	if cfg.Port != 8080 {
+		t.Errorf("Expected Port=8080, got %d", cfg.Port)
+	}
+
+	if watcher == nil {
+		t.Fatal("Expected watcher, got nil")
+	}
+}
+
+func TestLoadWithWatcherFileNotFound(t *testing.T) {
+	type Config struct {
+		Port int `yaml:"Port"`
+	}
+
+	_, watcher, err := LoadWithWatcher[Config]("/nonexistent/file.yaml", FromYAML("/tmp/test.yaml"))
+	if err == nil {
+		t.Fatal("Expected error for nonexistent file")
+	}
+
+	if watcher != nil {
+		t.Error("Expected watcher to be nil on error")
+	}
+}

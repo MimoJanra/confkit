@@ -14,6 +14,22 @@ func Load[T any](sources ...Source) (T, error) {
 	return LoadWithOptions[T](options...)
 }
 
+func LoadWithWatcher[T any](filePath string, sources ...Source) (T, *ConfigWatcher, error) {
+	cfg, err := Load[T](sources...)
+	if err != nil {
+		var zero T
+		return zero, nil, err
+	}
+
+	watcher, err := NewConfigWatcher(filePath)
+	if err != nil {
+		var zero T
+		return zero, nil, err
+	}
+
+	return cfg, watcher, nil
+}
+
 func LoadWithOptions[T any](options ...Option) (T, error) {
 	var cfg T
 
