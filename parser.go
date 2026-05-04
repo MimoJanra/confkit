@@ -8,22 +8,17 @@ import (
 	"time"
 )
 
-// Parser handles conversion of strings to typed values.
 type Parser struct{}
 
-// NewParser creates a new parser.
 func NewParser() *Parser {
 	return &Parser{}
 }
 
-// Parse converts a string value to the target type.
 func (p *Parser) Parse(value string, targetType reflect.Type) (any, error) {
-	// Handle nil/empty case
 	if value == "" {
 		return p.zeroValue(targetType), nil
 	}
 
-	// Handle special types first (before Kind check, since they're aliases)
 	if targetType.PkgPath() == "time" {
 		if targetType.Name() == "Duration" {
 			return parseDuration(value)
@@ -35,30 +30,23 @@ func (p *Parser) Parse(value string, targetType reflect.Type) (any, error) {
 	switch targetType.Kind() {
 	case reflect.String:
 		return value, nil
-
 	case reflect.Bool:
 		return parseBool(value)
-
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		return parseInt(value, targetType)
-
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 		return parseUint(value, targetType)
-
 	case reflect.Float32, reflect.Float64:
 		return parseFloat(value, targetType)
-
 	case reflect.Slice:
 		return p.parseSlice(value, targetType)
-
 	default:
 		return nil, fmt.Errorf("unsupported type: %v", targetType)
 	}
 }
 
 func parseBool(value string) (bool, error) {
-	value = strings.ToLower(strings.TrimSpace(value))
-	switch value {
+	switch strings.ToLower(strings.TrimSpace(value)) {
 	case "true", "1", "yes", "on":
 		return true, nil
 	case "false", "0", "no", "off":
@@ -73,7 +61,6 @@ func parseInt(value string, targetType reflect.Type) (any, error) {
 	if err != nil {
 		return nil, fmt.Errorf("invalid %s: %q", targetType.Name(), value)
 	}
-
 	switch targetType.Kind() {
 	case reflect.Int:
 		return int(i), nil
@@ -104,7 +91,6 @@ func parseUint(value string, targetType reflect.Type) (any, error) {
 	if err != nil {
 		return nil, fmt.Errorf("invalid %s: %q", targetType.Name(), value)
 	}
-
 	switch targetType.Kind() {
 	case reflect.Uint:
 		return uint(u), nil
@@ -135,7 +121,6 @@ func parseFloat(value string, targetType reflect.Type) (any, error) {
 	if err != nil {
 		return nil, fmt.Errorf("invalid %s: %q", targetType.Name(), value)
 	}
-
 	if targetType.Kind() == reflect.Float32 {
 		return float32(f), nil
 	}
@@ -151,7 +136,7 @@ func parseDuration(value string) (any, error) {
 }
 
 func parseTime(value string) (any, error) {
-	// v0.1: RFC3339 only
+	// RFC3339 only in v0.1
 	t, err := time.Parse(time.RFC3339, value)
 	if err != nil {
 		return nil, fmt.Errorf("invalid time: %q (use RFC3339 format: 2006-01-02T15:04:05Z07:00)", value)
@@ -161,8 +146,6 @@ func parseTime(value string) (any, error) {
 
 func (p *Parser) parseSlice(value string, targetType reflect.Type) (any, error) {
 	elemType := targetType.Elem()
-
-	// Split by comma
 	parts := strings.Split(strings.TrimSpace(value), ",")
 	result := reflect.MakeSlice(targetType, 0, len(parts))
 
@@ -171,12 +154,10 @@ func (p *Parser) parseSlice(value string, targetType reflect.Type) (any, error) 
 		if part == "" {
 			continue
 		}
-
 		parsed, err := p.Parse(part, elemType)
 		if err != nil {
 			return nil, fmt.Errorf("slice element parse error: %w", err)
 		}
-
 		result = reflect.Append(result, reflect.ValueOf(parsed))
 	}
 

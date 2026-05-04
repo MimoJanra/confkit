@@ -1,0 +1,9 @@
+port = 8080
+host = "0.0.0.0"
+log_level = "info"
+
+[database]
+url = "postgres://localhost/myapp"
+max_conn = 20
+timeout = "30s"
+password = "super-secret-password"

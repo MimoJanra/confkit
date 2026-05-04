@@ -1,6 +1,7 @@
 package confkit
 
 import (
+	"fmt"
 	"reflect"
 	"strings"
 	"testing"
@@ -50,6 +51,36 @@ func TestParseString(t *testing.T) {
 	}
 }
 
+func TestParseEmpty(t *testing.T) {
+	p := NewParser()
+
+	// Empty string should return zero value for each type
+	types := []reflect.Type{
+		reflect.TypeOf(""),
+		reflect.TypeOf(0),
+		reflect.TypeOf(false),
+		reflect.TypeOf(float64(0)),
+		reflect.TypeOf([]string{}),
+	}
+
+	for _, typ := range types {
+		result, err := p.Parse("", typ)
+		if err != nil {
+			t.Errorf("Parse('', %v): unexpected error: %v", typ, err)
+		}
+		_ = result
+	}
+}
+
+func TestParseUnsupportedType(t *testing.T) {
+	p := NewParser()
+	// map is not supported
+	_, err := p.Parse("test", reflect.TypeOf(map[string]string{}))
+	if err == nil {
+		t.Error("expected error for unsupported type, got nil")
+	}
+}
+
 func TestParseBool(t *testing.T) {
 	tests := []struct {
 		input    string
@@ -92,6 +123,10 @@ func TestParseInt(t *testing.T) {
 		{"256", reflect.TypeOf(uint8(0)), nil, true}, // overflow
 		{"-128", reflect.TypeOf(int8(0)), int8(-128), false},
 		{"100", reflect.TypeOf(int32(0)), int32(100), false},
+		{"200", reflect.TypeOf(int16(0)), int16(200), false},
+		{"400", reflect.TypeOf(int64(0)), int64(400), false},
+		{"invalid", reflect.TypeOf(int(0)), nil, true},
+		{"32768", reflect.TypeOf(int16(0)), nil, true}, // overflow int16
 	}
 
 	for _, tc := range tests {
@@ -447,8 +482,8 @@ func TestNestedStructsYAML(t *testing.T) {
 	}
 
 	type Config struct {
-		Port     int              `yaml:"port"`
-		Database DatabaseConfig   `yaml:"database"`
+		Port     int            `yaml:"port"`
+		Database DatabaseConfig `yaml:"database"`
 	}
 
 	cfg, err := Load[Config](FromYAML("testdata/config.yaml"))
@@ -476,8 +511,8 @@ func TestNestedStructsJSON(t *testing.T) {
 	}
 
 	type Config struct {
-		Mode     string           `json:"mode"`
-		Database DatabaseConfig   `json:"database"`
+		Mode     string         `json:"mode"`
+		Database DatabaseConfig `json:"database"`
 	}
 
 	cfg, err := Load[Config](FromJSON("testdata/config.json"))
@@ -498,6 +533,75 @@ func TestNestedStructsJSON(t *testing.T) {
 	}
 }
 
+func TestLoadFromTOML(t *testing.T) {
+	type Config struct {
+		Port int    `toml:"port"`
+		Host string `toml:"host"`
+	}
+
+	cfg, err := Load[Config](FromTOML("testdata/config.toml"))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if cfg.Port != 9000 {
+		t.Errorf("expected Port 9000, got %d", cfg.Port)
+	}
+
+	if cfg.Host != "0.0.0.0" {
+		t.Errorf("expected Host '0.0.0.0', got %q", cfg.Host)
+	}
+}
+
+func TestNestedStructsTOML(t *testing.T) {
+	type DatabaseConfig struct {
+		Host     string        `toml:"host"`
+		Port     int           `toml:"port"`
+		Username string        `toml:"username"`
+		Password string        `toml:"password" secret:"true"`
+		Timeout  time.Duration `toml:"timeout"`
+	}
+
+	type Config struct {
+		Port     int            `toml:"port"`
+		Host     string         `toml:"host"`
+		Database DatabaseConfig `toml:"database"`
+	}
+
+	cfg, err := Load[Config](FromTOML("testdata/config.toml"))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if cfg.Port != 9000 {
+		t.Errorf("expected Port 9000, got %d", cfg.Port)
+	}
+
+	if cfg.Host != "0.0.0.0" {
+		t.Errorf("expected Host '0.0.0.0', got %q", cfg.Host)
+	}
+
+	if cfg.Database.Host != "db.example.com" {
+		t.Errorf("expected Database.Host 'db.example.com', got %q", cfg.Database.Host)
+	}
+
+	if cfg.Database.Port != 5432 {
+		t.Errorf("expected Database.Port 5432, got %d", cfg.Database.Port)
+	}
+
+	if cfg.Database.Username != "admin" {
+		t.Errorf("expected Database.Username 'admin', got %q", cfg.Database.Username)
+	}
+
+	if cfg.Database.Password != "secret123" {
+		t.Errorf("expected Database.Password 'secret123', got %q", cfg.Database.Password)
+	}
+
+	if cfg.Database.Timeout != 30*time.Second {
+		t.Errorf("expected Database.Timeout 30s, got %v", cfg.Database.Timeout)
+	}
+}
+
 func TestNestedStructsValidation(t *testing.T) {
 	type DatabaseConfig struct {
 		Host string `yaml:"host" validate:"required"`
@@ -505,8 +609,8 @@ func TestNestedStructsValidation(t *testing.T) {
 	}
 
 	type Config struct {
-		Port     int              `yaml:"port" default:"8080"`
-		Database DatabaseConfig   `yaml:"database"`
+		Port     int            `yaml:"port" default:"8080"`
+		Database DatabaseConfig `yaml:"database"`
 	}
 
 	cfg, err := Load[Config](FromYAML("testdata/config.yaml"))
@@ -540,5 +644,361 @@ func TestValidationWithSecretRedaction(t *testing.T) {
 	}
 	if strings.Contains(formatted, "super-secret-12345") {
 		t.Errorf("secret value leaked in error: %s", formatted)
+	}
+}
+
+func TestCustomValidator(t *testing.T) {
+	// Register a custom validator for testing
+	RegisterValidator("positive", func(v reflect.Value) error {
+		if v.Kind() == reflect.Int && v.Int() <= 0 {
+			return fmt.Errorf("must be positive")
+		}
+		return nil
+	})
+
+	type Config struct {
+		Count int `env:"TEST_COUNT" validate:"positive"`
+	}
+
+	t.Setenv("TEST_COUNT", "-5")
+
+	_, err := Load[Config](FromEnv())
+	if err == nil {
+		t.Fatal("expected validation error for custom validator, got nil")
+	}
+
+	report, ok := err.(*ErrorReport)
+	if !ok {
+		t.Fatalf("expected ErrorReport, got %T", err)
+	}
+
+	if len(report.Errors) != 1 {
+		t.Fatalf("expected 1 error, got %d", len(report.Errors))
+	}
+
+	fieldErr := report.Errors[0]
+	if fieldErr.Rule != "positive" {
+		t.Errorf("expected rule 'positive', got %s", fieldErr.Rule)
+	}
+	if !strings.Contains(fieldErr.Message, "must be positive") {
+		t.Errorf("expected 'must be positive' in error message, got: %s", fieldErr.Message)
+	}
+}
+
+func TestValidationOneOf(t *testing.T) {
+	type Config struct {
+		LogLevel string `env:"TEST_LOGLEVEL" validate:"oneof=debug,info,warn,error"`
+	}
+
+	t.Setenv("TEST_LOGLEVEL", "invalid")
+
+	_, err := Load[Config](FromEnv())
+	if err == nil {
+		t.Fatal("expected validation error for oneof, got nil")
+	}
+
+	report, ok := err.(*ErrorReport)
+	if !ok {
+		t.Fatalf("expected ErrorReport, got %T", err)
+	}
+
+	if len(report.Errors) != 1 {
+		t.Fatalf("expected 1 error, got %d", len(report.Errors))
+	}
+
+	if report.Errors[0].Rule != "oneof" {
+		t.Errorf("expected rule 'oneof', got %s", report.Errors[0].Rule)
+	}
+}
+
+func TestValidationOneOfValid(t *testing.T) {
+	type Config struct {
+		LogLevel string `env:"TEST_LOGLEVEL_VALID" validate:"oneof=debug,info,warn,error"`
+	}
+
+	t.Setenv("TEST_LOGLEVEL_VALID", "info")
+
+	cfg, err := Load[Config](FromEnv())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if cfg.LogLevel != "info" {
+		t.Errorf("expected LogLevel 'info', got %q", cfg.LogLevel)
+	}
+}
+
+func TestValidationOneOfWithRequired(t *testing.T) {
+	type Config struct {
+		Level string `env:"TEST_LEVEL_REQUIRED" validate:"required,oneof=debug,info"`
+	}
+
+	// Don't set env var — required should fail
+	_, err := Load[Config](FromEnv())
+	if err == nil {
+		t.Fatal("expected validation error, got nil")
+	}
+
+	report, ok := err.(*ErrorReport)
+	if !ok {
+		t.Fatalf("expected ErrorReport, got %T", err)
+	}
+
+	if report.Errors[0].Rule != "required" {
+		t.Errorf("expected rule 'required', got %s", report.Errors[0].Rule)
+	}
+}
+
+func TestValidationStringMinMax(t *testing.T) {
+	type Config struct {
+		Name string `env:"TEST_NAME_LEN" validate:"min=3,max=10"`
+	}
+
+	t.Setenv("TEST_NAME_LEN", "ab")
+	_, err := Load[Config](FromEnv())
+	if err == nil {
+		t.Fatal("expected validation error for min string length, got nil")
+	}
+
+	t.Setenv("TEST_NAME_LEN", "this-is-too-long-for-max")
+	_, err = Load[Config](FromEnv())
+	if err == nil {
+		t.Fatal("expected validation error for max string length, got nil")
+	}
+
+	t.Setenv("TEST_NAME_LEN", "hello")
+	cfg, err := Load[Config](FromEnv())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if cfg.Name != "hello" {
+		t.Errorf("expected Name 'hello', got %q", cfg.Name)
+	}
+}
+
+func TestValidationFloatMinMax(t *testing.T) {
+	type Config struct {
+		Ratio float64 `env:"TEST_RATIO" validate:"min=0,max=1"`
+	}
+
+	t.Setenv("TEST_RATIO", "-0.5")
+	_, err := Load[Config](FromEnv())
+	if err == nil {
+		t.Fatal("expected validation error for float min, got nil")
+	}
+
+	t.Setenv("TEST_RATIO", "1.5")
+	_, err = Load[Config](FromEnv())
+	if err == nil {
+		t.Fatal("expected validation error for float max, got nil")
+	}
+
+	t.Setenv("TEST_RATIO", "0.5")
+	cfg, err := Load[Config](FromEnv())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if cfg.Ratio != 0.5 {
+		t.Errorf("expected Ratio 0.5, got %v", cfg.Ratio)
+	}
+}
+
+func TestValidationUintMinMax(t *testing.T) {
+	type Config struct {
+		Count uint `env:"TEST_UINT_COUNT" validate:"min=1,max=100"`
+	}
+
+	t.Setenv("TEST_UINT_COUNT", "0")
+	_, err := Load[Config](FromEnv())
+	if err == nil {
+		t.Fatal("expected validation error for uint min, got nil")
+	}
+
+	t.Setenv("TEST_UINT_COUNT", "50")
+	cfg, err := Load[Config](FromEnv())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if cfg.Count != 50 {
+		t.Errorf("expected Count 50, got %d", cfg.Count)
+	}
+}
+
+func TestErrorReportImplementsError(t *testing.T) {
+	report := &ErrorReport{}
+	report.AddError(FieldError{
+		Path:    "Port",
+		Kind:    ErrorKindValidation,
+		Message: "must be positive",
+	})
+	if report.Error() == "" {
+		t.Errorf("expected non-empty error string from ErrorReport.Error()")
+	}
+	if report.IsEmpty() {
+		t.Errorf("expected IsEmpty() to return false when there are errors")
+	}
+	empty := &ErrorReport{}
+	if !empty.IsEmpty() {
+		t.Errorf("expected IsEmpty() to return true for empty report")
+	}
+}
+
+func TestExplainVariousErrors(t *testing.T) {
+	// Test Explain with a regular error
+	err := fmt.Errorf("plain error")
+	result := Explain(err)
+	if !strings.Contains(result, "plain error") {
+		t.Errorf("expected 'plain error' in explained result, got: %s", result)
+	}
+
+	// Test Explain with an ErrorReport
+	report := &ErrorReport{}
+	report.AddError(FieldError{
+		Path:    "Host",
+		Kind:    ErrorKindValidation,
+		Rule:    "required",
+		Message: "field is required",
+		Source:  "env HOST",
+	})
+	result = Explain(report)
+	if !strings.Contains(result, "Host") {
+		t.Errorf("expected 'Host' in explained report, got: %s", result)
+	}
+}
+
+func TestValidationPtrField(t *testing.T) {
+	type Config struct {
+		Count *int `env:"TEST_PTR_COUNT" validate:"required"`
+	}
+	// nil pointer should satisfy required check differently
+	_, err := Load[Config](FromEnv())
+	// Just check it doesn't panic
+	_ = err
+}
+
+func TestLoadMissingYAMLFile(t *testing.T) {
+	type Config struct {
+		Port int `yaml:"port"`
+	}
+
+	_, err := Load[Config](FromYAML("testdata/nonexistent.yaml"))
+	if err == nil {
+		t.Fatal("expected error for missing YAML file, got nil")
+	}
+}
+
+func TestLoadMissingJSONFile(t *testing.T) {
+	type Config struct {
+		Port int `json:"port"`
+	}
+
+	_, err := Load[Config](FromJSON("testdata/nonexistent.json"))
+	if err == nil {
+		t.Fatal("expected error for missing JSON file, got nil")
+	}
+}
+
+func TestLoadMissingTOMLFile(t *testing.T) {
+	type Config struct {
+		Port int `toml:"port"`
+	}
+
+	_, err := Load[Config](FromTOML("testdata/nonexistent.toml"))
+	if err == nil {
+		t.Fatal("expected error for missing TOML file, got nil")
+	}
+}
+
+func TestNestedStructSnakeCaseFallback(t *testing.T) {
+	// When a nested struct parent has no yaml tag, lookup uses snake_case of field name
+	// "Database" → "database" to match config.yaml's [database] key
+	type DatabaseConfig struct {
+		Host string `yaml:"host"`
+		Port int    `yaml:"port"`
+	}
+	type Config struct {
+		Database DatabaseConfig // No yaml tag: falls back to "database" via toSnakeCase
+	}
+
+	cfg, err := Load[Config](FromYAML("testdata/config.yaml"))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if cfg.Database.Host != "localhost" {
+		t.Errorf("expected Database.Host 'localhost', got %q", cfg.Database.Host)
+	}
+	if cfg.Database.Port != 5432 {
+		t.Errorf("expected Database.Port 5432, got %d", cfg.Database.Port)
+	}
+}
+
+func TestFieldValueToStringTypes(t *testing.T) {
+	type Config struct {
+		Active bool    `env:"TEST_BOOL_FMT" validate:"required"`
+		Ratio  float32 `env:"TEST_FLOAT_FMT" validate:"required"`
+		Tags   []string `env:"TEST_SLICE_FMT"`
+	}
+
+	t.Setenv("TEST_BOOL_FMT", "true")
+	t.Setenv("TEST_FLOAT_FMT", "3.14")
+	t.Setenv("TEST_SLICE_FMT", "a,b")
+
+	cfg, err := Load[Config](FromEnv())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !cfg.Active {
+		t.Errorf("expected Active true, got %v", cfg.Active)
+	}
+}
+
+func TestValidationBoolRequired(t *testing.T) {
+	type Config struct {
+		// bool zero value is false, which is falsy for required check
+		Flag bool `env:"TEST_BOOL_REQUIRED" validate:"required"`
+	}
+
+	_, err := Load[Config](FromEnv())
+	if err == nil {
+		t.Fatal("expected validation error for required bool (false), got nil")
+	}
+}
+
+func TestValidationSliceRequired(t *testing.T) {
+	type Config struct {
+		Items []string `env:"TEST_SLICE_REQUIRED" validate:"required"`
+	}
+
+	_, err := Load[Config](FromEnv())
+	if err == nil {
+		t.Fatal("expected validation error for required empty slice, got nil")
+	}
+}
+
+func TestParseUintTypes(t *testing.T) {
+	p := NewParser()
+
+	tests := []struct {
+		input    string
+		typ      reflect.Type
+		expected any
+		wantErr  bool
+	}{
+		{"100", reflect.TypeOf(uint(0)), uint(100), false},
+		{"200", reflect.TypeOf(uint16(0)), uint16(200), false},
+		{"300", reflect.TypeOf(uint32(0)), uint32(300), false},
+		{"400", reflect.TypeOf(uint64(0)), uint64(400), false},
+		{"invalid", reflect.TypeOf(uint(0)), nil, true},
+	}
+
+	for _, tc := range tests {
+		result, err := p.Parse(tc.input, tc.typ)
+		if (err != nil) != tc.wantErr {
+			t.Errorf("Parse(%q, %v): got error %v, wantErr %v", tc.input, tc.typ, err, tc.wantErr)
+			continue
+		}
+		if err == nil && result != tc.expected {
+			t.Errorf("Parse(%q, %v): expected %v, got %v", tc.input, tc.typ, tc.expected, result)
+		}
 	}
 }

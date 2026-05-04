@@ -1,0 +1,9 @@
+port = 9000
+host = "0.0.0.0"
+
+[database]
+host = "db.example.com"
+port = 5432
+username = "admin"
+password = "secret123"
+timeout = "30s"
