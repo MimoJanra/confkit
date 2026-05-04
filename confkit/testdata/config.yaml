@@ -1,0 +1,6 @@
+port: 3000
+host: localhost
+mode: production
+database:
+  url: postgres://localhost:5432/app
+  pool_size: 20
