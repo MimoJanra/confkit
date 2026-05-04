@@ -24,6 +24,8 @@ type Schema struct {
 	Enum        []interface{}      `json:"enum,omitempty"`
 	Default     interface{}        `json:"default,omitempty"`
 	Secret      bool               `json:"secret,omitempty"`
+	Short       string             `json:"short,omitempty"`
+	Hidden      bool               `json:"hidden,omitempty"`
 }
 
 func GenerateSchema[T any]() (*Schema, error) {
@@ -106,6 +108,12 @@ func walkStruct(typ reflect.Type, parent *Schema) error {
 		}
 		if tags["secret"] == "true" {
 			fieldSchema.Secret = true
+		}
+		if short := tags["short"]; short != "" {
+			fieldSchema.Short = short
+		}
+		if tags["hidden"] == "true" {
+			fieldSchema.Hidden = true
 		}
 		if tags["validate"] != "" {
 			applyValidationRules(tags["validate"], fieldType, fieldSchema, &parent.Required, propName)
@@ -338,9 +346,14 @@ func GenerateCLIHelp[T any]() (string, error) {
 
 func addCLIHelpOptions(sb *strings.Builder, props map[string]*Schema, prefix string, required []string) {
 	for propName, prop := range props {
-		flagName := propName
+		if prop.Hidden {
+			continue
+		}
+
+		kebabName := strings.ReplaceAll(propName, "_", "-")
+		flagName := kebabName
 		if prefix != "" {
-			flagName = prefix + "-" + propName
+			flagName = prefix + "-" + kebabName
 		}
 
 		if prop.Type == "object" && prop.Properties != nil {
@@ -348,7 +361,13 @@ func addCLIHelpOptions(sb *strings.Builder, props map[string]*Schema, prefix str
 			continue
 		}
 
-		line := fmt.Sprintf("  --%s", flagName)
+		line := ""
+		if prop.Short != "" {
+			line = fmt.Sprintf("  -%s, --%s", prop.Short, flagName)
+		} else {
+			line = fmt.Sprintf("  --%s", flagName)
+		}
+
 		switch prop.Type {
 		case "string":
 			line += " VALUE"
