@@ -69,25 +69,52 @@ func (y *yamlSource) Lookup(field *FieldInfo) (any, bool, error) {
 	return value, true, nil
 }
 
-// lookupNested looks up a value using tag name, for now handles top-level only
+// lookupNested looks up a value using tag names for nested structs.
+// For a field path like "Database.Host", it reconstructs the nested structure:
+// Uses snake_case conversion for struct field names to match YAML conventions.
 func (y *yamlSource) lookupNested(tagName, fieldPath string) (any, bool) {
-	// For v0.1: only handle top-level fields
-	// TODO: handle nested structs like "server.port" -> server: { port: ... }
+	// Example: fieldPath = "Database.Host", tagName = "host"
+	// We need to find "database" in YAML, then "host" inside it
+
 	parts := strings.Split(fieldPath, ".")
-	if len(parts) > 1 {
-		// Nested field - not yet supported in v0.1
-		return nil, false
+
+	current := any(y.data)
+
+	// Navigate through all but the last part using snake_case keys
+	for i := 0; i < len(parts)-1; i++ {
+		key := toSnakeCase(parts[i])
+
+		if m, ok := current.(map[string]any); ok {
+			if v, found := m[key]; found {
+				current = v
+			} else {
+				return nil, false
+			}
+		} else {
+			return nil, false
+		}
 	}
 
-	// Top-level: look up by tag name
-	current := any(y.data)
-	switch v := current.(type) {
-	case map[string]any:
-		val, ok := v[tagName]
-		return val, ok
-	default:
-		return nil, false
+	// For the final part, use the provided tag name
+	if m, ok := current.(map[string]any); ok {
+		if v, found := m[tagName]; found {
+			return v, true
+		}
 	}
+
+	return nil, false
+}
+
+// toSnakeCase converts CamelCase to snake_case for YAML key matching
+func toSnakeCase(s string) string {
+	var result strings.Builder
+	for i, r := range s {
+		if i > 0 && r >= 'A' && r <= 'Z' {
+			result.WriteRune('_')
+		}
+		result.WriteRune(r)
+	}
+	return strings.ToLower(result.String())
 }
 
 
@@ -150,25 +177,40 @@ func (j *jsonSource) Lookup(field *FieldInfo) (any, bool, error) {
 	return value, true, nil
 }
 
-// lookupNested looks up a value using tag name, for now handles top-level only
+// lookupNested looks up a value using tag names for nested structs.
+// For a field path like "Database.Host", it reconstructs the nested structure:
+// Uses snake_case conversion for struct field names to match JSON conventions.
 func (j *jsonSource) lookupNested(tagName, fieldPath string) (any, bool) {
-	// For v0.1: only handle top-level fields
-	// TODO: handle nested structs
+	// Example: fieldPath = "Database.Host", tagName = "host"
+	// We need to find "database" in JSON, then "host" inside it
+
 	parts := strings.Split(fieldPath, ".")
-	if len(parts) > 1 {
-		// Nested field - not yet supported in v0.1
-		return nil, false
+
+	current := any(j.data)
+
+	// Navigate through all but the last part using snake_case keys
+	for i := 0; i < len(parts)-1; i++ {
+		key := toSnakeCase(parts[i])
+
+		if m, ok := current.(map[string]any); ok {
+			if v, found := m[key]; found {
+				current = v
+			} else {
+				return nil, false
+			}
+		} else {
+			return nil, false
+		}
 	}
 
-	// Top-level: look up by tag name
-	current := any(j.data)
-	switch v := current.(type) {
-	case map[string]any:
-		val, ok := v[tagName]
-		return val, ok
-	default:
-		return nil, false
+	// For the final part, use the provided tag name
+	if m, ok := current.(map[string]any); ok {
+		if v, found := m[tagName]; found {
+			return v, true
+		}
 	}
+
+	return nil, false
 }
 
 

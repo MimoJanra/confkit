@@ -10,6 +10,7 @@ import (
 // Load loads configuration from multiple sources into a typed struct.
 // Sources are applied left-to-right; later sources override earlier ones.
 // Defaults are applied after all sources.
+// Validation is run after all values are set.
 // Returns the typed struct or an ErrorReport if any errors occurred.
 func Load[T any](sources ...Source) (T, error) {
 	var cfg T
@@ -20,6 +21,7 @@ func Load[T any](sources ...Source) (T, error) {
 	// Prepare to collect errors
 	report := &ErrorReport{}
 	parser := NewParser()
+	validator := NewValidator()
 
 	// Track which fields were set by sources (vs. defaults)
 	fieldValues := make(map[string]any)
@@ -65,6 +67,17 @@ func Load[T any](sources ...Source) (T, error) {
 	val := reflect.ValueOf(&cfg).Elem()
 	if err := setStructFields(val, fields, fieldValues, fieldSources, parser, report); err != nil {
 		return cfg, report
+	}
+
+	// Early return if there are parse errors
+	if !report.IsEmpty() {
+		return cfg, report
+	}
+
+	// Validate the config
+	validationErrors := validator.ValidateConfig(cfg, fields)
+	if !validationErrors.IsEmpty() {
+		report.Errors = append(report.Errors, validationErrors.Errors...)
 	}
 
 	if !report.IsEmpty() {

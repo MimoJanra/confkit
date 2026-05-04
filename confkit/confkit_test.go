@@ -344,3 +344,201 @@ func TestLoadMultipleSources(t *testing.T) {
 		t.Errorf("expected Mode 'test' from env override, got %q", cfg.Mode)
 	}
 }
+
+func TestValidationRequired(t *testing.T) {
+	type Config struct {
+		Host string `env:"TEST_REQUIRED_HOST" validate:"required"`
+	}
+
+	// Don't set the env var, so it will be empty
+	_, err := Load[Config](FromEnv())
+	if err == nil {
+		t.Fatal("expected validation error for required field, got nil")
+	}
+
+	report, ok := err.(*ErrorReport)
+	if !ok {
+		t.Fatalf("expected ErrorReport, got %T", err)
+	}
+
+	if len(report.Errors) != 1 {
+		t.Fatalf("expected 1 error, got %d", len(report.Errors))
+	}
+
+	fieldErr := report.Errors[0]
+	if fieldErr.Kind != ErrorKindValidation {
+		t.Errorf("expected ErrorKindValidation, got %s", fieldErr.Kind)
+	}
+	if fieldErr.Path != "Host" {
+		t.Errorf("expected Path 'Host', got %q", fieldErr.Path)
+	}
+}
+
+func TestValidationMin(t *testing.T) {
+	type Config struct {
+		Port int `env:"TEST_MIN_PORT" validate:"min=1"`
+	}
+
+	t.Setenv("TEST_MIN_PORT", "0")
+
+	_, err := Load[Config](FromEnv())
+	if err == nil {
+		t.Fatal("expected validation error for min constraint, got nil")
+	}
+
+	report, ok := err.(*ErrorReport)
+	if !ok {
+		t.Fatalf("expected ErrorReport, got %T", err)
+	}
+
+	if len(report.Errors) != 1 {
+		t.Fatalf("expected 1 error, got %d", len(report.Errors))
+	}
+
+	fieldErr := report.Errors[0]
+	if fieldErr.Kind != ErrorKindValidation {
+		t.Errorf("expected ErrorKindValidation, got %s", fieldErr.Kind)
+	}
+}
+
+func TestValidationMax(t *testing.T) {
+	type Config struct {
+		Port int `env:"TEST_MAX_PORT" validate:"max=65535"`
+	}
+
+	t.Setenv("TEST_MAX_PORT", "99999")
+
+	_, err := Load[Config](FromEnv())
+	if err == nil {
+		t.Fatal("expected validation error for max constraint, got nil")
+	}
+
+	report, ok := err.(*ErrorReport)
+	if !ok {
+		t.Fatalf("expected ErrorReport, got %T", err)
+	}
+
+	if len(report.Errors) != 1 {
+		t.Fatalf("expected 1 error, got %d", len(report.Errors))
+	}
+}
+
+func TestValidationMultipleRules(t *testing.T) {
+	type Config struct {
+		Port int `env:"TEST_MULTI_PORT" validate:"required,min=1,max=65535"`
+	}
+
+	t.Setenv("TEST_MULTI_PORT", "8080")
+
+	cfg, err := Load[Config](FromEnv())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if cfg.Port != 8080 {
+		t.Errorf("expected Port 8080, got %d", cfg.Port)
+	}
+}
+
+func TestNestedStructsYAML(t *testing.T) {
+	type DatabaseConfig struct {
+		URL      string `yaml:"url"`
+		PoolSize int    `yaml:"pool_size"`
+	}
+
+	type Config struct {
+		Port     int              `yaml:"port"`
+		Database DatabaseConfig   `yaml:"database"`
+	}
+
+	cfg, err := Load[Config](FromYAML("testdata/config.yaml"))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if cfg.Port != 3000 {
+		t.Errorf("expected Port 3000, got %d", cfg.Port)
+	}
+
+	if cfg.Database.URL != "postgres://localhost:5432/app" {
+		t.Errorf("expected Database.URL 'postgres://localhost:5432/app', got %q", cfg.Database.URL)
+	}
+
+	if cfg.Database.PoolSize != 20 {
+		t.Errorf("expected Database.PoolSize 20, got %d", cfg.Database.PoolSize)
+	}
+}
+
+func TestNestedStructsJSON(t *testing.T) {
+	type DatabaseConfig struct {
+		Host string `json:"host"`
+		Port int    `json:"port"`
+	}
+
+	type Config struct {
+		Mode     string           `json:"mode"`
+		Database DatabaseConfig   `json:"database"`
+	}
+
+	cfg, err := Load[Config](FromJSON("testdata/config.json"))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if cfg.Mode != "development" {
+		t.Errorf("expected Mode 'development', got %q", cfg.Mode)
+	}
+
+	if cfg.Database.Host != "0.0.0.0" {
+		t.Errorf("expected Database.Host '0.0.0.0', got %q", cfg.Database.Host)
+	}
+
+	if cfg.Database.Port != 5432 {
+		t.Errorf("expected Database.Port 5432, got %d", cfg.Database.Port)
+	}
+}
+
+func TestNestedStructsValidation(t *testing.T) {
+	type DatabaseConfig struct {
+		Host string `yaml:"host" validate:"required"`
+		Port int    `yaml:"port" validate:"min=1,max=65535"`
+	}
+
+	type Config struct {
+		Port     int              `yaml:"port" default:"8080"`
+		Database DatabaseConfig   `yaml:"database"`
+	}
+
+	cfg, err := Load[Config](FromYAML("testdata/config.yaml"))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if cfg.Database.Port != 5432 {
+		t.Errorf("expected Database.Port 5432, got %d", cfg.Database.Port)
+	}
+}
+
+func TestValidationWithSecretRedaction(t *testing.T) {
+	type Config struct {
+		APIKey string `env:"TEST_SECRET" validate:"required" secret:"true"`
+	}
+
+	// Manually create a validation error to test redaction
+	report := &ErrorReport{}
+	report.AddError(FieldError{
+		Path:    "APIKey",
+		Kind:    ErrorKindValidation,
+		Message: "invalid format",
+		Value:   "super-secret-12345",
+		Secret:  true,
+	})
+
+	formatted := report.Format()
+	if !strings.Contains(formatted, "<redacted>") {
+		t.Errorf("expected secret to be redacted in error, got: %s", formatted)
+	}
+	if strings.Contains(formatted, "super-secret-12345") {
+		t.Errorf("secret value leaked in error: %s", formatted)
+	}
+}

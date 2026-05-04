@@ -2,5 +2,7 @@ port: 3000
 host: localhost
 mode: production
 database:
+  host: localhost
+  port: 5432
   url: postgres://localhost:5432/app
   pool_size: 20
