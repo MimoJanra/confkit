@@ -4,6 +4,9 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![GitHub Release](https://img.shields.io/github/v/release/MimoJanra/confkit.svg)](https://github.com/MimoJanra/confkit/releases)
 [![Go Report Card](https://goreportcard.com/badge/github.com/MimoJanra/confkit)](https://goreportcard.com/report/github.com/MimoJanra/confkit)
+[![Documentation](https://img.shields.io/badge/docs-mimojanra.github.io-blue)](https://mimojanra.github.io/confkit/)
+
+**[📖 Full Documentation](https://mimojanra.github.io/)** — Getting started, API reference, examples, and cloud integrations.
 
 > **Typed, validated configuration loading for Go** — the Pydantic equivalent for Go services.
 >
@@ -408,6 +411,18 @@ vault.VaultTokenAuth(token string) VaultAuth
 vault.VaultAppRoleAuth(roleID, secretID string) VaultAuth
 vault.VaultKubernetesAuth(role, jwt string) VaultAuth
 ```
+
+---
+
+## Documentation
+
+- **[Full Documentation](https://mimojanra.github.io/)** — Getting started, guides, API reference
+- **[Getting Started](https://mimojanra.github.io/docs/getting-started/)** — 5-minute quick start
+- **[API Reference](https://mimojanra.github.io/api/)** — Complete function and type reference
+- **[Examples](https://mimojanra.github.io/examples/)** — Runnable code examples
+- **[Sources Guide](https://mimojanra.github.io/docs/sources/)** — All configuration sources
+- **[GitHub Discussions](https://github.com/MimoJanra/confkit/discussions)** — Questions and ideas
+- **[Issues](https://github.com/MimoJanra/confkit/issues)** — Bug reports and feature requests
 
 ---
 
