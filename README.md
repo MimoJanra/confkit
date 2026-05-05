@@ -1,6 +1,13 @@
 # confkit
 
-> Typed, validated configuration loading for Go — the Pydantic equivalent for Go services.
+[![Go Version](https://img.shields.io/badge/go-1.21%2B-blue)](https://golang.org/doc/devel/release)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![GitHub Release](https://img.shields.io/github/v/release/MimoJanra/confkit.svg)](https://github.com/MimoJanra/confkit/releases)
+[![Go Report Card](https://goreportcard.com/badge/github.com/MimoJanra/confkit)](https://goreportcard.com/report/github.com/MimoJanra/confkit)
+
+> **Typed, validated configuration loading for Go** — the Pydantic equivalent for Go services.
+>
+> Load configuration from multiple sources (environment, YAML, JSON, TOML, Kubernetes, AWS, Vault, Consul, etcd) with type safety, validation, and human-readable error messages.
 
 Define your config as a Go struct. Declare sources. Get a fully validated, type-safe value — or a human-readable error message that tells you exactly which field failed, from which source, and why.
 
