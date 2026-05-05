@@ -319,7 +319,7 @@ func addMarkdownProperties(sb *strings.Builder, props map[string]*Schema, prefix
 		if prefix != "" {
 			fieldName = prefix + "." + propName
 		}
-		sb.WriteString(fmt.Sprintf("| %s | %s | %s | %s | %s |\n",
+		fmt.Fprintf(&sb, "| %s | %s | %s | %s | %s |\n",
 			fieldName,
 			getMarkdownType(prop.Type),
 			getMarkdownDefault(prop.Default),

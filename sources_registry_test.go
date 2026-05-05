@@ -42,7 +42,7 @@ func TestRegisterSource(t *testing.T) {
 func TestRegisterSourceDuplicate(t *testing.T) {
 	defer UnregisterSource("dup_test")
 
-	RegisterSource("dup_test", func() Source {
+	_ = RegisterSource("dup_test", func() Source {
 		return &MemorySource{data: make(map[string]string)}
 	})
 
@@ -64,7 +64,7 @@ func TestNewSourceNotFound(t *testing.T) {
 func TestLoadWithCustomSource(t *testing.T) {
 	defer UnregisterSource("test_custom")
 
-	RegisterSource("test_custom", func() Source {
+	_ = RegisterSource("test_custom", func() Source {
 		return &MemorySource{
 			data: map[string]string{
 				"Port": "9000",

@@ -31,7 +31,7 @@ Port: 8080
 Host: localhost
 `
 	tmpFile := writeTempYAML(t, yamlContent)
-	defer os.Remove(tmpFile)
+	defer func() { _ = os.Remove(tmpFile) }()
 
 	t.Setenv("HOST", "0.0.0.0")
 
@@ -111,7 +111,7 @@ func writeTempYAML(t *testing.T, content string) string {
 	if err != nil {
 		t.Fatalf("Failed to create temp file: %v", err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	if _, err := f.WriteString(content); err != nil {
 		t.Fatalf("Failed to write temp file: %v", err)

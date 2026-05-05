@@ -6,8 +6,8 @@ import (
 )
 
 func TestInterpolationBasic(t *testing.T) {
-	os.Setenv("TEST_VAR", "value123")
-	defer os.Unsetenv("TEST_VAR")
+	_ = os.Setenv("TEST_VAR", "value123")
+	defer func() { _ = os.Unsetenv("TEST_VAR") }()
 
 	r := NewInterpolationResolver(10)
 	result, err := r.Resolve("prefix-${TEST_VAR}-suffix", "test.field")
@@ -20,7 +20,7 @@ func TestInterpolationBasic(t *testing.T) {
 }
 
 func TestInterpolationWithDefault(t *testing.T) {
-	os.Unsetenv("NONEXISTENT_VAR")
+	_ = os.Unsetenv("NONEXISTENT_VAR")
 
 	r := NewInterpolationResolver(10)
 	result, err := r.Resolve("${NONEXISTENT_VAR|fallback}", "test.field")
@@ -33,10 +33,10 @@ func TestInterpolationWithDefault(t *testing.T) {
 }
 
 func TestInterpolationMultipleVars(t *testing.T) {
-	os.Setenv("HOST", "localhost")
-	os.Setenv("PORT", "8080")
-	defer os.Unsetenv("HOST")
-	defer os.Unsetenv("PORT")
+	_ = os.Setenv("HOST", "localhost")
+	_ = os.Setenv("PORT", "8080")
+	defer func() { _ = os.Unsetenv("HOST") }()
+	defer func() { _ = os.Unsetenv("PORT") }()
 
 	r := NewInterpolationResolver(10)
 	result, err := r.Resolve("http://${HOST}:${PORT}/api", "test.field")

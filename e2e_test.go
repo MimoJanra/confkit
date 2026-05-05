@@ -126,7 +126,7 @@ Host: yaml.host
 Database: yaml_db
 `
 	tmpFile := writeTempYAML(t, yamlContent)
-	defer os.Remove(tmpFile)
+	defer func() { _ = os.Remove(tmpFile) }()
 
 	t.Setenv("PORT", "8000")
 	t.Setenv("HOST", "env.host")

@@ -73,6 +73,7 @@ func TestEventRotationStrategy(t *testing.T) {
 	}
 
 	close(eventChan)
+	_ = err
 	shouldRotate, err = strategy.ShouldRotate(context.Background(), time.Now())
 	if err != nil {
 		t.Errorf("Got error after close: %v", err)

@@ -625,10 +625,6 @@ func TestNestedStructsValidation(t *testing.T) {
 }
 
 func TestValidationWithSecretRedaction(t *testing.T) {
-	type Config struct {
-		APIKey string `env:"TEST_SECRET" validate:"required" secret:"true"`
-	}
-
 	// Manually create a validation error to test redaction
 	report := &ErrorReport{}
 	report.AddError(FieldError{
@@ -1175,7 +1171,7 @@ func TestLoadWithWatcher(t *testing.T) {
 	yamlContent := `Port: 8080
 Host: localhost`
 	tmpFile := writeTempYAML(t, yamlContent)
-	defer os.Remove(tmpFile)
+	defer func() { _ = os.Remove(tmpFile) }()
 
 	type Config struct {
 		Port int    `yaml:"Port"`
