@@ -1,4 +1,4 @@
-package confkit
+package vault
 
 import (
 	"context"
@@ -57,14 +57,14 @@ func TestVaultSourceName(t *testing.T) {
 
 func TestFromVault(t *testing.T) {
 	auth := VaultTokenAuth("test-token")
-	src := FromVault("http://localhost:8200", auth)
+	src := FromVault("http://localhost:8200", auth, "myapp")
 
 	if src == nil {
 		t.Fatal("Expected non-nil source")
 	}
 
-	if src.Name() != "vault" && src.Name() != "file" {
-		t.Errorf("Expected vault or file source, got %q", src.Name())
+	if src.Name() != "vault" && src.Name() != "error" {
+		t.Errorf("Expected vault or error source, got %q", src.Name())
 	}
 }
 
@@ -82,7 +82,7 @@ func TestFromVaultWithKVVersion(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(string(rune(tt.kvVersion)), func(t *testing.T) {
 			auth := VaultTokenAuth("test-token")
-			src := FromVaultWithKVVersion("http://localhost:8200", auth, tt.kvVersion)
+			src := FromVaultWithKVVersion("http://localhost:8200", auth, tt.kvVersion, "myapp")
 
 			if src == nil {
 				t.Fatal("Expected non-nil source")

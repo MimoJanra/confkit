@@ -1,4 +1,4 @@
-package confkit
+package etcd
 
 import (
 	"testing"
@@ -11,8 +11,8 @@ func TestFromEtcd(t *testing.T) {
 		t.Fatal("Expected non-nil source")
 	}
 
-	if src.Name() != "etcd" && src.Name() != "file" {
-		t.Errorf("Expected etcd or file source, got %q", src.Name())
+	if src.Name() != "etcd" && src.Name() != "error" {
+		t.Errorf("Expected etcd or error source, got %q", src.Name())
 	}
 }
 
@@ -23,8 +23,8 @@ func TestFromEtcdWithPrefix(t *testing.T) {
 		t.Fatal("Expected non-nil source")
 	}
 
-	if src.Name() != "etcd" && src.Name() != "file" {
-		t.Errorf("Expected etcd or file source, got %q", src.Name())
+	if src.Name() != "etcd" && src.Name() != "error" {
+		t.Errorf("Expected etcd or error source, got %q", src.Name())
 	}
 }
 

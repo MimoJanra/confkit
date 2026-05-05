@@ -1,4 +1,4 @@
-package confkit
+package etcd
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"confkit"
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
@@ -34,7 +35,7 @@ func (e *EtcdSource) Name() string {
 	return "etcd"
 }
 
-func (e *EtcdSource) Lookup(field *FieldInfo) (any, bool, error) {
+func (e *EtcdSource) Lookup(field *confkit.FieldInfo) (any, bool, error) {
 	key := e.buildKey(field.Path)
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(e.timeout)*time.Second)
@@ -68,18 +69,18 @@ func (e *EtcdSource) Close() error {
 	return e.client.Close()
 }
 
-func FromEtcd(endpoints []string) Source {
+func FromEtcd(endpoints []string) confkit.Source {
 	return FromEtcdWithPrefix(endpoints, "/myapp/")
 }
 
-func FromEtcdWithPrefix(endpoints []string, prefix string) Source {
+func FromEtcdWithPrefix(endpoints []string, prefix string) confkit.Source {
 	if !strings.HasSuffix(prefix, "/") {
 		prefix += "/"
 	}
 
 	src, err := NewEtcdSource(endpoints, prefix)
 	if err != nil {
-		return &errorSource{err: err}
+		return confkit.NewErrorSource(err)
 	}
 	return src
 }

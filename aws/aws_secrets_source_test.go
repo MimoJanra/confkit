@@ -1,4 +1,4 @@
-package confkit
+package aws
 
 import (
 	"testing"
@@ -11,8 +11,8 @@ func TestFromAWSSecretsManager(t *testing.T) {
 		t.Fatal("Expected non-nil source")
 	}
 
-	if src.Name() != "aws-secrets-manager" && src.Name() != "file" {
-		t.Errorf("Expected aws-secrets-manager or file, got %q", src.Name())
+	if src.Name() != "aws-secrets-manager" && src.Name() != "error" {
+		t.Errorf("Expected aws-secrets-manager or error, got %q", src.Name())
 	}
 }
 
@@ -22,8 +22,8 @@ func TestFromAWSSecretsManagerWithRegion(t *testing.T) {
 		t.Fatal("Expected non-nil source")
 	}
 
-	if src.Name() != "aws-secrets-manager" && src.Name() != "file" {
-		t.Errorf("Expected aws-secrets-manager or file, got %q", src.Name())
+	if src.Name() != "aws-secrets-manager" && src.Name() != "error" {
+		t.Errorf("Expected aws-secrets-manager or error, got %q", src.Name())
 	}
 }
 
@@ -33,8 +33,8 @@ func TestFromAWSSecretsManagerWithOptions(t *testing.T) {
 		t.Fatal("Expected non-nil source")
 	}
 
-	if src.Name() != "aws-secrets-manager" && src.Name() != "file" {
-		t.Errorf("Expected aws-secrets-manager or file, got %q", src.Name())
+	if src.Name() != "aws-secrets-manager" && src.Name() != "error" {
+		t.Errorf("Expected aws-secrets-manager or error, got %q", src.Name())
 	}
 }
 

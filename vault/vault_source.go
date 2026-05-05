@@ -1,4 +1,4 @@
-package confkit
+package vault
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"confkit"
 	"github.com/hashicorp/vault/api"
 )
 
@@ -14,16 +15,17 @@ type VaultAuth interface {
 }
 
 type VaultSource struct {
-	addr      string
-	auth      VaultAuth
-	kvVersion int
-	client    *api.Client
-	token     string
-	tokenMu   sync.RWMutex
-	lastAuth  time.Time
+	addr       string
+	auth       VaultAuth
+	kvVersion  int
+	pathPrefix string
+	client     *api.Client
+	token      string
+	tokenMu    sync.RWMutex
+	lastAuth   time.Time
 }
 
-func NewVaultSource(addr string, auth VaultAuth, kvVersion int) (*VaultSource, error) {
+func NewVaultSource(addr string, auth VaultAuth, kvVersion int, pathPrefix string) (*VaultSource, error) {
 	config := api.DefaultConfig()
 	config.Address = addr
 
@@ -33,10 +35,11 @@ func NewVaultSource(addr string, auth VaultAuth, kvVersion int) (*VaultSource, e
 	}
 
 	return &VaultSource{
-		addr:      addr,
-		auth:      auth,
-		kvVersion: kvVersion,
-		client:    client,
+		addr:       addr,
+		auth:       auth,
+		kvVersion:  kvVersion,
+		pathPrefix: pathPrefix,
+		client:     client,
 	}, nil
 }
 
@@ -44,7 +47,7 @@ func (v *VaultSource) Name() string {
 	return "vault"
 }
 
-func (v *VaultSource) Lookup(field *FieldInfo) (any, bool, error) {
+func (v *VaultSource) Lookup(field *confkit.FieldInfo) (any, bool, error) {
 	token, err := v.ensureAuthed(context.Background())
 	if err != nil {
 		return "", false, err
@@ -93,10 +96,14 @@ func (v *VaultSource) ensureAuthed(ctx context.Context) (string, error) {
 }
 
 func (v *VaultSource) buildPath(fieldPath string) string {
-	if v.kvVersion == 2 {
-		return fmt.Sprintf("secret/data/myapp/%s", fieldPath)
+	prefix := v.pathPrefix
+	if prefix == "" {
+		prefix = "myapp"
 	}
-	return fmt.Sprintf("secret/myapp/%s", fieldPath)
+	if v.kvVersion == 2 {
+		return fmt.Sprintf("secret/data/%s/%s", prefix, fieldPath)
+	}
+	return fmt.Sprintf("secret/%s/%s", prefix, fieldPath)
 }
 
 type vaultTokenAuth struct {
@@ -167,18 +174,18 @@ func (a *vaultKubernetesAuth) Authenticate(ctx context.Context, client *api.Clie
 	return secret.Auth.ClientToken, nil
 }
 
-func FromVault(addr string, auth VaultAuth) Source {
-	return FromVaultWithKVVersion(addr, auth, 2)
+func FromVault(addr string, auth VaultAuth, pathPrefix string) confkit.Source {
+	return FromVaultWithKVVersion(addr, auth, 2, pathPrefix)
 }
 
-func FromVaultWithKVVersion(addr string, auth VaultAuth, kvVersion int) Source {
+func FromVaultWithKVVersion(addr string, auth VaultAuth, kvVersion int, pathPrefix string) confkit.Source {
 	if kvVersion != 1 && kvVersion != 2 {
 		kvVersion = 2
 	}
 
-	src, err := NewVaultSource(addr, auth, kvVersion)
+	src, err := NewVaultSource(addr, auth, kvVersion, pathPrefix)
 	if err != nil {
-		return &errorSource{err: err}
+		return confkit.NewErrorSource(err)
 	}
 	return src
 }

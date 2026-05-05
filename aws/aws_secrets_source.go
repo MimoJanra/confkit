@@ -1,4 +1,4 @@
-package confkit
+package aws
 
 import (
 	"context"
@@ -7,7 +7,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
+	"confkit"
+	awssdk "github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
 )
@@ -48,7 +49,7 @@ func (a *AWSSecretsManagerSource) Name() string {
 	return "aws-secrets-manager"
 }
 
-func (a *AWSSecretsManagerSource) Lookup(field *FieldInfo) (any, bool, error) {
+func (a *AWSSecretsManagerSource) Lookup(field *confkit.FieldInfo) (any, bool, error) {
 	if err := a.ensureCached(); err != nil {
 		return "", false, err
 	}
@@ -69,7 +70,7 @@ func (a *AWSSecretsManagerSource) ensureCached() error {
 	}
 
 	input := &secretsmanager.GetSecretValueInput{
-		SecretId: aws.String(a.secretName),
+		SecretId: awssdk.String(a.secretName),
 	}
 
 	result, err := a.client.GetSecretValue(a.ctx, input)
@@ -91,18 +92,18 @@ func (a *AWSSecretsManagerSource) ensureCached() error {
 	return nil
 }
 
-func FromAWSSecretsManager(secretName string) Source {
+func FromAWSSecretsManager(secretName string) confkit.Source {
 	return FromAWSSecretsManagerWithRegion(secretName, "")
 }
 
-func FromAWSSecretsManagerWithRegion(secretName string, region string) Source {
+func FromAWSSecretsManagerWithRegion(secretName string, region string) confkit.Source {
 	return FromAWSSecretsManagerWithOptions(secretName, region, 5*time.Minute)
 }
 
-func FromAWSSecretsManagerWithOptions(secretName string, region string, cacheTTL time.Duration) Source {
+func FromAWSSecretsManagerWithOptions(secretName string, region string, cacheTTL time.Duration) confkit.Source {
 	src, err := NewAWSSecretsManagerSource(secretName, region, cacheTTL)
 	if err != nil {
-		return &errorSource{err: err}
+		return confkit.NewErrorSource(err)
 	}
 	return src
 }

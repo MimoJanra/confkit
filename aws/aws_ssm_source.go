@@ -1,4 +1,4 @@
-package confkit
+package aws
 
 import (
 	"context"
@@ -7,7 +7,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
+	"confkit"
+	awssdk "github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ssm"
 )
@@ -41,7 +42,7 @@ func (a *AWSSSMSource) Name() string {
 	return "aws-ssm"
 }
 
-func (a *AWSSSMSource) Lookup(field *FieldInfo) (any, bool, error) {
+func (a *AWSSSMSource) Lookup(field *confkit.FieldInfo) (any, bool, error) {
 	if err := a.ensureCached(); err != nil {
 		return "", false, err
 	}
@@ -63,9 +64,9 @@ func (a *AWSSSMSource) ensureCached() error {
 	}
 
 	paginator := ssm.NewGetParametersByPathPaginator(a.client, &ssm.GetParametersByPathInput{
-		Path:           aws.String(a.pathPrefix),
-		Recursive:      aws.Bool(true),
-		WithDecryption: aws.Bool(true),
+		Path:           awssdk.String(a.pathPrefix),
+		Recursive:      awssdk.Bool(true),
+		WithDecryption: awssdk.Bool(true),
 	})
 
 	a.cache = make(map[string]string)
@@ -115,18 +116,18 @@ func (a *AWSSSMSource) parameterPathToFieldPath(paramPath string) string {
 	return strings.Join(fieldParts, ".")
 }
 
-func FromAWSSSMParameterStore(pathPrefix string) Source {
+func FromAWSSSMParameterStore(pathPrefix string) confkit.Source {
 	return FromAWSSSMParameterStoreWithTTL(pathPrefix, 5*time.Minute)
 }
 
-func FromAWSSSMParameterStoreWithTTL(pathPrefix string, cacheTTL time.Duration) Source {
+func FromAWSSSMParameterStoreWithTTL(pathPrefix string, cacheTTL time.Duration) confkit.Source {
 	if !strings.HasSuffix(pathPrefix, "/") {
 		pathPrefix += "/"
 	}
 
 	src, err := NewAWSSSMSource(pathPrefix, cacheTTL)
 	if err != nil {
-		return &errorSource{err: err}
+		return confkit.NewErrorSource(err)
 	}
 	return src
 }

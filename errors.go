@@ -66,7 +66,6 @@ func (er *ErrorReport) Format() string {
 	return sb.String()
 }
 
-// Explain formats an error for user display. Returns the original error string if it's not an ErrorReport.
 func Explain(err error) string {
 	if err == nil {
 		return ""

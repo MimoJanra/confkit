@@ -46,9 +46,13 @@ type errorSource struct {
 }
 
 func (e *errorSource) Name() string {
-	return "file"
+	return "error"
 }
 
 func (e *errorSource) Lookup(_ *FieldInfo) (any, bool, error) {
 	return "", false, e.err
+}
+
+func NewErrorSource(err error) Source {
+	return &errorSource{err: err}
 }

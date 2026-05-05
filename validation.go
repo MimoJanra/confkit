@@ -5,21 +5,9 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
-	"sync"
 )
 
 type CustomValidatorFunc func(reflect.Value) error
-
-var (
-	customValidators = make(map[string]CustomValidatorFunc)
-	validatorMutex   sync.RWMutex
-)
-
-func RegisterValidator(name string, fn CustomValidatorFunc) {
-	validatorMutex.Lock()
-	defer validatorMutex.Unlock()
-	customValidators[name] = fn
-}
 
 type Validator struct {
 	LocalValidators map[string]CustomValidatorFunc
@@ -68,9 +56,6 @@ type ValidationRule struct {
 	Value string
 }
 
-// parseValidationRules parses a validate tag into rules.
-// oneof requires special handling: its value contains commas (e.g. oneof=debug,info,warn)
-// which would be wrongly split as separate rules.
 func parseValidationRules(tag string) []ValidationRule {
 	var rules []ValidationRule
 
@@ -78,13 +63,7 @@ func parseValidationRules(tag string) []ValidationRule {
 		before := tag[:idx]
 		rest := tag[idx+6:]
 
-		// Collect known bare rule names to detect end of oneof value
 		knownRules := map[string]bool{"required": true}
-		validatorMutex.RLock()
-		for name := range customValidators {
-			knownRules[name] = true
-		}
-		validatorMutex.RUnlock()
 
 		endIdx := -1
 		for i, ch := range rest {
@@ -168,24 +147,6 @@ func (v *Validator) validateField(fieldVal reflect.Value, field FieldInfo, rule 
 		return v.validateOneOf(fieldVal, field, rule)
 	default:
 		if customFn, exists := v.LocalValidators[rule.Name]; exists {
-			if err := customFn(fieldVal); err != nil {
-				return FieldError{
-					Path:    field.Path,
-					Kind:    ErrorKindValidation,
-					Rule:    rule.Name,
-					Secret:  field.IsSecret,
-					Value:   fieldValueToString(fieldVal, field.IsSecret),
-					Source:  "validation",
-					Message: err.Error(),
-				}
-			}
-			return FieldError{}
-		}
-
-		validatorMutex.RLock()
-		customFn, exists := customValidators[rule.Name]
-		validatorMutex.RUnlock()
-		if exists {
 			if err := customFn(fieldVal); err != nil {
 				return FieldError{
 					Path:    field.Path,

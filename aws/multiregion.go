@@ -1,14 +1,16 @@
-package confkit
+package aws
 
 import (
 	"fmt"
 	"sync"
 	"time"
+
+	"confkit"
 )
 
 type RegionFailoverSource struct {
 	regions       []string
-	sources       []Source
+	sources       []confkit.Source
 	currentRegion int
 	cacheMutex    sync.RWMutex
 	regionCache   map[string]bool
@@ -16,12 +18,12 @@ type RegionFailoverSource struct {
 	lastCacheAt   time.Time
 }
 
-func NewRegionFailoverSource(regions []string, sourceFactory func(region string) Source) (*RegionFailoverSource, error) {
+func NewRegionFailoverSource(regions []string, sourceFactory func(region string) confkit.Source) (*RegionFailoverSource, error) {
 	if len(regions) == 0 {
 		return nil, fmt.Errorf("must provide at least one region")
 	}
 
-	sources := make([]Source, len(regions))
+	sources := make([]confkit.Source, len(regions))
 	for i, region := range regions {
 		sources[i] = sourceFactory(region)
 	}
@@ -39,7 +41,7 @@ func (r *RegionFailoverSource) Name() string {
 	return "multiregion"
 }
 
-func (r *RegionFailoverSource) Lookup(field *FieldInfo) (any, bool, error) {
+func (r *RegionFailoverSource) Lookup(field *confkit.FieldInfo) (any, bool, error) {
 	r.cacheMutex.RLock()
 	startRegion := r.currentRegion
 	r.cacheMutex.RUnlock()
@@ -102,23 +104,23 @@ func (r *RegionFailoverSource) GetHealthyRegions() []string {
 	return healthy
 }
 
-func FromAWSSecretsManagerMultiRegion(secretName string, regions []string) Source {
-	src, err := NewRegionFailoverSource(regions, func(region string) Source {
+func FromAWSSecretsManagerMultiRegion(secretName string, regions []string) confkit.Source {
+	src, err := NewRegionFailoverSource(regions, func(region string) confkit.Source {
 		return FromAWSSecretsManagerWithRegion(secretName, region)
 	})
 	if err != nil {
-		return &errorSource{err: err}
+		return confkit.NewErrorSource(err)
 	}
 	return src
 }
 
-func FromAWSSSMParameterStoreMultiRegion(pathPrefix string, regions []string) Source {
-	src, err := NewRegionFailoverSource(regions, func(region string) Source {
+func FromAWSSSMParameterStoreMultiRegion(pathPrefix string, regions []string) confkit.Source {
+	src, err := NewRegionFailoverSource(regions, func(region string) confkit.Source {
 		ssmSrc, _ := NewAWSSSMSource(pathPrefix, 5*time.Minute)
 		return ssmSrc
 	})
 	if err != nil {
-		return &errorSource{err: err}
+		return confkit.NewErrorSource(err)
 	}
 	return src
 }

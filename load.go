@@ -37,7 +37,7 @@ func LoadWithOptions[T any](options ...Option) (T, error) {
 	report := &ErrorReport{}
 	parser := NewParser()
 
-	config := &LoadConfig{
+	config := &loadConfig{
 		Sources:          make([]Source, 0),
 		Validators:       make(map[string]CustomValidatorFunc),
 		Middleware:       make([]MiddlewareFunc, 0),
@@ -102,7 +102,6 @@ func LoadWithOptions[T any](options ...Option) (T, error) {
 		}
 	}
 
-	// Perform interpolation on all field values
 	interpolationErrors := performInterpolation(fieldValues, resolver, report)
 	if !interpolationErrors {
 		return cfg, report

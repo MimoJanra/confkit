@@ -1,10 +1,11 @@
-package confkit
+package consul
 
 import (
 	"fmt"
 	"strings"
 	"time"
 
+	"confkit"
 	"github.com/hashicorp/consul/api"
 )
 
@@ -41,7 +42,7 @@ func (c *ConsulSource) Name() string {
 	return "consul"
 }
 
-func (c *ConsulSource) Lookup(field *FieldInfo) (any, bool, error) {
+func (c *ConsulSource) Lookup(field *confkit.FieldInfo) (any, bool, error) {
 	key := c.buildKey(field.Path)
 
 	opts := &api.QueryOptions{
@@ -72,18 +73,18 @@ func (c *ConsulSource) SetWaitDuration(duration time.Duration) {
 	c.waitDuration = duration
 }
 
-func FromConsul(addr string) Source {
+func FromConsul(addr string) confkit.Source {
 	return FromConsulWithOptions(addr, "", "")
 }
 
-func FromConsulWithToken(addr string, token string) Source {
+func FromConsulWithToken(addr string, token string) confkit.Source {
 	return FromConsulWithOptions(addr, token, "")
 }
 
-func FromConsulWithOptions(addr string, token string, datacenter string) Source {
+func FromConsulWithOptions(addr string, token string, datacenter string) confkit.Source {
 	src, err := NewConsulSource(addr, token, datacenter)
 	if err != nil {
-		return &errorSource{err: err}
+		return confkit.NewErrorSource(err)
 	}
 	return src
 }

@@ -1,4 +1,4 @@
-package confkit
+package consul
 
 import (
 	"testing"
@@ -11,8 +11,8 @@ func TestFromConsul(t *testing.T) {
 		t.Fatal("Expected non-nil source")
 	}
 
-	if src.Name() != "consul" && src.Name() != "file" {
-		t.Errorf("Expected consul or file source, got %q", src.Name())
+	if src.Name() != "consul" && src.Name() != "error" {
+		t.Errorf("Expected consul or error source, got %q", src.Name())
 	}
 }
 
@@ -22,8 +22,8 @@ func TestFromConsulWithToken(t *testing.T) {
 		t.Fatal("Expected non-nil source")
 	}
 
-	if src.Name() != "consul" && src.Name() != "file" {
-		t.Errorf("Expected consul or file source, got %q", src.Name())
+	if src.Name() != "consul" && src.Name() != "error" {
+		t.Errorf("Expected consul or error source, got %q", src.Name())
 	}
 }
 
@@ -33,8 +33,8 @@ func TestFromConsulWithOptions(t *testing.T) {
 		t.Fatal("Expected non-nil source")
 	}
 
-	if src.Name() != "consul" && src.Name() != "file" {
-		t.Errorf("Expected consul or file source, got %q", src.Name())
+	if src.Name() != "consul" && src.Name() != "error" {
+		t.Errorf("Expected consul or error source, got %q", src.Name())
 	}
 }
 

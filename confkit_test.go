@@ -649,21 +649,21 @@ func TestValidationWithSecretRedaction(t *testing.T) {
 }
 
 func TestCustomValidator(t *testing.T) {
-	// Register a custom validator for testing
-	RegisterValidator("positive", func(v reflect.Value) error {
-		if v.Kind() == reflect.Int && v.Int() <= 0 {
-			return fmt.Errorf("must be positive")
-		}
-		return nil
-	})
-
 	type Config struct {
 		Count int `env:"TEST_COUNT" validate:"positive"`
 	}
 
 	t.Setenv("TEST_COUNT", "-5")
 
-	_, err := Load[Config](FromEnv())
+	_, err := LoadWithOptions[Config](
+		WithSource(FromEnv()),
+		WithValidator("positive", func(v reflect.Value) error {
+			if v.Kind() == reflect.Int && v.Int() <= 0 {
+				return fmt.Errorf("must be positive")
+			}
+			return nil
+		}),
+	)
 	if err == nil {
 		t.Fatal("expected validation error for custom validator, got nil")
 	}
@@ -935,8 +935,8 @@ func TestNestedStructSnakeCaseFallback(t *testing.T) {
 
 func TestFieldValueToStringTypes(t *testing.T) {
 	type Config struct {
-		Active bool    `env:"TEST_BOOL_FMT" validate:"required"`
-		Ratio  float32 `env:"TEST_FLOAT_FMT" validate:"required"`
+		Active bool     `env:"TEST_BOOL_FMT" validate:"required"`
+		Ratio  float32  `env:"TEST_FLOAT_FMT" validate:"required"`
 		Tags   []string `env:"TEST_SLICE_FMT"`
 	}
 
@@ -1131,9 +1131,9 @@ func TestInterpolationInDefaults(t *testing.T) {
 
 func TestInterpolationFromSourceValues(t *testing.T) {
 	type Config struct {
-		Host               string `yaml:"Host"`
-		Port               int    `yaml:"Port"`
-		ConnectionString   string `yaml:"ConnectionString"`
+		Host             string `yaml:"Host"`
+		Port             int    `yaml:"Port"`
+		ConnectionString string `yaml:"ConnectionString"`
 	}
 
 	cfg, err := Load[Config](FromYAML("testdata/interpolation.yaml"))

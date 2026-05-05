@@ -24,24 +24,21 @@ type AppConfig struct {
 }
 
 func main() {
-	// Register a custom validator for database URLs
-	confkit.RegisterValidator("dburl", func(v reflect.Value) error {
-		if v.Kind() == reflect.String {
-			s := v.String()
-			if s == "" {
-				return fmt.Errorf("database URL cannot be empty")
+	cfg, err := confkit.LoadWithOptions[AppConfig](
+		confkit.WithSource(confkit.FromTOML("examples/config.toml")),
+		confkit.WithSource(confkit.FromEnv()),
+		confkit.WithValidator("dburl", func(v reflect.Value) error {
+			if v.Kind() == reflect.String {
+				s := v.String()
+				if s == "" {
+					return fmt.Errorf("database URL cannot be empty")
+				}
+				if !isValidDBURL(s) {
+					return fmt.Errorf("invalid database URL format")
+				}
 			}
-			if !isValidDBURL(s) {
-				return fmt.Errorf("invalid database URL format")
-			}
-		}
-		return nil
-	})
-
-	// Load config from TOML
-	cfg, err := confkit.Load[AppConfig](
-		confkit.FromTOML("examples/config.toml"),
-		confkit.FromEnv(),
+			return nil
+		}),
 	)
 	if err != nil {
 		log.Fatalf("Failed to load config: %v", err)

@@ -1,4 +1,4 @@
-package confkit
+package aws
 
 import (
 	"testing"
@@ -90,8 +90,8 @@ func TestFromAWSSSMParameterStore(t *testing.T) {
 		t.Fatal("Expected non-nil source")
 	}
 
-	if src.Name() != "aws-ssm" && src.Name() != "error-source" {
-		t.Errorf("Expected aws-ssm or error-source, got %q", src.Name())
+	if src.Name() != "aws-ssm" && src.Name() != "error" {
+		t.Errorf("Expected aws-ssm or error, got %q", src.Name())
 	}
 }
 
@@ -108,7 +108,7 @@ func TestFromAWSSSMParameterStorePathNormalization(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {
 			src := FromAWSSSMParameterStore(tt.input)
-			if _, ok := src.(*errorSource); ok {
+			if src.Name() == "error" {
 				t.Skip("AWS SDK not available")
 			}
 			if asrc, ok := src.(*AWSSSMSource); ok {
@@ -145,7 +145,7 @@ func TestFromAWSSSMParameterStoreWithTTL(t *testing.T) {
 		t.Fatal("Expected non-nil source")
 	}
 
-	if src.Name() != "aws-ssm" && src.Name() != "file" {
-		t.Errorf("Expected aws-ssm or file, got %q", src.Name())
+	if src.Name() != "aws-ssm" && src.Name() != "error" {
+		t.Errorf("Expected aws-ssm or error, got %q", src.Name())
 	}
 }

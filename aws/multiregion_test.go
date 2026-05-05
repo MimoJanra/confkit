@@ -1,13 +1,15 @@
-package confkit
+package aws
 
 import (
 	"testing"
+
+	"confkit"
 )
 
 func TestNewRegionFailoverSource(t *testing.T) {
 	regions := []string{"us-east-1", "us-west-2"}
-	src, err := NewRegionFailoverSource(regions, func(region string) Source {
-		return &errorSource{err: nil}
+	src, err := NewRegionFailoverSource(regions, func(region string) confkit.Source {
+		return confkit.NewErrorSource(nil)
 	})
 
 	if err != nil {
@@ -32,8 +34,8 @@ func TestRegionFailoverSourceName(t *testing.T) {
 }
 
 func TestRegionFailoverSourceEmptyRegions(t *testing.T) {
-	_, err := NewRegionFailoverSource([]string{}, func(region string) Source {
-		return &errorSource{err: nil}
+	_, err := NewRegionFailoverSource([]string{}, func(region string) confkit.Source {
+		return confkit.NewErrorSource(nil)
 	})
 
 	if err == nil {
@@ -43,8 +45,8 @@ func TestRegionFailoverSourceEmptyRegions(t *testing.T) {
 
 func TestRegionFailoverSourceGetCurrentRegion(t *testing.T) {
 	regions := []string{"us-east-1", "us-west-2", "eu-west-1"}
-	src, _ := NewRegionFailoverSource(regions, func(region string) Source {
-		return &errorSource{err: nil}
+	src, _ := NewRegionFailoverSource(regions, func(region string) confkit.Source {
+		return confkit.NewErrorSource(nil)
 	})
 
 	current := src.GetCurrentRegion()
@@ -55,8 +57,8 @@ func TestRegionFailoverSourceGetCurrentRegion(t *testing.T) {
 
 func TestRegionFailoverSourceGetHealthyRegions(t *testing.T) {
 	regions := []string{"us-east-1", "us-west-2"}
-	src, _ := NewRegionFailoverSource(regions, func(region string) Source {
-		return &errorSource{err: nil}
+	src, _ := NewRegionFailoverSource(regions, func(region string) confkit.Source {
+		return confkit.NewErrorSource(nil)
 	})
 
 	healthy := src.GetHealthyRegions()
@@ -73,8 +75,8 @@ func TestFromAWSSecretsManagerMultiRegion(t *testing.T) {
 		t.Fatal("Expected non-nil source")
 	}
 
-	if src.Name() != "multiregion" && src.Name() != "file" {
-		t.Errorf("Expected multiregion or file, got %q", src.Name())
+	if src.Name() != "multiregion" && src.Name() != "error" {
+		t.Errorf("Expected multiregion or error, got %q", src.Name())
 	}
 }
 
@@ -86,15 +88,15 @@ func TestFromAWSSSMParameterStoreMultiRegion(t *testing.T) {
 		t.Fatal("Expected non-nil source")
 	}
 
-	if src.Name() != "multiregion" && src.Name() != "file" {
-		t.Errorf("Expected multiregion or file, got %q", src.Name())
+	if src.Name() != "multiregion" && src.Name() != "error" {
+		t.Errorf("Expected multiregion or error, got %q", src.Name())
 	}
 }
 
 func TestRegionFailoverSourceCurrentRegionUpdate(t *testing.T) {
 	regions := []string{"region-a", "region-b"}
-	src, _ := NewRegionFailoverSource(regions, func(region string) Source {
-		return &errorSource{err: nil}
+	src, _ := NewRegionFailoverSource(regions, func(region string) confkit.Source {
+		return confkit.NewErrorSource(nil)
 	})
 
 	if src.GetCurrentRegion() != "region-a" {
