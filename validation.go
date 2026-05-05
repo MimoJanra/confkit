@@ -146,6 +146,9 @@ func (v *Validator) validateField(fieldVal reflect.Value, field FieldInfo, rule 
 	case "oneof":
 		return v.validateOneOf(fieldVal, field, rule)
 	default:
+		if fe, ok := v.validateBuiltin(fieldVal, field, rule); ok {
+			return fe
+		}
 		if customFn, exists := v.LocalValidators[rule.Name]; exists {
 			if err := customFn(fieldVal); err != nil {
 				return FieldError{

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+	"time"
 )
 
 func Load[T any](sources ...Source) (T, error) {
@@ -31,6 +32,7 @@ func LoadWithWatcher[T any](filePath string, sources ...Source) (T, *ConfigWatch
 }
 
 func LoadWithOptions[T any](options ...Option) (T, error) {
+	start := time.Now()
 	var cfg T
 
 	fields := ScanFields(cfg)
@@ -40,6 +42,7 @@ func LoadWithOptions[T any](options ...Option) (T, error) {
 	config := &loadConfig{
 		Sources:          make([]Source, 0),
 		Validators:       make(map[string]CustomValidatorFunc),
+		ModelValidators:  make([]func(any) error, 0),
 		Middleware:       make([]MiddlewareFunc, 0),
 		InterpolationMax: 10,
 	}
@@ -104,6 +107,7 @@ func LoadWithOptions[T any](options ...Option) (T, error) {
 
 	interpolationErrors := performInterpolation(fieldValues, resolver, report)
 	if !interpolationErrors {
+		fireHooks(config, false, start, len(report.Errors))
 		return cfg, report
 	}
 
@@ -111,6 +115,7 @@ func LoadWithOptions[T any](options ...Option) (T, error) {
 	setStructFields(val, fields, fieldValues, fieldSources, parser, report)
 
 	if !report.IsEmpty() {
+		fireHooks(config, false, start, len(report.Errors))
 		return cfg, report
 	}
 
@@ -119,11 +124,53 @@ func LoadWithOptions[T any](options ...Option) (T, error) {
 		report.Errors = append(report.Errors, validationErrors.Errors...)
 	}
 
+	// Run model (cross-field) validators only when field validation passed.
+	if report.IsEmpty() {
+		for _, mv := range config.ModelValidators {
+			if err := mv(&cfg); err != nil {
+				report.AddError(FieldError{
+					Path:    "_model",
+					Kind:    ErrorKindValidation,
+					Message: err.Error(),
+				})
+			}
+		}
+	}
+
 	if !report.IsEmpty() {
+		fireHooks(config, false, start, len(report.Errors))
 		return cfg, report
 	}
 
+	// Audit: record which source each field came from.
+	if config.AuditLogger != nil {
+		entries := make([]AuditEntry, 0, len(fields))
+		for _, field := range fields {
+			src, ok := fieldSources[field.Path]
+			if !ok {
+				continue
+			}
+			val := anyToString(fieldValues[field.Path])
+			if field.IsSecret {
+				val = "<redacted>"
+			}
+			entries = append(entries, AuditEntry{Field: field.Path, Source: src, Value: val})
+		}
+		config.AuditLogger(entries)
+	}
+
+	fireHooks(config, true, start, 0)
 	return cfg, nil
+}
+
+func fireHooks(config *loadConfig, success bool, start time.Time, errCount int) {
+	if len(config.LoadHooks) == 0 {
+		return
+	}
+	d := time.Since(start)
+	for _, h := range config.LoadHooks {
+		h(success, d, errCount)
+	}
 }
 
 func performInterpolation(fieldValues map[string]any, resolver *InterpolationResolver, report *ErrorReport) bool {
