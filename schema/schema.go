@@ -88,7 +88,9 @@ func walkStruct(typ reflect.Type, parent *Schema) error {
 		} else if fieldType.Kind() == reflect.Struct {
 			fieldSchema.Type = "object"
 			fieldSchema.Properties = make(map[string]*Schema)
-			walkStruct(fieldType, fieldSchema)
+			if err := walkStruct(fieldType, fieldSchema); err != nil {
+				return err
+			}
 		} else if fieldType.Kind() == reflect.Slice {
 			fieldSchema.Type = "array"
 			elemType := fieldType.Elem()

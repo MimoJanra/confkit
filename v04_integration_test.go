@@ -8,7 +8,7 @@ import (
 
 func TestV04HotReloadIntegration(t *testing.T) {
 	tmpFile := writeTempYAML(t, "Port: 8080\nHost: localhost")
-	defer os.Remove(tmpFile)
+	defer func() { _ = os.Remove(tmpFile) }()
 
 	src := FromYAML(tmpFile)
 	if src == nil {
@@ -50,8 +50,8 @@ func TestV04MultiSourcePrecedence(t *testing.T) {
 		Host string
 	}
 
-	os.Setenv("HOST", "env-host")
-	defer os.Unsetenv("HOST")
+	_ = os.Setenv("HOST", "env-host")
+	defer func() { _ = os.Unsetenv("HOST") }()
 
 	cfg, err := Load[Config](
 		FromEnv(),
@@ -132,7 +132,7 @@ func TestV04ObservabilityMetrics(t *testing.T) {
 
 func TestV04WatcherIntegration(t *testing.T) {
 	tmpFile := writeTempYAML(t, "test: value")
-	defer os.Remove(tmpFile)
+	defer func() { _ = os.Remove(tmpFile) }()
 
 	watcher, err := NewConfigWatcher(tmpFile)
 	if err != nil {
@@ -200,7 +200,7 @@ func TestV04FullStack(t *testing.T) {
 	}
 
 	tmpFile := writeTempYAML(t, "Port: 9000\nHost: example.com")
-	defer os.Remove(tmpFile)
+	defer func() { _ = os.Remove(tmpFile) }()
 
 	sources := []Source{
 		FromYAML(tmpFile),

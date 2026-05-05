@@ -73,7 +73,7 @@ func TestInterpolationNoVars(t *testing.T) {
 }
 
 func TestInterpolationUndefinedVar(t *testing.T) {
-	os.Unsetenv("UNDEFINED_VAR")
+	_ = os.Unsetenv("UNDEFINED_VAR")
 
 	r := NewInterpolationResolver(10)
 	_, err := r.Resolve("${UNDEFINED_VAR}", "test.field")

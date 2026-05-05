@@ -73,8 +73,7 @@ func TestEventRotationStrategy(t *testing.T) {
 	}
 
 	close(eventChan)
-	_ = err
-	shouldRotate, err = strategy.ShouldRotate(context.Background(), time.Now())
+	_, err = strategy.ShouldRotate(context.Background(), time.Now())
 	if err != nil {
 		t.Errorf("Got error after close: %v", err)
 	}
@@ -117,8 +116,8 @@ func TestRotationEngineIsRotating(t *testing.T) {
 }
 
 func TestRotationEngineLastRotation(t *testing.T) {
-	engine := NewRotationEngine(RotateOnInterval(1 * time.Hour))
 	before := time.Now()
+	engine := NewRotationEngine(RotateOnInterval(1 * time.Hour))
 
 	if engine.lastRotation.Before(before) {
 		t.Error("Last rotation should be recent")
