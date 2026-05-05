@@ -1,9 +1,10 @@
 # confkit
 
-[![Go Version](https://img.shields.io/badge/go-1.24%2B-blue)](https://golang.org/doc/devel/release)
+[![Go Version](https://img.shields.io/badge/go-1.22%2B-blue)](https://golang.org/doc/devel/release)
 [![Go Reference](https://pkg.go.dev/badge/github.com/MimoJanra/confkit.svg)](https://pkg.go.dev/github.com/MimoJanra/confkit)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![GitHub Release](https://img.shields.io/github/v/release/MimoJanra/confkit.svg)](https://github.com/MimoJanra/confkit/releases)
+[![Tests](https://github.com/MimoJanra/confkit/actions/workflows/test.yml/badge.svg)](https://github.com/MimoJanra/confkit/actions/workflows/test.yml)
+[![codecov](https://codecov.io/gh/MimoJanra/confkit/branch/main/graph/badge.svg)](https://codecov.io/gh/MimoJanra/confkit)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Go Report Card](https://goreportcard.com/badge/github.com/MimoJanra/confkit)](https://goreportcard.com/report/github.com/MimoJanra/confkit)
 [![Documentation](https://img.shields.io/badge/docs-mimojanra.github.io-blue)](https://mimojanra.github.io/confkit/)
 [![LLM Context](https://img.shields.io/badge/llms.txt-reference-brightgreen)](./llms.txt)
@@ -548,4 +549,14 @@ vault.VaultKubernetesAuth(role, jwt string) VaultAuth
 
 ## License
 
-MIT
+MIT — A permissive, redistributable license with minimal restrictions.
+
+confkit is released under the MIT License, which allows you to:
+- ✅ Use commercially (SaaS, proprietary software, etc.)
+- ✅ Modify and redistribute
+- ✅ Use in closed-source projects
+- ✅ Sublicense
+
+The only requirement: include a copy of the license in your distribution.
+
+See [LICENSE](LICENSE) file for full text.
