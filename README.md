@@ -47,16 +47,16 @@ if err != nil {
 ## Install
 
 ```bash
-go get confkit
+go get github.com/MimoJanra/confkit
 ```
 
 Enterprise sources (Vault, Consul, etcd, AWS) are separate optional modules:
 
 ```bash
-go get confkit/vault
-go get confkit/consul
-go get confkit/etcd
-go get confkit/aws
+go get github.com/MimoJanra/confkit/vault
+go get github.com/MimoJanra/confkit/consul
+go get github.com/MimoJanra/confkit/etcd
+go get github.com/MimoJanra/confkit/aws
 ```
 
 ---
@@ -69,7 +69,7 @@ package main
 import (
     "log"
     "time"
-    "confkit"
+    "github.com/MimoJanra/confkit"
 )
 
 type Config struct {
@@ -364,7 +364,7 @@ func NewErrorSource(err error) Source
 ## Schema Generation
 
 ```go
-import "confkit/schema"
+import "github.com/MimoJanra/confkit/schema"
 
 // JSON Schema (draft-07 compatible)
 s, err := schema.GenerateSchema[Config]()

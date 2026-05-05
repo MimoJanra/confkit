@@ -1,4 +1,4 @@
-module confkit
+module github.com/MimoJanra/confkit
 
 go 1.24.0
 
