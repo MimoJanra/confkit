@@ -8,7 +8,7 @@ import (
 
 func TestNewConfigWatcher(t *testing.T) {
 	tmpFile := writeTempYAML(t, "Port: 8080")
-	defer os.Remove(tmpFile)
+	defer func() { _ = os.Remove(tmpFile) }()
 
 	watcher, err := NewConfigWatcher(tmpFile)
 	if err != nil {
@@ -32,7 +32,7 @@ func TestConfigWatcherFileNotFound(t *testing.T) {
 
 func TestConfigWatcherDetectsChanges(t *testing.T) {
 	tmpFile := writeTempYAML(t, "Port: 8080")
-	defer os.Remove(tmpFile)
+	defer func() { _ = os.Remove(tmpFile) }()
 
 	watcher, err := NewConfigWatcher(tmpFile)
 	if err != nil {
@@ -64,7 +64,7 @@ func TestConfigWatcherDetectsChanges(t *testing.T) {
 
 func TestConfigWatcherMultipleListeners(t *testing.T) {
 	tmpFile := writeTempYAML(t, "Port: 8080")
-	defer os.Remove(tmpFile)
+	defer func() { _ = os.Remove(tmpFile) }()
 
 	watcher, err := NewConfigWatcher(tmpFile)
 	if err != nil {
@@ -100,7 +100,7 @@ func TestConfigWatcherMultipleListeners(t *testing.T) {
 
 func TestConfigWatcherStopsCleaning(t *testing.T) {
 	tmpFile := writeTempYAML(t, "Port: 8080")
-	defer os.Remove(tmpFile)
+	defer func() { _ = os.Remove(tmpFile) }()
 
 	watcher, err := NewConfigWatcher(tmpFile)
 	if err != nil {
