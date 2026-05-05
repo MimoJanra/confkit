@@ -1,7 +1,7 @@
 package schema
 
 import (
-	"confkit/internal/tagutil"
+	"confkit/tagutil"
 	"encoding/json"
 	"fmt"
 	"reflect"

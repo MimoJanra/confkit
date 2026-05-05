@@ -1,7 +1,7 @@
 package confkit
 
 import (
-	"confkit/internal/tagutil"
+	"confkit/tagutil"
 	"reflect"
 )
 
