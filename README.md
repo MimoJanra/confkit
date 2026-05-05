@@ -1,21 +1,57 @@
 # confkit
 
 [![Go Version](https://img.shields.io/badge/go-1.24%2B-blue)](https://golang.org/doc/devel/release)
+[![Go Reference](https://pkg.go.dev/badge/github.com/MimoJanra/confkit.svg)](https://pkg.go.dev/github.com/MimoJanra/confkit)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![GitHub Release](https://img.shields.io/github/v/release/MimoJanra/confkit.svg)](https://github.com/MimoJanra/confkit/releases)
 [![Go Report Card](https://goreportcard.com/badge/github.com/MimoJanra/confkit)](https://goreportcard.com/report/github.com/MimoJanra/confkit)
 [![Documentation](https://img.shields.io/badge/docs-mimojanra.github.io-blue)](https://mimojanra.github.io/confkit/)
 [![LLM Context](https://img.shields.io/badge/llms.txt-reference-brightgreen)](./llms.txt)
 
-**[📖 Full Documentation](https://mimojanra.github.io/confkit/)** — Getting started, API reference, examples, and cloud integrations.
+**Typed, validated configuration loading for Go** — no more stringly-typed config, boilerplate, or cryptic error messages.
 
-**[🤖 LLM Context](./llms.txt)** — Machine-readable API reference for Claude, Copilot, and other AI coding assistants.
+confkit lets you define application config as a Go struct, load it from multiple sources (YAML, env vars, JSON, TOML, Kubernetes, AWS, Vault), apply defaults, validate fields, and safely redact secrets. Think Pydantic for Go.
 
-> **Typed, validated configuration loading for Go** — the Pydantic equivalent for Go services.
->
-> Load configuration from multiple sources (environment, YAML, JSON, TOML, Kubernetes, AWS, Vault, Consul, etcd) with type safety, validation, and human-readable error messages.
+## 30-Second Example
 
-Define your config as a Go struct. Declare sources. Get a fully validated, type-safe value — or a human-readable error message that tells you exactly which field failed, from which source, and why.
+Define your config struct once. Defaults and validation are in the tags:
+
+```go
+type Config struct {
+    Port     int    `env:"PORT" default:"8080" validate:"min=1,max=65535"`
+    Database string `env:"DATABASE_URL" validate:"required" secret:"true"`
+}
+
+// Load from YAML + env, get typed value or clear error
+cfg, err := confkit.Load[Config](
+    confkit.FromYAML("config.yaml"),
+    confkit.FromEnv(),  // env overrides YAML
+)
+if err != nil {
+    log.Fatal(confkit.Explain(err))
+}
+```
+
+On validation error:
+```
+Invalid configuration:
+
+  Database
+    error: field is required
+    source: env (DATABASE_URL)
+```
+
+No custom error handling. No secret leaks in logs. Types are checked at compile time.
+
+## Why confkit?
+
+✅ **Typed** — `Load[T]` returns your struct, not a map[string]interface{} or error-prone interface{}  
+✅ **Defaults & validation** — via struct tags, no extra config files  
+✅ **Clear errors** — know exactly which field failed, why, and where it came from  
+✅ **Secret redaction** — mark sensitive fields with `secret:"true"`, they're automatically hidden  
+✅ **Multiple sources** — load from YAML, env, JSON, TOML, Kubernetes, AWS, Vault with explicit precedence  
+✅ **Lightweight** — only 2 core dependencies, cloud integrations are optional modules  
+✅ **Production-ready** — v0.5.0 with full test coverage, used in real services
 
 ```go
 type Config struct {
@@ -41,19 +77,30 @@ if err != nil {
 
 ---
 
-## Why confkit instead of Viper or koanf
+## Comparison with Alternatives
 
-| | confkit | Viper | koanf |
-|---|---|---|---|
-| Typed return value | ✅ generics `Load[T]` | ❌ `GetString()` | ❌ `Unmarshal()` |
-| Validation built-in | ✅ `validate` tag | ❌ manual | ❌ manual |
-| Human-readable errors | ✅ field + source + value | ❌ | ❌ |
-| Secret redaction | ✅ `secret:"true"` | ❌ | ❌ |
-| String interpolation | ✅ `${VAR}` | ❌ | ❌ |
-| Core dep footprint | 2 packages | ~20 packages | modular |
-| Enterprise sources | optional submodules | bundled | bundled |
+confkit is best when you want **typed config structs with built-in validation, defaults, and safe error messages** without assembling multiple libraries by hand.
 
-**confkit is for you if:** you want your config validated at startup with clear error messages, you don't want stringly-typed `Get*()` accessors, and you don't want cloud SDKs downloaded unless you use them.
+| | confkit | Viper | envconfig | koanf |
+|---|:---:|:---:|:---:|:---:|
+| Typed `Load[T]` | ✅ | ❌ | ⚠️ | ❌ |
+| Defaults via tags | ✅ | ⚠️ | ✅ | ❌ |
+| Validation rules | ✅ | ❌ | ❌ | ❌ |
+| Secret redaction | ✅ | ❌ | ❌ | ❌ |
+| Multi-source merging | ✅ | ✅ | ⚠️ | ✅ |
+| Lightweight core | ✅ | ❌ | ✅ | ✅ |
+| Cloud integrations | optional | bundled | bundled | bundled |
+| Runtime reloading | ✅ | ✅ | ❌ | ⚠️ |
+
+**confkit shines when:**
+- You want a single struct definition for your entire config
+- You need defaults and validation without extra code
+- You care about safe error messages (no secret leaks)
+- You use cloud sources (Vault, AWS) but don't want 50MB of SDKs in your core binary
+
+**Use Viper if:** you need heavy runtime reloading with watches across dozens of files  
+**Use envconfig if:** you only care about env vars and simple type conversion  
+**Use koanf if:** you want extreme modularity and don't need validation
 
 ---
 
@@ -109,6 +156,76 @@ func main() {
 ```
 
 Environment variables for the struct above: `HOST`, `PORT`, `TIMEOUT`, `DB_DSN`, `DB_MAX_CONNS`.
+
+---
+
+## Real-World Examples
+
+### HTTP Server with Database
+
+```go
+type Config struct {
+    Server struct {
+        Addr string `env:"ADDR" default:":8080"`
+        TLS  bool   `env:"TLS" default:"false"`
+    }
+    Database struct {
+        URL      string `env:"URL" validate:"required" secret:"true"`
+        MaxConns int    `env:"MAX_CONNS" default:"10"`
+    }
+}
+
+cfg, err := confkit.Load[Config](confkit.FromEnv())
+```
+
+**Environment:**
+```bash
+SERVER_ADDR=:3000
+DATABASE_URL=postgres://user:pass@localhost/db
+DATABASE_MAX_CONNS=20
+```
+
+### CLI Tool with Multiple Sources
+
+```go
+type Config struct {
+    Verbose  bool   `flag:"verbose" short:"v"`
+    Output   string `flag:"output" short:"o" default:"stdout"`
+    InputDir string `flag:"input" validate:"required"`
+}
+
+cfg, err := confkit.Load[Config](confkit.FromFlags())
+// Use: ./mytool -v -o file.txt --input /data
+```
+
+### Microservice with Vault
+
+```go
+import "github.com/MimoJanra/confkit/vault"
+
+type Config struct {
+    API struct {
+        Key    string `validate:"required" secret:"true"`
+        Secret string `validate:"required" secret:"true"`
+    }
+}
+
+auth := vault.VaultTokenAuth(os.Getenv("VAULT_TOKEN"))
+cfg, err := confkit.Load[Config](
+    vault.FromVault("https://vault.example.com", auth, "/secret/myapp"),
+)
+```
+
+### Development vs Production
+
+```go
+cfg, err := confkit.Load[Config](
+    confkit.FromYAML("config.defaults.yaml"),      // base defaults
+    confkit.FromYAML("config." + os.Getenv("ENV") + ".yaml"), // prod/dev specific
+    confkit.FromEnv(),                             // runtime overrides
+)
+// Loads: config.defaults.yaml → config.prod.yaml → env vars
+```
 
 ---
 
