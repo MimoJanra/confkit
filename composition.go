@@ -10,7 +10,6 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// FromYAMLFiles merges multiple YAML files. Later files override earlier ones.
 func FromYAMLFiles(paths ...string) Source {
 	merged, err := mergeFiles(paths, func(data []byte) (map[string]any, error) {
 		var m map[string]any
@@ -22,7 +21,6 @@ func FromYAMLFiles(paths ...string) Source {
 	return &multiFileSource{name: "yaml", data: merged}
 }
 
-// FromJSONFiles merges multiple JSON files. Later files override earlier ones.
 func FromJSONFiles(paths ...string) Source {
 	merged, err := mergeFiles(paths, func(data []byte) (map[string]any, error) {
 		var m map[string]any
@@ -34,7 +32,6 @@ func FromJSONFiles(paths ...string) Source {
 	return &multiFileSource{name: "json", data: merged}
 }
 
-// FromTOMLFiles merges multiple TOML files. Later files override earlier ones.
 func FromTOMLFiles(paths ...string) Source {
 	merged, err := mergeFiles(paths, func(data []byte) (map[string]any, error) {
 		var m map[string]any
@@ -62,7 +59,6 @@ func mergeFiles(paths []string, parse func([]byte) (map[string]any, error)) (map
 	return merged, nil
 }
 
-// deepMerge merges src into dst. Nested maps are merged recursively; scalars are overwritten.
 func deepMerge(dst, src map[string]any) {
 	for k, v := range src {
 		if srcMap, ok := v.(map[string]any); ok {

@@ -17,8 +17,6 @@ var (
 	hostnameRegex = regexp.MustCompile(`^[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*$`)
 )
 
-// validateBuiltin handles built-in format validators.
-// Returns (FieldError, true) if the rule was recognized, (FieldError{}, false) if not.
 func (v *Validator) validateBuiltin(fieldVal reflect.Value, field FieldInfo, rule ValidationRule) (FieldError, bool) {
 	switch rule.Name {
 	case "email":

@@ -1,13 +1,3 @@
-// Package otel provides OpenTelemetry tracing integration for confkit.
-//
-// Usage:
-//
-//	import "github.com/MimoJanra/confkit/otel"
-//
-//	cfg, err := otel.Load[Config](ctx, tracer,
-//	    confkit.FromEnv(),
-//	    confkit.FromYAML("config.yaml"),
-//	)
 package otel
 
 import (
@@ -19,7 +9,6 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-// Load wraps confkit.Load with an OpenTelemetry span.
 func Load[T any](ctx context.Context, tracer trace.Tracer, sources ...confkit.Source) (T, error) {
 	ctx, span := tracer.Start(ctx, "confkit.Load")
 	defer span.End()
@@ -38,7 +27,6 @@ func Load[T any](ctx context.Context, tracer trace.Tracer, sources ...confkit.So
 	return cfg, nil
 }
 
-// LoadWithOptions wraps confkit.LoadWithOptions with an OpenTelemetry span.
 func LoadWithOptions[T any](ctx context.Context, tracer trace.Tracer, options ...confkit.Option) (T, error) {
 	ctx, span := tracer.Start(ctx, "confkit.Load")
 	defer span.End()
