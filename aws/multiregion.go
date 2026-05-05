@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"confkit"
+	"github.com/MimoJanra/confkit"
 )
 
 type RegionFailoverSource struct {

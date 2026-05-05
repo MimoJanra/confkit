@@ -3,7 +3,7 @@ package aws
 import (
 	"testing"
 
-	"confkit"
+	"github.com/MimoJanra/confkit"
 )
 
 func TestNewRegionFailoverSource(t *testing.T) {

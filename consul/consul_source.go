@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"confkit"
+	"github.com/MimoJanra/confkit"
 	"github.com/hashicorp/consul/api"
 )
 

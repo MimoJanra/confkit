@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"confkit"
+	"github.com/MimoJanra/confkit"
 	"github.com/hashicorp/vault/api"
 )
 

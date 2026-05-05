@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"confkit"
+	"github.com/MimoJanra/confkit"
 	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
