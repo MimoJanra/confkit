@@ -10,8 +10,8 @@ func TestBuiltinValidators(t *testing.T) {
 	run := func(envKey, envVal string, load func() error, wantErr bool) func(*testing.T) {
 		return func(t *testing.T) {
 			t.Helper()
-			os.Setenv(envKey, envVal)
-			t.Cleanup(func() { os.Unsetenv(envKey) })
+			_ = os.Setenv(envKey, envVal)
+			t.Cleanup(func() { _ = os.Unsetenv(envKey) })
 			err := load()
 			if wantErr && err == nil {
 				t.Error("expected error, got nil")
@@ -159,8 +159,8 @@ func TestModelValidator(t *testing.T) {
 	})
 
 	t.Run("passes when tls disabled", func(t *testing.T) {
-		os.Setenv("MV_TLS_ENABLED", "false")
-		t.Cleanup(func() { os.Unsetenv("MV_TLS_ENABLED"); os.Unsetenv("MV_CERT_PATH") })
+		_ = os.Setenv("MV_TLS_ENABLED", "false")
+		t.Cleanup(func() { _ = os.Unsetenv("MV_TLS_ENABLED"); _ = os.Unsetenv("MV_CERT_PATH") })
 		_, err := LoadWithOptions[TLSConfig](WithSource(FromEnv()), tlsCheck)
 		if err != nil {
 			t.Errorf("unexpected error: %v", err)
@@ -168,9 +168,9 @@ func TestModelValidator(t *testing.T) {
 	})
 
 	t.Run("fails when tls enabled without cert", func(t *testing.T) {
-		os.Setenv("MV_TLS_ENABLED", "true")
-		os.Setenv("MV_CERT_PATH", "")
-		t.Cleanup(func() { os.Unsetenv("MV_TLS_ENABLED"); os.Unsetenv("MV_CERT_PATH") })
+		_ = os.Setenv("MV_TLS_ENABLED", "true")
+		_ = os.Setenv("MV_CERT_PATH", "")
+		t.Cleanup(func() { _ = os.Unsetenv("MV_TLS_ENABLED"); _ = os.Unsetenv("MV_CERT_PATH") })
 		_, err := LoadWithOptions[TLSConfig](WithSource(FromEnv()), tlsCheck)
 		if err == nil {
 			t.Error("expected error, got nil")
@@ -178,9 +178,9 @@ func TestModelValidator(t *testing.T) {
 	})
 
 	t.Run("passes when tls enabled with cert", func(t *testing.T) {
-		os.Setenv("MV_TLS_ENABLED", "true")
-		os.Setenv("MV_CERT_PATH", "/etc/certs/server.crt")
-		t.Cleanup(func() { os.Unsetenv("MV_TLS_ENABLED"); os.Unsetenv("MV_CERT_PATH") })
+		_ = os.Setenv("MV_TLS_ENABLED", "true")
+		_ = os.Setenv("MV_CERT_PATH", "/etc/certs/server.crt")
+		t.Cleanup(func() { _ = os.Unsetenv("MV_TLS_ENABLED"); _ = os.Unsetenv("MV_CERT_PATH") })
 		_, err := LoadWithOptions[TLSConfig](WithSource(FromEnv()), tlsCheck)
 		if err != nil {
 			t.Errorf("unexpected error: %v", err)
@@ -218,8 +218,8 @@ func TestMultiFileYAML(t *testing.T) {
 	base := t.TempDir() + "/base.yaml"
 	override := t.TempDir() + "/override.yaml"
 
-	os.WriteFile(base, []byte("host: localhost\nport: 5432\n"), 0644)
-	os.WriteFile(override, []byte("host: db.prod.internal\n"), 0644)
+	_ = os.WriteFile(base, []byte("host: localhost\nport: 5432\n"), 0644)
+	_ = os.WriteFile(override, []byte("host: db.prod.internal\n"), 0644)
 
 	type Cfg struct {
 		Host string `yaml:"host"`
