@@ -7,8 +7,8 @@ import (
 	"reflect"
 	"time"
 
-	"confkit"
-	"confkit/schema"
+	"github.com/MimoJanra/confkit"
+	"github.com/MimoJanra/confkit/schema"
 )
 
 type AppConfig struct {

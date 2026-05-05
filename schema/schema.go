@@ -1,9 +1,9 @@
 package schema
 
 import (
-	"confkit/tagutil"
 	"encoding/json"
 	"fmt"
+	"github.com/MimoJanra/confkit/tagutil"
 	"reflect"
 	"strconv"
 	"strings"

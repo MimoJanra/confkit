@@ -1,8 +1,8 @@
 package confkit
 
 import (
-	"confkit/tagutil"
 	"fmt"
+	"github.com/MimoJanra/confkit/tagutil"
 	"os"
 	"strings"
 
