@@ -1,7 +1,7 @@
 title: confkit
 description: Typed, validated configuration loading for Go
 url: https://mimojanra.github.io
-baseurl: ""
+baseurl: /confkit
 markdown: kramdown
 highlighter: rouge
 
