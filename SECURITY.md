@@ -2,7 +2,8 @@
 
 ## Reporting Security Vulnerabilities
 
-If you discover a security vulnerability in confkit, please **do not** open a public GitHub issue. Instead, email security details to **alk@tassta.com** with:
+If you discover a security vulnerability in confkit, please **do not** open a public GitHub issue. Instead, email
+security details to **alk@tassta.com** with:
 
 - Description of the vulnerability
 - Steps to reproduce (if applicable)
@@ -10,6 +11,7 @@ If you discover a security vulnerability in confkit, please **do not** open a pu
 - Suggested fix (if you have one)
 
 We will:
+
 - Acknowledge receipt within 48 hours
 - Investigate and assess severity
 - Develop and test a fix
@@ -36,6 +38,7 @@ type Config struct {
 ```
 
 **Use this for:**
+
 - Database passwords
 - API keys and tokens
 - OAuth secrets
@@ -78,6 +81,7 @@ cfg, _ := confkit.Load[Config](confkit.FromEnv())
 ### 4. Minimal Dependencies
 
 Core module depends only on:
+
 - `gopkg.in/yaml.v3` — YAML parsing (widely audited)
 - `github.com/pelletier/go-toml/v2` — TOML parsing (widely audited)
 - Go stdlib
@@ -133,6 +137,7 @@ type Config struct {
 ### 4. Use Cloud Secret Managers
 
 For production, use:
+
 - **HashiCorp Vault** — `confkit/vault`
 - **AWS Secrets Manager** — `confkit/aws`
 - **Kubernetes Secrets** — built-in
@@ -200,11 +205,11 @@ if err != nil {
 ### Core Dependencies
 
 - **gopkg.in/yaml.v3** — v3.0.1+ required
-  - Widely used, actively maintained
-  - CVE monitoring via Go's vulnerability database
-  
+    - Widely used, actively maintained
+    - CVE monitoring via Go's vulnerability database
+
 - **github.com/pelletier/go-toml/v2** — v2.0.0+ required
-  - Maintained, CVE monitoring enabled
+    - Maintained, CVE monitoring enabled
 
 ### Enterprise Dependencies
 
@@ -220,11 +225,13 @@ These are only required if you use the corresponding source.
 ### Vulnerability Scanning
 
 We use:
+
 - **Go's built-in vulnerability scanner:** `go list -json -m all | nancy sleuth`
 - **GitHub Dependabot:** Automated PR for dependency updates
 - **Manual audits** before releases
 
 Run locally:
+
 ```bash
 go list -json -m all | nancy sleuth
 ```
@@ -239,6 +246,7 @@ go list -json -m all | nancy sleuth
 - **Example-based tests:** Every documented example is tested
 
 Before release:
+
 ```bash
 go test -v ./...
 go test -cover ./...
@@ -250,12 +258,12 @@ go test -cover ./...
 
 Security fixes are released for:
 
-| Version | Status | Support |
-|---------|--------|---------|
-| v0.5.x  | Active | Current + bug fixes |
-| v0.4.x  | Stable | Security fixes only |
+| Version | Status | Support                |
+|---------|--------|------------------------|
+| v0.5.x  | Active | Current + bug fixes    |
+| v0.4.x  | Stable | Security fixes only    |
 | v0.3.x  | Legacy | Critical security only |
-| < v0.3  | EOL    | No support |
+| < v0.3  | EOL    | No support             |
 
 **Recommendation:** Upgrade to latest stable version regularly.
 
@@ -277,12 +285,14 @@ Example timeline for a reported vulnerability:
 ## PII & Data Protection
 
 confkit does **not**:
+
 - Store configuration in logs (except via explicit `Explain()`)
 - Cache sensitive values unencrypted
 - Transmit configuration anywhere
 - Track usage or phone home
 
 confkit **does**:
+
 - Redact secrets in error messages
 - Support secure sources (Vault, AWS Secrets Manager)
 - Validate at startup (fail fast)
@@ -292,11 +302,13 @@ confkit **does**:
 ## Questions?
 
 For security questions (non-vulnerability):
+
 - Open a GitHub Discussion
 - Email **alk@tassta.com**
 - Read [CONTRIBUTING.md](CONTRIBUTING.md)
 
 For vulnerabilities:
+
 - Email **alk@tassta.com** with details
 - Do **not** open a public issue
 - Allow 30 days for fix + release

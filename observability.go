@@ -83,8 +83,12 @@ func parseFieldPath(path string) []string {
 }
 
 func LogLoadStart(sources []string) string {
-	return fmt.Sprintf(`{"event":"config_load_start","sources":%s,"timestamp":"%s"}`,
-		toJSON(sources), time.Now().Format(time.RFC3339))
+	payload := map[string]any{
+		"event":     "config_load_start",
+		"sources":   sources,
+		"timestamp": time.Now().Format(time.RFC3339),
+	}
+	return toJSON(payload)
 }
 
 func LogLoadComplete(duration time.Duration, fieldCount int, errorCount int) string {

@@ -9,9 +9,11 @@
 [![Documentation](https://img.shields.io/badge/docs-mimojanra.github.io-blue)](https://mimojanra.github.io/confkit/)
 [![LLM Context](https://img.shields.io/badge/llms.txt-reference-brightgreen)](./llms.txt)
 
-**Typed, validated configuration loading for Go** — no more stringly-typed config, boilerplate, or cryptic error messages.
+**Typed, validated configuration loading for Go** — no more stringly-typed config, boilerplate, or cryptic error
+messages.
 
-confkit lets you define application config as a Go struct, load it from multiple sources (YAML, env vars, JSON, TOML, Kubernetes, AWS, Vault), apply defaults, validate fields, and safely redact secrets. Think Pydantic for Go.
+confkit lets you define application config as a Go struct, load it from multiple sources (YAML, env vars, JSON, TOML,
+Kubernetes, AWS, Vault), apply defaults, validate fields, and safely redact secrets. Think Pydantic for Go.
 
 ## 30-Second Example
 
@@ -34,6 +36,7 @@ if err != nil {
 ```
 
 On validation error:
+
 ```
 Invalid configuration:
 
@@ -80,20 +83,22 @@ if err != nil {
 
 ## Comparison with Alternatives
 
-confkit is best when you want **typed config structs with built-in validation, defaults, and safe error messages** without assembling multiple libraries by hand.
+confkit is best when you want **typed config structs with built-in validation, defaults, and safe error messages**
+without assembling multiple libraries by hand.
 
-| | confkit | Viper | envconfig | koanf |
-|---|:---:|:---:|:---:|:---:|
-| Typed `Load[T]` | ✅ | ❌ | ⚠️ | ❌ |
-| Defaults via tags | ✅ | ⚠️ | ✅ | ❌ |
-| Validation rules | ✅ | ❌ | ❌ | ❌ |
-| Secret redaction | ✅ | ❌ | ❌ | ❌ |
-| Multi-source merging | ✅ | ✅ | ⚠️ | ✅ |
-| Lightweight core | ✅ | ❌ | ✅ | ✅ |
-| Cloud integrations | optional | bundled | bundled | bundled |
-| Runtime reloading | ✅ | ✅ | ❌ | ⚠️ |
+|                      | confkit  |  Viper  | envconfig |  koanf  |
+|----------------------|:--------:|:-------:|:---------:|:-------:|
+| Typed `Load[T]`      |    ✅     |    ❌    |    ⚠️     |    ❌    |
+| Defaults via tags    |    ✅     |   ⚠️    |     ✅     |    ❌    |
+| Validation rules     |    ✅     |    ❌    |     ❌     |    ❌    |
+| Secret redaction     |    ✅     |    ❌    |     ❌     |    ❌    |
+| Multi-source merging |    ✅     |    ✅    |    ⚠️     |    ✅    |
+| Lightweight core     |    ✅     |    ❌    |     ✅     |    ✅    |
+| Cloud integrations   | optional | bundled |  bundled  | bundled |
+| Runtime reloading    |    ✅     |    ✅    |     ❌     |   ⚠️    |
 
 **confkit shines when:**
+
 - You want a single struct definition for your entire config
 - You need defaults and validation without extra code
 - You care about safe error messages (no secret leaks)
@@ -128,31 +133,32 @@ go get github.com/MimoJanra/confkit/aws
 package main
 
 import (
-    "log"
-    "time"
-    "github.com/MimoJanra/confkit"
+	"log"
+	"time"
+
+	"github.com/MimoJanra/confkit"
 )
 
 type Config struct {
-    Host    string        `env:"HOST"     default:"localhost"`
-    Port    int           `env:"PORT"     default:"8080"      validate:"min=1,max=65535"`
-    Timeout time.Duration `env:"TIMEOUT"  default:"30s"`
-    DB      struct {
-        DSN      string `env:"DSN"       validate:"required" secret:"true"`
-        MaxConns int    `env:"MAX_CONNS" default:"10"        validate:"min=1,max=100"`
-    } `prefix:"DB_"`
+	Host    string        `env:"HOST"     default:"localhost"`
+	Port    int           `env:"PORT"     default:"8080"      validate:"min=1,max=65535"`
+	Timeout time.Duration `env:"TIMEOUT"  default:"30s"`
+	DB      struct {
+		DSN      string `env:"DSN"       validate:"required" secret:"true"`
+		MaxConns int    `env:"MAX_CONNS" default:"10"        validate:"min=1,max=100"`
+	} `prefix:"DB_"`
 }
 
 func main() {
-    cfg, err := confkit.Load[Config](
-        confkit.FromYAML("config.yaml"), // lowest priority
-        confkit.FromEnv(),               // overrides file
-        confkit.FromFlags(),             // highest priority
-    )
-    if err != nil {
-        log.Fatal(confkit.Explain(err))
-    }
-    log.Printf("listening on %s:%d", cfg.Host, cfg.Port)
+	cfg, err := confkit.Load[Config](
+		confkit.FromYAML("config.yaml"), // lowest priority
+		confkit.FromEnv(),               // overrides file
+		confkit.FromFlags(),             // highest priority
+	)
+	if err != nil {
+		log.Fatal(confkit.Explain(err))
+	}
+	log.Printf("listening on %s:%d", cfg.Host, cfg.Port)
 }
 ```
 
@@ -180,6 +186,7 @@ cfg, err := confkit.Load[Config](confkit.FromEnv())
 ```
 
 **Environment:**
+
 ```bash
 SERVER_ADDR=:3000
 DATABASE_URL=postgres://user:pass@localhost/db
@@ -292,14 +299,14 @@ aws.FromAWSSSMParameterStoreMultiRegion(pathPrefix string, regions []string) con
 
 Rules used in the `validate` struct tag:
 
-| Rule | Types | Behaviour |
-|---|---|---|
-| `required` | any | Non-zero value required |
-| `min=N` | int, float | Value ≥ N |
-| `min=N` | string | Length ≥ N characters |
-| `max=N` | int, float | Value ≤ N |
-| `max=N` | string | Length ≤ N characters |
-| `oneof=a b c` | string | Value must equal one of the space-separated options |
+| Rule          | Types      | Behaviour                                           |
+|---------------|------------|-----------------------------------------------------|
+| `required`    | any        | Non-zero value required                             |
+| `min=N`       | int, float | Value ≥ N                                           |
+| `min=N`       | string     | Length ≥ N characters                               |
+| `max=N`       | int, float | Value ≤ N                                           |
+| `max=N`       | string     | Length ≤ N characters                               |
+| `oneof=a b c` | string     | Value must equal one of the space-separated options |
 
 Rules are comma-separated: `validate:"required,min=1,max=65535"`.
 
@@ -512,16 +519,16 @@ help := schema.GenerateCLIHelp[Config]()
 
 ## Supported Types
 
-| Type | Parsed from |
-|---|---|
-| `string` | as-is |
-| `int` / `int8` / `int16` / `int32` / `int64` | decimal |
-| `uint` / `uint8` / `uint16` / `uint32` / `uint64` | decimal |
-| `float32` / `float64` | decimal |
-| `bool` | `true` `false` `1` `0` `yes` `no` |
-| `time.Duration` | `"5s"` `"1m30s"` `"2h"` |
-| `[]string` | comma-separated `"a,b,c"` |
-| `[]int` | comma-separated `"1,2,3"` |
+| Type                                              | Parsed from                       |
+|---------------------------------------------------|-----------------------------------|
+| `string`                                          | as-is                             |
+| `int` / `int8` / `int16` / `int32` / `int64`      | decimal                           |
+| `uint` / `uint8` / `uint16` / `uint32` / `uint64` | decimal                           |
+| `float32` / `float64`                             | decimal                           |
+| `bool`                                            | `true` `false` `1` `0` `yes` `no` |
+| `time.Duration`                                   | `"5s"` `"1m30s"` `"2h"`           |
+| `[]string`                                        | comma-separated `"a,b,c"`         |
+| `[]int`                                           | comma-separated `"1,2,3"`         |
 
 ---
 
@@ -552,6 +559,7 @@ vault.VaultKubernetesAuth(role, jwt string) VaultAuth
 MIT — A permissive, redistributable license with minimal restrictions.
 
 confkit is released under the MIT License, which allows you to:
+
 - ✅ Use commercially (SaaS, proprietary software, etc.)
 - ✅ Modify and redistribute
 - ✅ Use in closed-source projects

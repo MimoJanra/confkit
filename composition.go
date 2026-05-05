@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/pelletier/go-toml/v2"
@@ -46,13 +47,14 @@ func FromTOMLFiles(paths ...string) Source {
 func mergeFiles(paths []string, parse func([]byte) (map[string]any, error)) (map[string]any, error) {
 	merged := make(map[string]any)
 	for _, path := range paths {
-		raw, err := os.ReadFile(path)
+		cleanPath := filepath.Clean(path)
+		raw, err := os.ReadFile(cleanPath)
 		if err != nil {
-			return nil, fmt.Errorf("failed to read %s: %w", path, err)
+			return nil, fmt.Errorf("failed to read %s: %w", cleanPath, err)
 		}
 		m, err := parse(raw)
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse %s: %w", path, err)
+			return nil, fmt.Errorf("failed to parse %s: %w", cleanPath, err)
 		}
 		deepMerge(merged, m)
 	}

@@ -2,6 +2,7 @@ package confkit
 
 import (
 	"fmt"
+	"math"
 	"net"
 	"net/mail"
 	"net/url"
@@ -185,7 +186,19 @@ func numCheck(fieldVal reflect.Value, field FieldInfo, rule string, check func(i
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		n = fieldVal.Int()
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		n = int64(fieldVal.Uint())
+		un := fieldVal.Uint()
+		if un > math.MaxInt64 {
+			return FieldError{
+				Path:    field.Path,
+				Kind:    ErrorKindValidation,
+				Rule:    rule,
+				Secret:  field.IsSecret,
+				Value:   fieldValueToString(fieldVal, field.IsSecret),
+				Source:  "validation",
+				Message: fmt.Sprintf("numeric value %d exceeds max supported value %d", un, int64(math.MaxInt64)),
+			}
+		}
+		n = int64(un)
 	case reflect.String:
 		var err error
 		n, err = strconv.ParseInt(fieldVal.String(), 10, 64)

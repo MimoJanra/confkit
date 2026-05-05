@@ -2,6 +2,7 @@ package confkit
 
 import (
 	"fmt"
+	"math"
 	"reflect"
 	"strconv"
 	"strings"
@@ -63,6 +64,9 @@ func parseInt(value string, targetType reflect.Type) (any, error) {
 	}
 	switch targetType.Kind() {
 	case reflect.Int:
+		if strconv.IntSize == 32 && (i < math.MinInt32 || i > math.MaxInt32) {
+			return nil, fmt.Errorf("int out of range: %d", i)
+		}
 		return int(i), nil
 	case reflect.Int8:
 		if i < -128 || i > 127 {
@@ -93,6 +97,9 @@ func parseUint(value string, targetType reflect.Type) (any, error) {
 	}
 	switch targetType.Kind() {
 	case reflect.Uint:
+		if strconv.IntSize == 32 && u > math.MaxUint32 {
+			return nil, fmt.Errorf("uint out of range: %d", u)
+		}
 		return uint(u), nil
 	case reflect.Uint8:
 		if u > 255 {

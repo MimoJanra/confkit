@@ -2,9 +2,10 @@ package confkit
 
 import (
 	"fmt"
-	"github.com/MimoJanra/confkit/tagutil"
 	"os"
 	"strings"
+
+	"github.com/MimoJanra/confkit/tagutil"
 
 	"gopkg.in/yaml.v3"
 )

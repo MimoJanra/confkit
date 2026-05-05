@@ -1,12 +1,14 @@
 # Contributing to confkit
 
-Thank you for your interest in contributing to confkit! This document provides guidelines and instructions for contributors.
+Thank you for your interest in contributing to confkit! This document provides guidelines and instructions for
+contributors.
 
 ## Philosophy
 
 confkit follows these principles:
 
-- **Minimal external dependencies** — Use only essential libraries (YAML, TOML parsers). Cloud SDKs are optional submodules.
+- **Minimal external dependencies** — Use only essential libraries (YAML, TOML parsers). Cloud SDKs are optional
+  submodules.
 - **Clean code, clean structure** — Inspired by Pydantic, but Go-native.
 - **Type-safe first** — Leverage Go generics for compile-time safety.
 - **Human-readable errors** — Error messages should help users fix their config, not confuse them.
@@ -69,17 +71,17 @@ confkit/
 ## Commit Conventions
 
 - **One-line messages only**. No multi-line bodies.
-  - ✅ Good: `Add Load function`
-  - ✅ Good: `Implement EnvSource`
-  - ❌ Bad: `Add Load function and improve error handling`
+    - ✅ Good: `Add Load function`
+    - ✅ Good: `Implement EnvSource`
+    - ❌ Bad: `Add Load function and improve error handling`
 
 - **Imperative mood** (present tense):
-  - ✅ `Add` not `Added`
-  - ✅ `Fix` not `Fixed`
-  - ✅ `Implement` not `Implements`
+    - ✅ `Add` not `Added`
+    - ✅ `Fix` not `Fixed`
+    - ✅ `Implement` not `Implements`
 
 - **No AI attribution**. Commits are authored by humans.
-  - ❌ Never add `Co-Authored-By: Claude ...` footers
+    - ❌ Never add `Co-Authored-By: Claude ...` footers
 
 - **Atomic commits**. One logical change per commit.
 
@@ -128,6 +130,7 @@ counter++
 Test file naming: `*_test.go` (Go convention).
 
 Test structure:
+
 ```go
 func TestEnvSourceLookup(t *testing.T) {
     tests := []struct {
@@ -154,11 +157,13 @@ func TestEnvSourceLookup(t *testing.T) {
 - **Help users fix**: Error messages should be actionable.
 
 Bad:
+
 ```
 Key: 'Config.Port' Error: Field validation for 'Port' failed on the 'min' tag
 ```
 
 Good:
+
 ```
 PORT must be between 1 and 65535, got 99999
   source: env
@@ -176,9 +181,9 @@ PORT must be between 1 and 65535, got 99999
    ```
 
 2. Add tests:
-   - Happy path (field found)
-   - Field not found
-   - Source errors (connection failures, etc.)
+    - Happy path (field found)
+    - Field not found
+    - Source errors (connection failures, etc.)
 
 3. Update `README.md` with usage example.
 
@@ -207,9 +212,9 @@ PORT must be between 1 and 65535, got 99999
 
 1. Implement the rule in `validation.go`.
 2. Add tests covering:
-   - Valid values (should not error)
-   - Invalid values (should error)
-   - Edge cases
+    - Valid values (should not error)
+    - Invalid values (should error)
+    - Edge cases
 3. Update `README.md` "Validation" section.
 4. Commit: `Add <rule-name> validation rule`
 
@@ -263,9 +268,9 @@ If you find a bug or have a feature request:
 
 1. **Check existing issues** to avoid duplicates.
 2. **Provide context**:
-   - What Go version are you using?
-   - What sources/features are you using?
-   - Minimal reproduction case
+    - What Go version are you using?
+    - What sources/features are you using?
+    - Minimal reproduction case
 3. **Include error output** (use `confkit.Explain()` for config errors).
 4. **Suggest a fix** if you have one.
 

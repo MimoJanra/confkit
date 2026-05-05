@@ -1,6 +1,7 @@
 # Agent Instructions for confkit
 
-confkit is a Go library for **typed, validated configuration loading** from multiple sources (YAML, JSON, TOML, environment variables, Kubernetes, Vault, Consul, etcd, AWS SSM, AWS Secrets Manager).
+confkit is a Go library for **typed, validated configuration loading** from multiple sources (YAML, JSON, TOML,
+environment variables, Kubernetes, Vault, Consul, etcd, AWS SSM, AWS Secrets Manager).
 
 ## Project Intent
 
@@ -43,34 +44,43 @@ confkit/
 ## Important Commands
 
 **Run tests:**
+
 ```bash
 go test ./...
 go test -cover ./...
 ```
 
 **Format code:**
+
 ```bash
 gofmt -w .
 ```
 
 **Check module health:**
+
 ```bash
 go mod tidy
 go test ./...
 ```
 
 **Run linter:**
+
 ```bash
 golangci-lint run
 ```
 
 ## Code Style & Principles
 
-- **Core is iron:** The five core pieces (loading, defaulting, validation, errors, types) must be rock solid. Don't add experimental features to core.
-- **Keep core lightweight:** Only depend on `gopkg.in/yaml.v3` and `github.com/pelletier/go-toml/v2` in the main package.
-- **Cloud SDKs belong in submodules:** Vault, Consul, etcd, AWS, Kubernetes integrations go in optional `confkit/vault`, `confkit/consul`, etc.
-- **Preserve clear error messages:** This is the killer feature. Error messages must identify: field name, rule that failed, actual value (redacted if secret), and source.
-- **Never expose secret-tagged fields:** Any field with `secret:"true"` must be redacted in errors, dumps, logs, and anywhere else.
+- **Core is iron:** The five core pieces (loading, defaulting, validation, errors, types) must be rock solid. Don't add
+  experimental features to core.
+- **Keep core lightweight:** Only depend on `gopkg.in/yaml.v3` and `github.com/pelletier/go-toml/v2` in the main
+  package.
+- **Cloud SDKs belong in submodules:** Vault, Consul, etcd, AWS, Kubernetes integrations go in optional `confkit/vault`,
+  `confkit/consul`, etc.
+- **Preserve clear error messages:** This is the killer feature. Error messages must identify: field name, rule that
+  failed, actual value (redacted if secret), and source.
+- **Never expose secret-tagged fields:** Any field with `secret:"true"` must be redacted in errors, dumps, logs, and
+  anywhere else.
 - **No global state:** Validators and middleware are registered per Load[T] call, never globally.
 
 ## Public API Stability
@@ -120,6 +130,7 @@ Write table-driven tests for validators and type parsing.
 confkit is well-suited for Go services that use LLMs:
 
 **Pattern 1: LLM API client config**
+
 ```go
 type LLMConfig struct {
     Provider   string  `env:"LLM_PROVIDER" validate:"oneof=claude,openai,anthropic"`
@@ -133,6 +144,7 @@ cfg, err := confkit.Load[LLMConfig](confkit.FromEnv())
 ```
 
 **Pattern 2: Multi-model configuration**
+
 ```go
 type Config struct {
     Primary   LLMConfig
@@ -147,6 +159,7 @@ cfg, err := confkit.Load[Config](
 ```
 
 **Pattern 3: Hot reload for prompt templates or LLM parameters**
+
 ```go
 cfg, watcher, err := confkit.LoadWithWatcher[Config](
     "llm-config.yaml",

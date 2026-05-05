@@ -1,8 +1,9 @@
 package confkit
 
 import (
-	"github.com/MimoJanra/confkit/tagutil"
 	"reflect"
+
+	"github.com/MimoJanra/confkit/tagutil"
 )
 
 type FieldInfo struct {
