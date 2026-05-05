@@ -6,7 +6,7 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/MimoJanra/confkit)](https://goreportcard.com/report/github.com/MimoJanra/confkit)
 [![Documentation](https://img.shields.io/badge/docs-mimojanra.github.io-blue)](https://mimojanra.github.io/confkit/)
 
-**[📖 Full Documentation](https://mimojanra.github.io/)** — Getting started, API reference, examples, and cloud integrations.
+**[📖 Full Documentation](https://mimojanra.github.io/confkit/)** — Getting started, API reference, examples, and cloud integrations.
 
 > **Typed, validated configuration loading for Go** — the Pydantic equivalent for Go services.
 >
