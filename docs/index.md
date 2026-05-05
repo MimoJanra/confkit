@@ -61,9 +61,9 @@ go get github.com/MimoJanra/confkit@v0.5.0
 
 ## Resources
 
-- **[Documentation](/docs/)** — Full guides and tutorials
-- **[API Reference](/api/)** — Complete function and type reference
-- **[Examples](/examples/)** — Runnable code examples
+- **[Documentation]({{ site.baseurl }}/docs/)** — Full guides and tutorials
+- **[API Reference]({{ site.baseurl }}/api/)** — Complete function and type reference
+- **[Examples]({{ site.baseurl }}/examples/)** — Runnable code examples
 - **[GitHub](https://github.com/MimoJanra/confkit)** — Source code
 
 ## License

@@ -147,7 +147,7 @@ cfg, err := confkit.Load[Config](
 
 ## Next Steps
 
-- [Configuration Sources](/docs/sources/) — Learn about all available sources
-- [Validation Rules](/docs/validation/) — Deep dive into validation
-- [Error Handling](/docs/errors/) — Programmatically handle errors
-- [Cloud Integrations](/docs/cloud/) — Use Kubernetes, AWS, Vault, and more
+- [Configuration Sources](./sources/) — Learn about all available sources
+- [Validation Rules](./validation/) — Deep dive into validation
+- [Error Handling](./errors/) — Programmatically handle errors
+- [Cloud Integrations](./cloud/) — Use Kubernetes, AWS, Vault, and more

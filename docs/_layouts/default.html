@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ page.title | default: site.title }}</title>
+    <meta name="description" content="{{ page.description | default: site.description }}">
+    <link rel="stylesheet" href="{{ site.baseurl }}/assets/css/style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='75' font-size='75' font-weight='bold' fill='%230066cc'>c</text></svg>">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="logo">confkit</div>
+            <nav>
+                <a href="{{ site.baseurl }}/">Home</a>
+                <a href="{{ site.baseurl }}/docs/">Docs</a>
+                <a href="{{ site.baseurl }}/api/">API</a>
+                <a href="{{ site.baseurl }}/examples/">Examples</a>
+                <a href="https://github.com/MimoJanra/confkit">GitHub</a>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <div class="container">
+            {{ content }}
+        </div>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2026 confkit. MIT License.</p>
+            <p><a href="https://github.com/MimoJanra/confkit">GitHub</a> | <a href="https://github.com/MimoJanra/confkit/issues">Issues</a></p>
+        </div>
+    </footer>
+</body>
+</html>

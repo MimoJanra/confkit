@@ -1,19 +1,20 @@
 title: confkit
-description: Typed, validated configuration loading for Go — the Pydantic equivalent for Go services
-url: https://confkit.dev
-baseurl: ""
-theme: jekyll-theme-minimal
+description: Typed, validated configuration loading for Go
+url: https://mimojanra.github.io
+baseurl: /confkit
+markdown: kramdown
+highlighter: rouge
+
 plugins:
   - jekyll-sitemap
 
-navigation:
-  - name: Home
-    url: /
-  - name: Docss
-    url: /docs/
-  - name: API Reference
-    url: /api/
-  - name: Examples
-    url: /examples/
-  - name: GitHub
-    url: https://github.com/MimoJanra/confkit
+exclude:
+  - vendor
+  - Gemfile
+  - Gemfile.lock
+
+defaults:
+  - scope:
+      path: ""
+    values:
+      layout: "default"
