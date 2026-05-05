@@ -319,13 +319,13 @@ func addMarkdownProperties(sb *strings.Builder, props map[string]*Schema, prefix
 		if prefix != "" {
 			fieldName = prefix + "." + propName
 		}
-		fmt.Fprintf(&sb, "| %s | %s | %s | %s | %s |\n",
+		fmt.Fprintf(sb, "| %s | %s | %s | %s | %s |\n",
 			fieldName,
 			getMarkdownType(prop.Type),
 			getMarkdownDefault(prop.Default),
 			getMarkdownRules(prop),
 			prop.Description,
-		))
+		)
 		if prop.Type == "object" && prop.Properties != nil {
 			addMarkdownProperties(sb, prop.Properties, fieldName)
 		}
