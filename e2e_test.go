@@ -19,11 +19,11 @@ func TestE2EEnvPrefixAndInterpolation(t *testing.T) {
 	}
 
 	type Config struct {
-		Host     string           `env:"HOST" prefix:"APP_"`
-		Port     int              `env:"PORT" prefix:"APP_"`
-		BaseURL  string           `default:"http://${Host}:${Port}"`
-		Database DatabaseConfig   `prefix:"APP_DB_"`
-		DbConnStr string          `default:"postgres://${Database.Host}:${Database.Port}"`
+		Host      string         `env:"HOST" prefix:"APP_"`
+		Port      int            `env:"PORT" prefix:"APP_"`
+		BaseURL   string         `default:"http://${Host}:${Port}"`
+		Database  DatabaseConfig `prefix:"APP_DB_"`
+		DbConnStr string         `default:"postgres://${Database.Host}:${Database.Port}"`
 	}
 
 	cfg, err := Load[Config](FromEnv())

@@ -264,11 +264,11 @@ func TestGenerateCLIHelp(t *testing.T) {
 
 func TestGenerateSchemaAllTypes(t *testing.T) {
 	type Config struct {
-		Count   int     `json:"count" default:"1"`
-		Active  bool    `json:"active" default:"true"`
-		Ratio   float64 `json:"ratio" validate:"min=0,max=1"`
-		Tags    []string `json:"tags"`
-		Name    string  `json:"name" validate:"min=3,max=50"`
+		Count  int      `json:"count" default:"1"`
+		Active bool     `json:"active" default:"true"`
+		Ratio  float64  `json:"ratio" validate:"min=0,max=1"`
+		Tags   []string `json:"tags"`
+		Name   string   `json:"name" validate:"min=3,max=50"`
 	}
 
 	schema, err := GenerateSchema[Config]()
@@ -371,10 +371,10 @@ func TestCLIHelpNestedRequired(t *testing.T) {
 
 func TestGenerateSchemaDefaults(t *testing.T) {
 	type Config struct {
-		Active  bool    `json:"active" default:"true"`
-		Ratio   float64 `json:"ratio" default:"0.5"`
-		Count   int     `json:"count" default:"42"`
-		Name    string  `json:"name" default:"hello"`
+		Active bool    `json:"active" default:"true"`
+		Ratio  float64 `json:"ratio" default:"0.5"`
+		Count  int     `json:"count" default:"42"`
+		Name   string  `json:"name" default:"hello"`
 	}
 
 	schema, err := GenerateSchema[Config]()
@@ -417,10 +417,10 @@ func TestCLIHelpConstraintsWithDefault(t *testing.T) {
 
 func TestMarkdownAllTypes(t *testing.T) {
 	type Config struct {
-		Count   int      `json:"count"`
-		Active  bool     `json:"active"`
-		Ratio   float64  `json:"ratio"`
-		Tags    []string `json:"tags"`
+		Count  int      `json:"count"`
+		Active bool     `json:"active"`
+		Ratio  float64  `json:"ratio"`
+		Tags   []string `json:"tags"`
 	}
 
 	md, err := GenerateMarkdown[Config]()
@@ -445,7 +445,7 @@ func TestMarkdownAllTypes(t *testing.T) {
 func TestSchemaFieldWithoutFormatTag(t *testing.T) {
 	// When a field has no json/yaml/toml tag, getPropName falls back to snake_case
 	type Config struct {
-		ServerPort int  `default:"8080"` // No format tag: should become "server_port"
+		ServerPort int `default:"8080"` // No format tag: should become "server_port"
 	}
 
 	schema, err := GenerateSchema[Config]()
@@ -461,8 +461,8 @@ func TestSchemaFieldWithoutFormatTag(t *testing.T) {
 
 func TestSchemaUintAndFloat32(t *testing.T) {
 	type Config struct {
-		Count  uint    `json:"count" validate:"min=0,max=1000"`
-		Ratio  float32 `json:"ratio"`
+		Count uint    `json:"count" validate:"min=0,max=1000"`
+		Ratio float32 `json:"ratio"`
 	}
 
 	schema, err := GenerateSchema[Config]()
@@ -535,9 +535,9 @@ func TestMarkdownWithNestedStruct(t *testing.T) {
 
 func TestSchemaParseDefaultBool(t *testing.T) {
 	type Config struct {
-		Debug   bool    `json:"debug" default:"true"`
-		Ratio   float32 `json:"ratio" default:"0.5"`
-		Count   uint    `json:"count" default:"5"`
+		Debug bool    `json:"debug" default:"true"`
+		Ratio float32 `json:"ratio" default:"0.5"`
+		Count uint    `json:"count" default:"5"`
 	}
 
 	schema, err := GenerateSchema[Config]()
@@ -578,8 +578,8 @@ func TestSchemaRequiredNestedSection(t *testing.T) {
 
 func TestSchemaArrayOfInts(t *testing.T) {
 	type Config struct {
-		Ports []int    `json:"ports"`
-		Flags []bool   `json:"flags"`
+		Ports []int  `json:"ports"`
+		Flags []bool `json:"flags"`
 	}
 
 	schema, err := GenerateSchema[Config]()
@@ -597,7 +597,7 @@ func TestSchemaArrayOfInts(t *testing.T) {
 
 func TestSchemaMultipleValidationRules(t *testing.T) {
 	type Config struct {
-		Score int `json:"score" validate:"required,min=0,max=100"`
+		Score int    `json:"score" validate:"required,min=0,max=100"`
 		Level string `json:"level" validate:"required,oneof=beginner,intermediate,advanced"`
 	}
 
