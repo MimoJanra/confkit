@@ -1,0 +1,34 @@
+# GitHub CODEOWNERS
+# Automatically request reviews from maintainers
+
+* @MimoJanra
+
+# Documentation
+/README.md @MimoJanra
+/Docs/ @MimoJanra
+/CONTRIBUTING.md @MimoJanra
+
+# Core configuration loading
+/load.go @MimoJanra
+/field_info.go @MimoJanra
+/parser.go @MimoJanra
+/validation.go @MimoJanra
+/errors.go @MimoJanra
+
+# Sources
+/sources.go @MimoJanra
+/*_source.go @MimoJanra
+
+# Schema generation
+/schema/ @MimoJanra
+
+# Enterprise modules
+/vault/ @MimoJanra
+/consul/ @MimoJanra
+/etcd/ @MimoJanra
+/aws/ @MimoJanra
+
+# CI/CD and configuration
+/.github/ @MimoJanra
+/go.mod @MimoJanra
+/go.sum @MimoJanra
