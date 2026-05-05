@@ -57,20 +57,30 @@ Advanced loading with functional options for custom validators, middleware, and 
 
 **Options:**
 - `WithSource(source Source)` — Add a source
-- `WithValidator(name string, fn CustomValidatorFunc)` — Register custom validator
-- `WithMiddleware(fn MiddlewareFunc)` — Add transformation middleware
-- `WithInterpolationMax(max int)` — Set interpolation recursion limit
+- `WithValidator(name string, fn CustomValidatorFunc)` — Register a custom per-field validator
+- `WithModelValidator[T](fn func(*T) error)` — Register a cross-field validator
+- `WithMiddleware(fn MiddlewareFunc)` — Add a value transformation middleware
+- `WithInterpolationMaxDepth(n int)` — Set interpolation recursion limit
+- `WithAuditLogger(fn AuditLogger)` — Receive a log of every field's resolved value and source
+- `WithLoadHook(fn LoadHookFunc)` — Receive success/duration/errCount after every load
 
 **Example:**
 ```go
 cfg, err := confkit.LoadWithOptions[Config](
     confkit.WithSource(confkit.FromYAML("config.yaml")),
     confkit.WithSource(confkit.FromEnv()),
-    confkit.WithValidator("custom", func(val string) error {
-        if val == "invalid" {
-            return fmt.Errorf("cannot be 'invalid'")
+    // Cross-field validation
+    confkit.WithModelValidator(func(cfg *Config) error {
+        if cfg.TLSEnabled && cfg.CertPath == "" {
+            return fmt.Errorf("cert_path required when tls_enabled is true")
         }
         return nil
+    }),
+    // Audit trail
+    confkit.WithAuditLogger(func(entries []confkit.AuditEntry) {
+        for _, e := range entries {
+            log.Printf("field=%s source=%s value=%s", e.Field, e.Source, e.Value)
+        }
     }),
 )
 ```
@@ -217,6 +227,26 @@ cfg, _ := confkit.Load[Config](confkit.FromTOML("config.toml"))
 
 ---
 
+### FromYAMLFiles / FromJSONFiles / FromTOMLFiles
+
+```go
+func FromYAMLFiles(paths ...string) Source
+func FromJSONFiles(paths ...string) Source
+func FromTOMLFiles(paths ...string) Source
+```
+
+Merges multiple files of the same format into a single source. Later files override earlier ones; nested maps are deep-merged.
+
+**Example:**
+```go
+cfg, _ := confkit.Load[Config](
+    confkit.FromYAMLFiles("base.yaml", "production.yaml", "local.yaml"),
+    confkit.FromEnv(),
+)
+```
+
+---
+
 ### FromFlags
 
 ```go
@@ -229,6 +259,42 @@ Loads configuration from command-line flags. Field names are converted to kebab-
 ```go
 // Run: go run main.go --database-url=... --port=3000
 cfg, _ := confkit.Load[Config](confkit.FromFlags())
+```
+
+---
+
+## Observability Submodules
+
+### confkit/prometheus
+
+```go
+import "github.com/MimoJanra/confkit/prometheus"
+
+m := prometheus.NewMetrics(prometheus.DefaultRegisterer)
+
+cfg, err := confkit.LoadWithOptions[Config](
+    confkit.WithSource(confkit.FromEnv()),
+    m.Hook(), // records loads_total, load_duration_seconds, errors_total
+)
+```
+
+**Metrics registered:**
+- `confkit_loads_total{status="success|error"}` — counter
+- `confkit_load_duration_seconds` — histogram
+- `confkit_errors_total{kind="validation"}` — counter
+
+---
+
+### confkit/otel
+
+```go
+import "github.com/MimoJanra/confkit/otel"
+
+cfg, err := otel.Load[Config](ctx, tracer,
+    confkit.FromEnv(),
+    confkit.FromYAML("config.yaml"),
+)
+// Creates span "confkit.Load" with attributes: confkit.sources, confkit.success
 ```
 
 ---
@@ -310,17 +376,43 @@ Configuration is driven by struct tags. Common tags:
 
 ### Validation Rules
 
-- `required` — Field must be present
-- `min=N` — Minimum value (int, float, string length)
-- `max=N` — Maximum value (int, float, string length)
-- `oneof=val1,val2,...` — Must be one of the listed values
+**Numeric / range:**
+- `required` — field must be present and non-zero
+- `min=N` — minimum value (int/float) or minimum length (string)
+- `max=N` — maximum value (int/float) or maximum length (string)
+- `oneof=val1,val2,...` — must be one of the listed values
+
+**Format (string fields):**
+- `email` — valid email address
+- `url` — valid URL (any scheme)
+- `http_url` — valid HTTP or HTTPS URL
+- `ip` — valid IPv4 or IPv6 address
+- `ipv4` — valid IPv4 address
+- `ipv6` — valid IPv6 address
+- `uuid` — valid UUID (v1–v5)
+- `hostname` — valid hostname per RFC 1123
+- `port` — valid port number 1–65535 (works on `int` and `string`)
+- `regex=pattern` — must match the regular expression
+- `len=N` — must be exactly N characters (Unicode-aware)
+- `contains=str` — must contain the substring
+- `startswith=str` — must start with the prefix
+- `endswith=str` — must end with the suffix
+- `alpha` — letters only
+- `alphanum` — letters and digits only
+- `numeric` — digits only
+- `lowercase` — must be all lowercase
+- `uppercase` — must be all uppercase
+- `notempty` — must not be blank (non-whitespace)
 
 **Example:**
 ```go
 type Config struct {
-    Port int `env:"PORT" validate:"required,min=1,max=65535"`
-    Status string `validate:"oneof=active,inactive,pending"`
-    DatabaseURL string `validate:"required" secret:"true"`
+    Port        int    `env:"PORT"    validate:"required,port"`
+    AdminEmail  string `env:"EMAIL"   validate:"required,email"`
+    APIKey      string `env:"API_KEY" validate:"required,len=32" secret:"true"`
+    Environment string `env:"ENV"     validate:"oneof=dev,staging,prod"`
+    ServiceURL  string `env:"SVC_URL" validate:"http_url"`
+    ServiceID   string `env:"SVC_ID"  validate:"uuid"`
 }
 ```
 

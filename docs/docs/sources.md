@@ -298,6 +298,43 @@ cfg, err := confkit.Load[Config](etcd)
 
 ---
 
+## Multi-File Sources
+
+When you need to merge several files of the same format (e.g., a base config + environment overlay + local overrides), use the `*Files` variants. Later files override earlier ones; nested maps are merged recursively (deep merge).
+
+### FromYAMLFiles
+
+```go
+cfg, err := confkit.Load[Config](
+    confkit.FromYAMLFiles(
+        "config/base.yaml",       // shipped defaults
+        "config/production.yaml", // environment overlay
+        "config/local.yaml",      // developer overrides (git-ignored)
+    ),
+    confkit.FromEnv(),
+)
+```
+
+### FromJSONFiles
+
+```go
+cfg, err := confkit.Load[Config](
+    confkit.FromJSONFiles("base.json", "override.json"),
+)
+```
+
+### FromTOMLFiles
+
+```go
+cfg, err := confkit.Load[Config](
+    confkit.FromTOMLFiles("base.toml", "local.toml"),
+)
+```
+
+**Deep merge behaviour:** if both files define a nested map key, the maps are merged. Scalar values in the later file win.
+
+---
+
 ## Source Precedence
 
 When using multiple sources, they are evaluated left-to-right. Later sources override earlier ones:

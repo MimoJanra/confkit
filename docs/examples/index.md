@@ -310,6 +310,138 @@ func main() {
 
 ---
 
+## Multi-File Config Merging
+
+Merge base defaults with environment-specific overrides:
+
+```go
+cfg, err := confkit.Load[Config](
+    confkit.FromYAMLFiles(
+        "config/base.yaml",        // shipped defaults
+        "config/production.yaml",  // prod-specific values
+        "config/local.yaml",       // developer overrides (git-ignored)
+    ),
+    confkit.FromEnv(), // highest priority
+)
+```
+
+**base.yaml:**
+```yaml
+port: 8080
+log_level: info
+db:
+  host: localhost
+  port: 5432
+```
+
+**production.yaml:**
+```yaml
+log_level: warn
+db:
+  host: db.prod.internal
+```
+
+Result: `db.host = db.prod.internal`, `db.port = 5432`, `log_level = warn`.
+
+---
+
+## Format Validators
+
+Built-in validators for common formats — no external libraries:
+
+```go
+type Config struct {
+    AdminEmail string `env:"ADMIN_EMAIL" validate:"required,email"`
+    ServiceURL string `env:"SERVICE_URL" validate:"http_url"`
+    ClientIP   string `env:"CLIENT_IP"   validate:"ip"`
+    ServiceID  string `env:"SERVICE_ID"  validate:"uuid"`
+    Port       int    `env:"PORT"        validate:"port"`
+    APIKey     string `env:"API_KEY"     validate:"required,len=32,alphanum" secret:"true"`
+    Region     string `env:"REGION"      validate:"regex=^[a-z]+-[a-z]+-[0-9]+$"`
+}
+```
+
+---
+
+## Cross-Field Validation (Model Validators)
+
+Validate relationships between fields — Pydantic-style:
+
+```go
+type TLSConfig struct {
+    Enabled  bool   `env:"TLS_ENABLED"`
+    CertPath string `env:"TLS_CERT_PATH"`
+    KeyPath  string `env:"TLS_KEY_PATH"`
+}
+
+cfg, err := confkit.LoadWithOptions[TLSConfig](
+    confkit.WithSource(confkit.FromEnv()),
+    confkit.WithModelValidator(func(cfg *TLSConfig) error {
+        if cfg.Enabled && cfg.CertPath == "" {
+            return fmt.Errorf("tls_cert_path is required when tls_enabled is true")
+        }
+        if cfg.Enabled && cfg.KeyPath == "" {
+            return fmt.Errorf("tls_key_path is required when tls_enabled is true")
+        }
+        return nil
+    }),
+)
+```
+
+---
+
+## Audit Logging
+
+See exactly which source provided each field value:
+
+```go
+cfg, err := confkit.LoadWithOptions[Config](
+    confkit.WithSource(confkit.FromYAML("config.yaml")),
+    confkit.WithSource(confkit.FromEnv()),
+    confkit.WithAuditLogger(func(entries []confkit.AuditEntry) {
+        for _, e := range entries {
+            log.Printf("%-30s ← %s: %s", e.Field, e.Source, e.Value)
+        }
+    }),
+)
+// Output:
+// Server.Port                    ← env: 9000
+// Server.Host                    ← yaml: 0.0.0.0
+// Database.Password              ← env: <redacted>
+```
+
+---
+
+## Prometheus Metrics
+
+```go
+import "github.com/MimoJanra/confkit/prometheus"
+
+m := prometheus.NewMetrics(prometheus.DefaultRegisterer)
+
+cfg, err := confkit.LoadWithOptions[Config](
+    confkit.WithSource(confkit.FromEnv()),
+    m.Hook(),
+)
+// Tracks: confkit_loads_total, confkit_load_duration_seconds, confkit_errors_total
+```
+
+---
+
+## OpenTelemetry Tracing
+
+```go
+import "github.com/MimoJanra/confkit/otel"
+
+cfg, err := otel.Load[Config](ctx, tracer,
+    confkit.FromYAML("config.yaml"),
+    confkit.FromEnv(),
+)
+// Creates span "confkit.Load" with confkit.sources and confkit.success attributes
+```
+
+---
+
 ## Advanced: Custom Source
 
 ```go

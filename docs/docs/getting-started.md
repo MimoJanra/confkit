@@ -10,7 +10,7 @@ Install confkit and load your first configuration in 5 minutes.
 ## Installation
 
 ```bash
-go get github.com/MimoJanra/confkit@v0.5.0
+go get github.com/MimoJanra/confkit@v0.5.1
 ```
 
 **Requirements:** Go 1.24 or later

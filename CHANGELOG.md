@@ -192,24 +192,84 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Roadmap
 
-### v0.6 (Planned)
+## [0.8.0] - 2026-05-05
 
-- Configuration composition / includes
-- Multi-file YAML support (merge multiple files)
-- Config templating (Helm-style)
-- Performance optimizations
+### Added — Observability
 
-### v0.7 (Planned)
+- **Audit logging** (`WithAuditLogger`)
+  - Callback receives `[]AuditEntry` after every successful load
+  - Each entry has `Field`, `Source`, and `Value` (secrets redacted)
+- **Load hooks** (`WithLoadHook`)
+  - Low-level hook called after every load with `success bool`, `duration`, `errCount`
+  - Used by Prometheus and OTel submodules
+- **Prometheus submodule** (`confkit/prometheus`)
+  - `NewMetrics(reg)` registers `confkit_loads_total`, `confkit_load_duration_seconds`, `confkit_errors_total`
+  - `Metrics.Hook()` returns a `confkit.Option` — drop-in, no wrapping needed
+- **OpenTelemetry submodule** (`confkit/otel`)
+  - `otel.Load[T](ctx, tracer, sources...)` — wraps Load with a span
+  - `otel.LoadWithOptions[T](ctx, tracer, options...)` — same for options form
+  - Span attributes: `confkit.sources`, `confkit.success`
 
-- Custom validation rules library (email, URL, IP, etc.)
-- Conditional validation (Field B validation depends on Field A)
-- Cross-field validation
+---
 
-### v0.8 (Planned)
+## [0.7.0] - 2026-05-05
 
-- Prometheus metrics for config loads and reloads
-- Structured tracing (OpenTelemetry)
-- Config audit logging
+### Added — Advanced Validation
+
+- **18 built-in format validators** (no external dependencies):
+  - `email` — valid email address
+  - `url` — valid URL (any scheme)
+  - `http_url` — valid HTTP or HTTPS URL
+  - `ip` — valid IPv4 or IPv6 address
+  - `ipv4` — valid IPv4 address
+  - `ipv6` — valid IPv6 address
+  - `uuid` — valid UUID (v1–v5)
+  - `hostname` — valid hostname (RFC 1123)
+  - `port` — valid port number (1–65535), works on int and string fields
+  - `regex=pattern` — value must match the given regular expression
+  - `len=N` — string must be exactly N characters (Unicode-aware)
+  - `contains=str` — string must contain substring
+  - `startswith=str` — string must start with prefix
+  - `endswith=str` — string must end with suffix
+  - `alpha` — letters only
+  - `alphanum` — letters and digits only
+  - `numeric` — digits only
+  - `lowercase` — all lowercase
+  - `uppercase` — all uppercase
+  - `notempty` — must not be blank (non-whitespace)
+
+- **Model validators** (`WithModelValidator[T](fn func(*T) error)`)
+  - Cross-field validation: runs after all field validators pass
+  - Receives a pointer to the fully populated config struct
+  - Multiple model validators can be registered; all run independently
+
+---
+
+## [0.6.0] - 2026-05-05
+
+### Added — Config Composition
+
+- **Multi-file YAML** (`FromYAMLFiles(paths ...string)`)
+  - Merges multiple YAML files; later files override earlier ones
+  - Nested maps are merged recursively (deep merge)
+- **Multi-file JSON** (`FromJSONFiles(paths ...string)`)
+  - Same semantics as `FromYAMLFiles` for JSON
+- **Multi-file TOML** (`FromTOMLFiles(paths ...string)`)
+  - Same semantics as `FromYAMLFiles` for TOML
+
+**Usage pattern:**
+```go
+cfg, err := confkit.Load[Config](
+    confkit.FromYAMLFiles(
+        "config/base.yaml",      // defaults
+        "config/production.yaml", // env-specific overrides
+        "config/local.yaml",      // developer local overrides
+    ),
+    confkit.FromEnv(),
+)
+```
+
+---
 
 ### v1.0 (Planned)
 
