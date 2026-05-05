@@ -5,8 +5,11 @@
 [![GitHub Release](https://img.shields.io/github/v/release/MimoJanra/confkit.svg)](https://github.com/MimoJanra/confkit/releases)
 [![Go Report Card](https://goreportcard.com/badge/github.com/MimoJanra/confkit)](https://goreportcard.com/report/github.com/MimoJanra/confkit)
 [![Documentation](https://img.shields.io/badge/docs-mimojanra.github.io-blue)](https://mimojanra.github.io/confkit/)
+[![LLM Context](https://img.shields.io/badge/llms.txt-reference-brightgreen)](./llms.txt)
 
 **[📖 Full Documentation](https://mimojanra.github.io/confkit/)** — Getting started, API reference, examples, and cloud integrations.
+
+**[🤖 LLM Context](./llms.txt)** — Machine-readable API reference for Claude, Copilot, and other AI coding assistants.
 
 > **Typed, validated configuration loading for Go** — the Pydantic equivalent for Go services.
 >
