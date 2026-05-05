@@ -72,6 +72,7 @@ func LoadWithOptions[T any](options ...Option) (T, error) {
 			if ok {
 				strVal := anyToString(value)
 
+				middlewareOK := true
 				for _, mw := range config.Middleware {
 					transformed, err := mw(field, strVal)
 					if err != nil {
@@ -80,9 +81,14 @@ func LoadWithOptions[T any](options ...Option) (T, error) {
 							Kind:    ErrorKindValidation,
 							Message: err.Error(),
 						})
-						continue
+						middlewareOK = false
+						break
 					}
 					strVal = transformed
+				}
+
+				if !middlewareOK {
+					continue
 				}
 
 				fieldValues[field.Path] = strVal
@@ -105,8 +111,8 @@ func LoadWithOptions[T any](options ...Option) (T, error) {
 		}
 	}
 
-	interpolationErrors := performInterpolation(fieldValues, resolver, report)
-	if !interpolationErrors {
+	interpolationOK := performInterpolation(fieldValues, resolver, report)
+	if !interpolationOK {
 		fireHooks(config, false, start, len(report.Errors))
 		return cfg, report
 	}

@@ -192,6 +192,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Roadmap
 
+## [0.8.1] - 2026-05-05
+
+### Fixed
+
+- **AWS SSM nested field lookups** — Field path round-trip no longer lossy; cache stores by full parameter path to preserve Go field casing
+- **AWS multi-region region parameter** — Region argument now passed to AWS config loader instead of being ignored
+- **AWS multi-region error handling** — Preserves last region error when all sources fail (instead of swallowing it)
+- **Rotation engine IsRotating() state** — Now correctly set to true during rotation and false on completion
+- **Watcher SetPollInterval race condition** — Uses atomic.Value to safely track interval changes; no more silent failures when interval changed after Start()
+- **Watcher Stop() double-call panic** — Added sync.Once guard for idempotent shutdown
+- **Watcher listener concurrent modification race** — Deep copies listener slice to prevent append corruption
+- **Interpolation regex compilation** — Moved regex to package level and converted environment to map for O(1) variable lookup
+- **Field scanning append footgun** — Explicitly allocates ancestor tag slices to prevent shared backing array corruption in nested structs
+- **Kubernetes ConfigMap source** — Tag-based key resolution (env/yaml/json tags) with exact field name and snake_case fallbacks
+- **Variable naming clarity** — Renamed inverted `interpolationErrors` flag to `interpolationOK`
+- **Middleware error handling** — Continues to next source on middleware failure instead of breaking
+- **Multi-region SSM path normalization** — Path prefix now normalized consistently with single-region helper
+
+---
+
 ## [0.8.0] - 2026-05-05
 
 ### Added — Observability

@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+
+	"github.com/MimoJanra/confkit/tagutil"
 )
 
 type KubernetesConfigMapSource struct {
@@ -25,24 +27,39 @@ func (k *KubernetesConfigMapSource) Name() string {
 }
 
 func (k *KubernetesConfigMapSource) Lookup(field *FieldInfo) (any, bool, error) {
-	filePath := filepath.Join(k.mountPath, field.Name)
+	var keys []string
 
-	data, err := os.ReadFile(filePath)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return "", false, nil
+	keys = append(keys, field.Name)
+
+	for _, tag := range []string{"env", "yaml", "json"} {
+		if tagKey, ok := field.Tags[tag]; ok {
+			keys = append(keys, tagKey)
 		}
-		return "", false, fmt.Errorf("cannot read configmap file %s: %w", filePath, err)
 	}
 
-	return string(data), true, nil
+	keys = append(keys, tagutil.SnakeCase(field.Name))
+
+	for _, key := range keys {
+		filePath := filepath.Join(k.mountPath, key)
+		data, err := os.ReadFile(filePath)
+		if err == nil {
+			return string(data), true, nil
+		}
+		if !os.IsNotExist(err) {
+			return "", false, fmt.Errorf("cannot read configmap file %s: %w", filePath, err)
+		}
+	}
+
+	return "", false, nil
 }
 
 func FromKubernetesConfigMap(namespace, configMapName string) Source {
-	defaultMountPath := filepath.Join("/var/run/secrets/config", namespace, configMapName)
-	return NewKubernetesConfigMapSource(namespace, configMapName, defaultMountPath)
+	return FromKubernetesConfigMapWithPath(namespace, configMapName, "")
 }
 
 func FromKubernetesConfigMapWithPath(namespace, configMapName, mountPath string) Source {
+	if mountPath == "" {
+		mountPath = filepath.Join("/var/run/secrets/config", namespace, configMapName)
+	}
 	return NewKubernetesConfigMapSource(namespace, configMapName, mountPath)
 }

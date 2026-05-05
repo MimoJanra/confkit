@@ -24,7 +24,16 @@ type AWSSSMSource struct {
 }
 
 func NewAWSSSMSource(pathPrefix string, cacheTTL time.Duration) (*AWSSSMSource, error) {
-	cfg, err := config.LoadDefaultConfig(context.Background())
+	return NewAWSSSMSourceWithRegion(pathPrefix, cacheTTL, "")
+}
+
+func NewAWSSSMSourceWithRegion(pathPrefix string, cacheTTL time.Duration, region string) (*AWSSSMSource, error) {
+	opts := []func(*config.LoadOptions) error{}
+	if region != "" {
+		opts = append(opts, config.WithRegion(region))
+	}
+
+	cfg, err := config.LoadDefaultConfig(context.Background(), opts...)
 	if err != nil {
 		return nil, fmt.Errorf("cannot load AWS config: %w", err)
 	}
@@ -79,8 +88,7 @@ func (a *AWSSSMSource) ensureCached() error {
 
 		for _, param := range page.Parameters {
 			if param.Name != nil && param.Value != nil {
-				fieldPath := a.parameterPathToFieldPath(*param.Name)
-				a.cache[fieldPath] = *param.Value
+				a.cache[*param.Name] = *param.Value
 			}
 		}
 	}
@@ -107,13 +115,7 @@ func (a *AWSSSMSource) parameterPathToFieldPath(paramPath string) string {
 	relativePath = strings.TrimPrefix(relativePath, "/")
 
 	parts := strings.Split(relativePath, "/")
-	fieldParts := make([]string, len(parts))
-
-	for i, part := range parts {
-		fieldParts[i] = strings.ToLower(part)
-	}
-
-	return strings.Join(fieldParts, ".")
+	return strings.Join(parts, ".")
 }
 
 func FromAWSSSMParameterStore(pathPrefix string) confkit.Source {

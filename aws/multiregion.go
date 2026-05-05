@@ -2,6 +2,7 @@ package aws
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -46,6 +47,7 @@ func (r *RegionFailoverSource) Lookup(field *confkit.FieldInfo) (any, bool, erro
 	startRegion := r.currentRegion
 	r.cacheMutex.RUnlock()
 
+	var lastErr error
 	for i := 0; i < len(r.regions); i++ {
 		regionIdx := (startRegion + i) % len(r.regions)
 		source := r.sources[regionIdx]
@@ -61,12 +63,16 @@ func (r *RegionFailoverSource) Lookup(field *confkit.FieldInfo) (any, bool, erro
 		}
 
 		if err != nil {
+			lastErr = err
 			r.updateRegionCache(r.regions[regionIdx], false)
 			continue
 		}
 	}
 
-	return "", false, fmt.Errorf("all regions exhausted for field %s", field.Path)
+	if lastErr != nil {
+		return nil, false, lastErr
+	}
+	return nil, false, nil
 }
 
 func (r *RegionFailoverSource) updateRegionCache(region string, healthy bool) {
@@ -115,8 +121,15 @@ func FromAWSSecretsManagerMultiRegion(secretName string, regions []string) confk
 }
 
 func FromAWSSSMParameterStoreMultiRegion(pathPrefix string, regions []string) confkit.Source {
+	if !strings.HasSuffix(pathPrefix, "/") {
+		pathPrefix += "/"
+	}
+
 	src, err := NewRegionFailoverSource(regions, func(region string) confkit.Source {
-		ssmSrc, _ := NewAWSSSMSource(pathPrefix, 5*time.Minute)
+		ssmSrc, err := NewAWSSSMSourceWithRegion(pathPrefix, 5*time.Minute, region)
+		if err != nil {
+			return confkit.NewErrorSource(err)
+		}
 		return ssmSrc
 	})
 	if err != nil {

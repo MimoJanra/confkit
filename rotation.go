@@ -56,6 +56,7 @@ func (r *RotationEngine) run(ctx context.Context) {
 	for {
 		select {
 		case <-r.stopChan:
+			r.isRotating.Store(false)
 			return
 		case <-r.ticker.C:
 			r.mu.RLock()
@@ -69,11 +70,15 @@ func (r *RotationEngine) run(ctx context.Context) {
 			}
 
 			if shouldRotate {
+				r.isRotating.Store(true)
+
 				r.mu.Lock()
 				r.lastRotation = time.Now()
 				r.mu.Unlock()
 
 				r.notifyCallbacks(nil, nil, nil)
+
+				r.isRotating.Store(false)
 			}
 		}
 	}

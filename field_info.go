@@ -68,7 +68,9 @@ func scanFieldsRecursive(val reflect.Value, typ reflect.Type, pathPrefix string,
 			if fieldVal.Kind() == reflect.Ptr {
 				fieldVal = fieldVal.Elem()
 			}
-			newAncestors := append(ancestorTags, tags)
+			newAncestors := make([]map[string]string, len(ancestorTags)+1)
+			copy(newAncestors, ancestorTags)
+			newAncestors[len(ancestorTags)] = tags
 			fields = append(fields, scanFieldsRecursive(fieldVal, fieldType, path, newAncestors)...)
 			continue
 		}

@@ -7,8 +7,12 @@ import (
 	"strings"
 )
 
+var (
+	interpolationPattern = regexp.MustCompile(`\$\{([^}|]+)(?:\|([^}]*))?\}`)
+)
+
 type InterpolationResolver struct {
-	env        []string
+	envMap     map[string]string
 	config     map[string]string
 	visited    map[string]bool
 	maxDepth   int
@@ -19,8 +23,17 @@ func NewInterpolationResolver(maxDepth int) *InterpolationResolver {
 	if maxDepth <= 0 {
 		maxDepth = 10
 	}
+
+	envMap := make(map[string]string)
+	for _, pair := range os.Environ() {
+		parts := strings.SplitN(pair, "=", 2)
+		if len(parts) == 2 {
+			envMap[parts[0]] = parts[1]
+		}
+	}
+
 	return &InterpolationResolver{
-		env:      os.Environ(),
+		envMap:   envMap,
 		config:   make(map[string]string),
 		visited:  make(map[string]bool),
 		maxDepth: maxDepth,
@@ -49,9 +62,8 @@ func (r *InterpolationResolver) resolve(value string, depth int) (string, error)
 	placeholder := "\x00ESCAPED_DOLLAR\x00"
 	protected := strings.ReplaceAll(value, "$$", placeholder)
 
-	pattern := regexp.MustCompile(`\$\{([^}|]+)(?:\|([^}]*))?\}`)
-	result := pattern.ReplaceAllStringFunc(protected, func(match string) string {
-		parts := pattern.FindStringSubmatch(match)
+	result := interpolationPattern.ReplaceAllStringFunc(protected, func(match string) string {
+		parts := interpolationPattern.FindStringSubmatch(match)
 		if len(parts) < 2 {
 			return match
 		}
@@ -66,14 +78,8 @@ func (r *InterpolationResolver) resolve(value string, depth int) (string, error)
 			return match
 		}
 
-		for _, envPair := range r.env {
-			if idx := strings.Index(envPair, "="); idx != -1 {
-				key := envPair[:idx]
-				val := envPair[idx+1:]
-				if key == varName {
-					return val
-				}
-			}
+		if envVal, ok := r.envMap[varName]; ok {
+			return envVal
 		}
 
 		if val, ok := r.config[varName]; ok {
@@ -91,9 +97,8 @@ func (r *InterpolationResolver) resolve(value string, depth int) (string, error)
 		return match
 	})
 
-	if pattern.MatchString(result) {
-		pattern2 := regexp.MustCompile(`\$\{([^}|]+)`)
-		matches := pattern2.FindAllStringSubmatch(result, -1)
+	if interpolationPattern.MatchString(result) {
+		matches := interpolationPattern.FindAllStringSubmatch(result, -1)
 		for _, m := range matches {
 			if len(m) > 1 {
 				return "", fmt.Errorf("circular reference or undefined variable: ${%s}", m[1])
