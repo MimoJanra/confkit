@@ -9,7 +9,7 @@ plugins:
 navigation:
   - name: Home
     url: /
-  - name: Docs
+  - name: Docss
     url: /docs/
   - name: API Reference
     url: /api/
