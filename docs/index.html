@@ -807,11 +807,11 @@ cfg, err := confkit.Load[Config](
             button.addEventListener('click', function() {
                 const text = this.textContent.trim();
                 if (text.includes('Start') || text.includes('Get')) {
-                    window.location.href = '/docs/installation.html';
+                    window.location.href = './docs/installation.html';
                 } else if (text.includes('Documentation')) {
                     window.location.href = './docs/';
                 } else if (text.includes('Read')) {
-                    window.location.href = './docs/docs/getting-started.html';
+                    window.location.href = './docs/getting-started.html';
                 }
             });
         });

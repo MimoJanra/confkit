@@ -503,14 +503,14 @@ go get github.com/MimoJanra/confkit/schema
 Complete documentation available in:
 
 - README.md — Overview and quick start
-- docs/docs/installation.md — Setup and dependencies
-- docs/docs/getting-started.md — 5-minute tutorial
-- docs/docs/validation.md — Validation in detail
-- docs/docs/defaults.md — How defaults work
-- docs/docs/secret-redaction.md — Secret handling
-- docs/docs/hot-reload.md — File watching
-- docs/docs/schema-generation.md — JSON Schema, Markdown, help
-- docs/docs/sources.md — All configuration sources
+- docs/installation.md — Setup and dependencies
+- docs/getting-started.md — 5-minute tutorial
+- docs/validation.md — Validation in detail
+- docs/defaults.md — How defaults work
+- docs/secret-redaction.md — Secret handling
+- docs/hot-reload.md — File watching
+- docs/schema-generation.md — JSON Schema, Markdown, help
+- docs/sources.md — All configuration sources
 
 ## Recipes (Real-World Examples)
 
