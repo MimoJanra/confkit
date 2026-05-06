@@ -64,7 +64,7 @@ func parseInt(value string, targetType reflect.Type) (any, error) {
 	}
 	switch targetType.Kind() {
 	case reflect.Int:
-		if strconv.IntSize == 32 && (i < math.MinInt32 || i > math.MaxInt32) {
+		if i < int64(math.MinInt) || i > int64(math.MaxInt) {
 			return nil, fmt.Errorf("int out of range: %d", i)
 		}
 		return int(i), nil
@@ -97,22 +97,22 @@ func parseUint(value string, targetType reflect.Type) (any, error) {
 	}
 	switch targetType.Kind() {
 	case reflect.Uint:
-		if strconv.IntSize == 32 && u > math.MaxUint32 {
+		if u > uint64(math.MaxUint) {
 			return nil, fmt.Errorf("uint out of range: %d", u)
 		}
 		return uint(u), nil
 	case reflect.Uint8:
-		if u > 255 {
+		if u > math.MaxUint8 {
 			return nil, fmt.Errorf("uint8 out of range: %d", u)
 		}
 		return uint8(u), nil
 	case reflect.Uint16:
-		if u > 65535 {
+		if u > math.MaxUint16 {
 			return nil, fmt.Errorf("uint16 out of range: %d", u)
 		}
 		return uint16(u), nil
 	case reflect.Uint32:
-		if u > 4294967295 {
+		if u > math.MaxUint32 {
 			return nil, fmt.Errorf("uint32 out of range: %d", u)
 		}
 		return uint32(u), nil
