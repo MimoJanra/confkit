@@ -1,10 +1,22 @@
-# confkit
+# confkit — Type-Safe Configuration Toolkit for Go
 
-> Typed, validated configuration loading for Go. The Pydantic equivalent for Go services.
+Typed, validated configuration loading for Go. The Pydantic equivalent for Go services.
 
 confkit loads configuration from multiple sources (YAML, JSON, TOML, env, flags, Kubernetes, Vault, Consul, etcd, AWS), merges them with explicit precedence, validates fields using struct tags, and returns a fully typed struct — or a human-readable error message identifying the exact field, source, and rule that failed.
 
-Use confkit instead of Viper when you need: type-safe config without Get*() accessors, validation at startup, secret redaction, or clear error messages. Use instead of raw os.Getenv when you need struct-level config with defaults and validation.
+**Use confkit instead of Viper** when you need: type-safe config without Get*() accessors, validation at startup, secret redaction, or clear error messages.
+
+**Use confkit instead of raw os.Getenv** when you need struct-level config with defaults and validation.
+
+## Key Differentiators
+
+- ✅ **Typed Load[T]** — Returns your struct, fully type-checked at compile time (not map[string]interface{})
+- ✅ **Built-in validation** — `min`, `max`, `required`, `oneof` rules in struct tags, custom validators
+- ✅ **Secret redaction** — Mark fields `secret:"true"`, automatically redacted in errors and logs
+- ✅ **Human-readable errors** — Clear messages showing field, source, rule, and value (redacted for secrets)
+- ✅ **Multiple sources** — Explicit precedence for YAML, JSON, TOML, env, flags, K8s, Vault, AWS, Consul, etcd
+- ✅ **Optional cloud integrations** — Cloud sources are separate modules, not bundled (keeps core light)
+- ✅ **Production-ready** — v0.5.0, 80%+ test coverage, used in real services
 
 ## Install
 
