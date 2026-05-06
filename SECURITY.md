@@ -3,7 +3,7 @@
 ## Reporting Security Vulnerabilities
 
 If you discover a security vulnerability in confkit, please **do not** open a public GitHub issue. Instead, email
-security details to **alk@tassta.com** with:
+security details to **mimojanra@gmail.com** with:
 
 - Description of the vulnerability
 - Steps to reproduce (if applicable)
@@ -304,11 +304,11 @@ confkit **does**:
 For security questions (non-vulnerability):
 
 - Open a GitHub Discussion
-- Email **alk@tassta.com**
+- Email **mimojanra@gmail.com**
 - Read [CONTRIBUTING.md](CONTRIBUTING.md)
 
 For vulnerabilities:
 
-- Email **alk@tassta.com** with details
+- Email **mimojanra@gmail.com** with details
 - Do **not** open a public issue
 - Allow 30 days for fix + release
