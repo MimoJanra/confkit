@@ -263,13 +263,15 @@ confkit.FromJSON(path string) Source
 confkit.FromTOML(path string) Source
 confkit.FromEnv() Source
 confkit.FromFlags() Source
-confkit.FromKubernetesConfigMap(namespace, name string) Source
-confkit.FromKubernetesConfigMapWithPath(namespace, name, mountPath string) Source
 ```
 
-Optional enterprise sources (separate `go get` per module):
+Optional sources (separate `go get` per module):
 
 ```go
+// go get confkit/k8s
+k8s.FromKubernetesConfigMap(namespace, name string) confkit.Source
+k8s.FromKubernetesConfigMapWithPath(namespace, name, mountPath string) confkit.Source
+
 // go get confkit/vault
 vault.FromVault(addr string, auth VaultAuth, pathPrefix string) confkit.Source
 vault.FromVaultWithKVVersion(addr string, auth VaultAuth, kvVersion int, pathPrefix string) confkit.Source

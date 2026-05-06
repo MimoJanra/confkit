@@ -23,6 +23,7 @@ type RotationEngine struct {
 	stopChan      chan struct{}
 	mu            sync.RWMutex
 	isRotating    atomic.Bool
+	stopOnce      sync.Once
 }
 
 func NewRotationEngine(strategy RotationStrategy) *RotationEngine {
@@ -46,10 +47,12 @@ func (r *RotationEngine) Start(ctx context.Context, interval time.Duration) {
 }
 
 func (r *RotationEngine) Stop() {
-	if r.ticker != nil {
-		r.ticker.Stop()
-	}
-	close(r.stopChan)
+	r.stopOnce.Do(func() {
+		if r.ticker != nil {
+			r.ticker.Stop()
+		}
+		close(r.stopChan)
+	})
 }
 
 func (r *RotationEngine) run(ctx context.Context) {

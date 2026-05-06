@@ -42,7 +42,7 @@
 //	confkit.FromTOML(path)          // Load from TOML file
 //	confkit.FromEnv()               // Load from environment variables
 //	confkit.FromFlags()             // Load from command-line flags
-//	confkit.FromKubernetesConfigMap(namespace, name)  // Load from K8s ConfigMap
+//	k8s.FromKubernetesConfigMap(namespace, name)      // Load from K8s ConfigMap (github.com/MimoJanra/confkit/k8s)
 //
 // Optional enterprise sources (separate modules):
 //

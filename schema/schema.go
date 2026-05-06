@@ -3,7 +3,7 @@ package schema
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/MimoJanra/confkit/tagutil"
+	"github.com/MimoJanra/confkit/structtags"
 	"reflect"
 	"strconv"
 	"strings"
@@ -71,7 +71,7 @@ func walkStruct(typ reflect.Type, parent *Schema) error {
 			continue
 		}
 
-		tags := tagutil.ParseStructTags(field.Tag)
+		tags := structtags.ParseStructTags(field.Tag)
 		propName := getPropName(field.Name, tags)
 		if propName == "" {
 			continue
@@ -83,7 +83,7 @@ func walkStruct(typ reflect.Type, parent *Schema) error {
 			fieldType = fieldType.Elem()
 		}
 
-		if tagutil.IsSpecialType(fieldType) {
+		if structtags.IsSpecialType(fieldType) {
 			fieldSchema.Type = "string"
 		} else if fieldType.Kind() == reflect.Struct {
 			fieldSchema.Type = "object"
@@ -133,7 +133,7 @@ func getPropName(fieldName string, tags map[string]string) string {
 			return name
 		}
 	}
-	return tagutil.SnakeCase(fieldName)
+	return structtags.SnakeCase(fieldName)
 }
 
 func getTypeString(typ reflect.Type) string {

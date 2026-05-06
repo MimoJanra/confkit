@@ -19,9 +19,10 @@ confkit follows these principles:
 ```
 confkit/
 ├── load.go                 # Core Load[T] API
-├── field_info.go           # FieldInfo type and reflection scanning
+├── fieldinfo.go            # FieldInfo type and reflection scanning
 ├── parser.go               # Primitive type parsing
 ├── sources.go              # Source interface
+├── file_sources.go         # File format sources (YAML, JSON, TOML)
 ├── env_source.go           # EnvSource
 ├── yaml_source.go          # YAMLSource
 ├── json_source.go          # JSONSource
@@ -31,17 +32,16 @@ confkit/
 ├── errors.go               # ErrorReport and human-readable formatting
 ├── options.go              # Functional options
 ├── interpolation.go        # String interpolation
-├── sources_registry.go     # Custom source registry
+├── registry.go             # Custom source registry
 ├── watcher.go              # Hot reload / file watching
 ├── observability.go        # Config dump, metrics
-├── k8s_source.go           # Kubernetes ConfigMap source
-├── aws_ssm_source.go       # AWS SSM Parameter Store source
+├── k8s/                    # Kubernetes ConfigMap submodule (optional)
+├── aws/                    # AWS SSM/Secrets Manager submodule (optional)
 ├── vault/                  # HashiCorp Vault submodule (optional)
 ├── consul/                 # Consul submodule (optional)
 ├── etcd/                   # etcd submodule (optional)
-├── aws/                    # AWS Secrets Manager submodule (optional)
 ├── schema/                 # JSON Schema + documentation generation
-├── internal/               # Internal utilities
+├── structtags/             # Struct tag parsing utilities
 └── examples/               # Usage examples
 ```
 

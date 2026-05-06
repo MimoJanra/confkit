@@ -19,9 +19,10 @@ Use confkit when Go services need:
 ```
 confkit/
 ├── load.go              # Load[T], LoadWithOptions[T], LoadWithWatcher[T]
-├── field_info.go        # FieldInfo type and struct tag scanning
+├── fieldinfo.go         # FieldInfo type and struct tag scanning
 ├── parser.go            # Type parsing (int, float, bool, duration, etc.)
 ├── sources.go           # Source interface
+├── file_sources.go      # File format sources (YAML, JSON, TOML)
 ├── env_source.go        # FromEnv()
 ├── yaml_source.go       # FromYAML(path)
 ├── json_source.go       # FromJSON(path)
@@ -33,7 +34,8 @@ confkit/
 ├── interpolation.go     # String interpolation ${VAR}
 ├── watcher.go           # Hot reload / file watching
 ├── observability.go     # Config dump, metrics
-├── k8s_source.go        # Kubernetes ConfigMap/Secret
+├── k8s/                 # Kubernetes ConfigMap/Secret (separate module)
+├── aws/                 # AWS SSM/Secrets (separate module)
 ├── vault/               # HashiCorp Vault (separate module)
 ├── consul/              # HashiCorp Consul KV (separate module)
 ├── etcd/                # etcd v3 (separate module)

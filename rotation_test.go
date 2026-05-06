@@ -2,6 +2,9 @@ package confkit
 
 import (
 	"context"
+	"errors"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -138,4 +141,179 @@ func TestMultipleCallbacks(t *testing.T) {
 	if len(engine.callbacks) != 2 {
 		t.Errorf("Expected 2 callbacks, got %d", len(engine.callbacks))
 	}
+}
+
+// Integration tests for Start/Stop and async behavior
+func TestRotationEngineStart_WithInterval(t *testing.T) {
+	callCount := atomic.Int32{}
+
+	engine := NewRotationEngine(RotateOnInterval(50 * time.Millisecond))
+	engine.AddCallback(func(oldCfg, newCfg any, err error) {
+		if err == nil {
+			callCount.Add(1)
+		}
+	})
+
+	engine.Start(context.Background(), 30*time.Millisecond)
+	time.Sleep(150 * time.Millisecond)
+	engine.Stop()
+
+	if callCount.Load() == 0 {
+		t.Error("Expected at least one rotation callback")
+	}
+}
+
+func TestRotationEngineStop_DoubleStop(t *testing.T) {
+	engine := NewRotationEngine(RotateOnInterval(1 * time.Second))
+	engine.Start(context.Background(), 50*time.Millisecond)
+
+	engine.Stop()
+	time.Sleep(10 * time.Millisecond)
+
+	// Second stop should not panic
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("Second Stop should not panic: %v", r)
+		}
+	}()
+	engine.Stop()
+}
+
+func TestRotationEngineStop_BeforeStart(t *testing.T) {
+	engine := NewRotationEngine(RotateOnInterval(1 * time.Second))
+
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("Stop before Start should not panic: %v", r)
+		}
+	}()
+	engine.Stop()
+}
+
+func TestRotationEngineCallback_InvokedOnRotation(t *testing.T) {
+	callbackCalled := false
+	var receivedErr error
+
+	engine := NewRotationEngine(RotateOnInterval(50 * time.Millisecond))
+	engine.AddCallback(func(oldCfg, newCfg any, err error) {
+		callbackCalled = true
+		receivedErr = err
+	})
+
+	engine.Start(context.Background(), 30*time.Millisecond)
+	time.Sleep(150 * time.Millisecond)
+	engine.Stop()
+
+	if !callbackCalled {
+		t.Error("Expected callback to be invoked")
+	}
+	if receivedErr != nil {
+		t.Errorf("Expected no error in callback, got %v", receivedErr)
+	}
+}
+
+func TestRotationEngineCallback_ReceivesError(t *testing.T) {
+	errorReceived := false
+
+	strategy := &testErrorStrategy{err: errors.New("test error")}
+	engine := NewRotationEngine(strategy)
+	engine.AddCallback(func(oldCfg, newCfg any, err error) {
+		if err != nil {
+			errorReceived = true
+		}
+	})
+
+	engine.Start(context.Background(), 30*time.Millisecond)
+	time.Sleep(100 * time.Millisecond)
+	engine.Stop()
+
+	if !errorReceived {
+		t.Error("Expected callback to receive error")
+	}
+}
+
+func TestRotationEngine_ConcurrentCallbacks(t *testing.T) {
+	count := atomic.Int32{}
+	mu := sync.Mutex{}
+	var callErrors []error
+
+	engine := NewRotationEngine(RotateOnInterval(50 * time.Millisecond))
+
+	// Add multiple callbacks
+	for i := 0; i < 5; i++ {
+		engine.AddCallback(func(oldCfg, newCfg any, err error) {
+			count.Add(1)
+			mu.Lock()
+			callErrors = append(callErrors, err)
+			mu.Unlock()
+		})
+	}
+
+	engine.Start(context.Background(), 30*time.Millisecond)
+	time.Sleep(150 * time.Millisecond)
+	engine.Stop()
+
+	time.Sleep(50 * time.Millisecond) // Wait for goroutines
+
+	// Should have called multiple times with multiple callbacks each time
+	if count.Load() < 5 {
+		t.Errorf("Expected at least 5 total callback invocations, got %d", count.Load())
+	}
+}
+
+func TestRotationEngine_LastRotationUpdated(t *testing.T) {
+	engine := NewRotationEngine(RotateOnInterval(50 * time.Millisecond))
+
+	initialTime := engine.lastRotation
+	engine.Start(context.Background(), 30*time.Millisecond)
+	time.Sleep(150 * time.Millisecond)
+	engine.Stop()
+
+	if engine.lastRotation.Equal(initialTime) {
+		t.Error("Expected lastRotation to be updated")
+	}
+	if engine.lastRotation.Before(initialTime) {
+		t.Error("Expected lastRotation to be after initial time")
+	}
+}
+
+func TestEventRotationStrategy_ContextCancellation(t *testing.T) {
+	eventChan := make(chan struct{})
+	strategy := RotateOnEvent(eventChan)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	shouldRotate, err := strategy.ShouldRotate(ctx, time.Now())
+
+	if err == nil {
+		t.Error("Expected error when context is canceled")
+	}
+	if shouldRotate {
+		t.Error("Expected ShouldRotate to be false when context canceled")
+	}
+}
+
+func TestEventRotationStrategy_ShouldRotateOnEvent(t *testing.T) {
+	eventChan := make(chan struct{}, 1)
+	eventChan <- struct{}{}
+
+	strategy := RotateOnEvent(eventChan)
+	shouldRotate, err := strategy.ShouldRotate(context.Background(), time.Now())
+
+	if err != nil {
+		t.Errorf("Expected no error, got %v", err)
+	}
+	if !shouldRotate {
+		t.Error("Expected ShouldRotate to be true when event is available")
+	}
+}
+
+// Test helper strategy that always returns an error
+type testErrorStrategy struct {
+	err error
+}
+
+func (t *testErrorStrategy) ShouldRotate(ctx context.Context, lastRotation time.Time) (bool, error) {
+	return false, t.err
 }

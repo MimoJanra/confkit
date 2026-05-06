@@ -33,17 +33,6 @@ func TestV04HotReloadIntegration(t *testing.T) {
 	watcher.Stop()
 }
 
-func TestV04KubernetesSourceIntegration(t *testing.T) {
-	src := FromKubernetesConfigMap("default", "app-config")
-	if src == nil {
-		t.Fatal("Expected non-nil Kubernetes source")
-	}
-
-	if src.Name() != "kubernetes-configmap" {
-		t.Errorf("Expected kubernetes-configmap source, got %q", src.Name())
-	}
-}
-
 func TestV04MultiSourcePrecedence(t *testing.T) {
 	type Config struct {
 		Port int `default:"8080"`
@@ -154,27 +143,6 @@ func TestV04WatcherIntegration(t *testing.T) {
 	time.Sleep(300 * time.Millisecond)
 
 	watcher.Stop()
-}
-
-func TestV04SourceNamingConsistency(t *testing.T) {
-	sources := map[string]Source{
-		"env": FromEnv(),
-		"k8s": FromKubernetesConfigMap("default", "config"),
-	}
-
-	expectedNames := map[string]string{
-		"env": "env",
-		"k8s": "kubernetes-configmap",
-	}
-
-	for key, src := range sources {
-		expected := expectedNames[key]
-		actual := src.Name()
-
-		if actual != expected {
-			t.Errorf("Source %s: expected %q, got %q", key, expected, actual)
-		}
-	}
 }
 
 type TestConfig struct {

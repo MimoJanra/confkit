@@ -6,6 +6,7 @@ use (
 	./consul
 	./etcd
 	./aws
+	./k8s
 	./prometheus
 	./otel
 )

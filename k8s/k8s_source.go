@@ -1,4 +1,4 @@
-package confkit
+package k8s
 
 import (
 	"fmt"
@@ -6,7 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/MimoJanra/confkit/tagutil"
+	"github.com/MimoJanra/confkit"
+	"github.com/MimoJanra/confkit/structtags"
 )
 
 type KubernetesConfigMapSource struct {
@@ -27,7 +28,7 @@ func (k *KubernetesConfigMapSource) Name() string {
 	return "kubernetes-configmap"
 }
 
-func (k *KubernetesConfigMapSource) Lookup(field *FieldInfo) (any, bool, error) {
+func (k *KubernetesConfigMapSource) Lookup(field *confkit.FieldInfo) (any, bool, error) {
 	var keys []string
 
 	keys = append(keys, field.Name)
@@ -38,7 +39,7 @@ func (k *KubernetesConfigMapSource) Lookup(field *FieldInfo) (any, bool, error) 
 		}
 	}
 
-	keys = append(keys, tagutil.SnakeCase(field.Name))
+	keys = append(keys, structtags.SnakeCase(field.Name))
 
 	for _, key := range keys {
 		if strings.Contains(key, "/") || strings.Contains(key, string(filepath.Separator)) || strings.Contains(key, "..") {
@@ -62,11 +63,11 @@ func (k *KubernetesConfigMapSource) Lookup(field *FieldInfo) (any, bool, error) 
 	return "", false, nil
 }
 
-func FromKubernetesConfigMap(namespace, configMapName string) Source {
+func FromKubernetesConfigMap(namespace, configMapName string) confkit.Source {
 	return FromKubernetesConfigMapWithPath(namespace, configMapName, "")
 }
 
-func FromKubernetesConfigMapWithPath(namespace, configMapName, mountPath string) Source {
+func FromKubernetesConfigMapWithPath(namespace, configMapName, mountPath string) confkit.Source {
 	if mountPath == "" {
 		mountPath = filepath.Join("/var/run/secrets/config", namespace, configMapName)
 	}

@@ -5,7 +5,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/MimoJanra/confkit/tagutil"
+	"github.com/MimoJanra/confkit/structtags"
 
 	"gopkg.in/yaml.v3"
 )
@@ -85,7 +85,7 @@ func (y *yamlSource) lookupNested(tagName, fieldPath string, ancestorTags []map[
 // ancestorKey returns the map key for ancestor level i, preferring preferredTag format.
 func ancestorKey(fieldName string, i int, ancestorTags []map[string]string, preferredTag string) string {
 	if i >= len(ancestorTags) || ancestorTags[i] == nil {
-		return tagutil.SnakeCase(fieldName)
+		return structtags.SnakeCase(fieldName)
 	}
 	tags := ancestorTags[i]
 	// Try preferred format first, then the other two, then snake_case
@@ -100,5 +100,5 @@ func ancestorKey(fieldName string, i int, ancestorTags []map[string]string, pref
 			return v
 		}
 	}
-	return tagutil.SnakeCase(fieldName)
+	return structtags.SnakeCase(fieldName)
 }

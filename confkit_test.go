@@ -1206,3 +1206,351 @@ func TestLoadWithWatcherFileNotFound(t *testing.T) {
 		t.Error("Expected watcher to be nil on error")
 	}
 }
+
+// Test FromYAMLFiles with single file
+func TestFromYAMLFilesSingle(t *testing.T) {
+	type Config struct {
+		Port int    `yaml:"port"`
+		Host string `yaml:"host"`
+	}
+
+	tmpFile := writeTempYAML(t, "port: 8080\nhost: localhost")
+	defer os.Remove(tmpFile)
+
+	cfg, err := Load[Config](FromYAMLFiles(tmpFile))
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+	if cfg.Port != 8080 {
+		t.Errorf("Expected Port 8080, got %d", cfg.Port)
+	}
+	if cfg.Host != "localhost" {
+		t.Errorf("Expected Host 'localhost', got %q", cfg.Host)
+	}
+}
+
+// Test FromYAMLFiles with multiple files (precedence)
+func TestFromYAMLFilesMultiple(t *testing.T) {
+	type Config struct {
+		Port int    `yaml:"port"`
+		Host string `yaml:"host"`
+		Mode string `yaml:"mode"`
+	}
+
+	file1 := writeTempYAML(t, "port: 8080\nhost: localhost\nmode: dev")
+	file2 := writeTempYAML(t, "port: 9000\nmode: prod")
+	defer os.Remove(file1)
+	defer os.Remove(file2)
+
+	cfg, err := Load[Config](FromYAMLFiles(file1, file2))
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+	// file2 should override file1
+	if cfg.Port != 9000 {
+		t.Errorf("Expected Port 9000 (from file2), got %d", cfg.Port)
+	}
+	if cfg.Host != "localhost" {
+		t.Errorf("Expected Host 'localhost' (from file1), got %q", cfg.Host)
+	}
+	if cfg.Mode != "prod" {
+		t.Errorf("Expected Mode 'prod' (from file2), got %q", cfg.Mode)
+	}
+}
+
+// Test FromYAMLFiles with nested structures
+func TestFromYAMLFilesNestedMerge(t *testing.T) {
+	type Database struct {
+		Host string `yaml:"host"`
+		Port int    `yaml:"port"`
+	}
+	type Config struct {
+		Database Database `yaml:"database"`
+		Port     int      `yaml:"port"`
+	}
+
+	file1 := writeTempYAML(t, "port: 8080\ndatabase:\n  host: db1.local\n  port: 5432")
+	file2 := writeTempYAML(t, "port: 9000\ndatabase:\n  host: db2.local")
+	defer os.Remove(file1)
+	defer os.Remove(file2)
+
+	cfg, err := Load[Config](FromYAMLFiles(file1, file2))
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+	if cfg.Port != 9000 {
+		t.Errorf("Expected Port 9000, got %d", cfg.Port)
+	}
+	if cfg.Database.Host != "db2.local" {
+		t.Errorf("Expected Database.Host 'db2.local', got %q", cfg.Database.Host)
+	}
+	// Port from file1 should persist since file2 doesn't override it
+	if cfg.Database.Port != 5432 {
+		t.Errorf("Expected Database.Port 5432, got %d", cfg.Database.Port)
+	}
+}
+
+// Test FromYAMLFiles with no files
+func TestFromYAMLFilesNoFiles(t *testing.T) {
+	type Config struct {
+		Port int `yaml:"port" default:"8080"`
+	}
+
+	cfg, err := Load[Config](FromYAMLFiles())
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+	if cfg.Port != 8080 {
+		t.Errorf("Expected default Port 8080, got %d", cfg.Port)
+	}
+}
+
+// Test FromYAMLFiles with nonexistent file
+func TestFromYAMLFilesMissing(t *testing.T) {
+	type Config struct {
+		Port int `yaml:"port"`
+	}
+
+	_, err := Load[Config](FromYAMLFiles("/nonexistent/file.yaml"))
+	if err == nil {
+		t.Fatal("Expected error for missing YAML file")
+	}
+}
+
+// Test FromJSONFiles with single file
+func TestFromJSONFilesSingle(t *testing.T) {
+	type Config struct {
+		Port int    `json:"port"`
+		Host string `json:"host"`
+	}
+
+	tmpFile := writeTempJSON(t, `{"port":8080,"host":"localhost"}`)
+	defer os.Remove(tmpFile)
+
+	cfg, err := Load[Config](FromJSONFiles(tmpFile))
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+	if cfg.Port != 8080 {
+		t.Errorf("Expected Port 8080, got %d", cfg.Port)
+	}
+	if cfg.Host != "localhost" {
+		t.Errorf("Expected Host 'localhost', got %q", cfg.Host)
+	}
+}
+
+// Test FromJSONFiles with multiple files (precedence)
+func TestFromJSONFilesMultiple(t *testing.T) {
+	type Config struct {
+		Port int    `json:"port"`
+		Host string `json:"host"`
+		Mode string `json:"mode"`
+	}
+
+	file1 := writeTempJSON(t, `{"port":8080,"host":"localhost","mode":"dev"}`)
+	file2 := writeTempJSON(t, `{"port":9000,"mode":"prod"}`)
+	defer os.Remove(file1)
+	defer os.Remove(file2)
+
+	cfg, err := Load[Config](FromJSONFiles(file1, file2))
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+	if cfg.Port != 9000 {
+		t.Errorf("Expected Port 9000 (from file2), got %d", cfg.Port)
+	}
+	if cfg.Host != "localhost" {
+		t.Errorf("Expected Host 'localhost' (from file1), got %q", cfg.Host)
+	}
+	if cfg.Mode != "prod" {
+		t.Errorf("Expected Mode 'prod' (from file2), got %q", cfg.Mode)
+	}
+}
+
+// Test FromJSONFiles with nested structures
+func TestFromJSONFilesNestedMerge(t *testing.T) {
+	type Database struct {
+		Host string `json:"host"`
+		Port int    `json:"port"`
+	}
+	type Config struct {
+		Database Database `json:"database"`
+		Port     int      `json:"port"`
+	}
+
+	file1 := writeTempJSON(t, `{"port":8080,"database":{"host":"db1.local","port":5432}}`)
+	file2 := writeTempJSON(t, `{"port":9000,"database":{"host":"db2.local"}}`)
+	defer os.Remove(file1)
+	defer os.Remove(file2)
+
+	cfg, err := Load[Config](FromJSONFiles(file1, file2))
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+	if cfg.Port != 9000 {
+		t.Errorf("Expected Port 9000, got %d", cfg.Port)
+	}
+	if cfg.Database.Host != "db2.local" {
+		t.Errorf("Expected Database.Host 'db2.local', got %q", cfg.Database.Host)
+	}
+	if cfg.Database.Port != 5432 {
+		t.Errorf("Expected Database.Port 5432, got %d", cfg.Database.Port)
+	}
+}
+
+// Test FromTOMLFiles with single file
+func TestFromTOMLFilesSingle(t *testing.T) {
+	type Config struct {
+		Port int    `toml:"port"`
+		Host string `toml:"host"`
+	}
+
+	tmpFile := writeTempTOML(t, "port = 8080\nhost = \"localhost\"")
+	defer os.Remove(tmpFile)
+
+	cfg, err := Load[Config](FromTOMLFiles(tmpFile))
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+	if cfg.Port != 8080 {
+		t.Errorf("Expected Port 8080, got %d", cfg.Port)
+	}
+	if cfg.Host != "localhost" {
+		t.Errorf("Expected Host 'localhost', got %q", cfg.Host)
+	}
+}
+
+// Test FromTOMLFiles with multiple files (precedence)
+func TestFromTOMLFilesMultiple(t *testing.T) {
+	type Config struct {
+		Port int    `toml:"port"`
+		Host string `toml:"host"`
+		Mode string `toml:"mode"`
+	}
+
+	file1 := writeTempTOML(t, "port = 8080\nhost = \"localhost\"\nmode = \"dev\"")
+	file2 := writeTempTOML(t, "port = 9000\nmode = \"prod\"")
+	defer os.Remove(file1)
+	defer os.Remove(file2)
+
+	cfg, err := Load[Config](FromTOMLFiles(file1, file2))
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+	if cfg.Port != 9000 {
+		t.Errorf("Expected Port 9000 (from file2), got %d", cfg.Port)
+	}
+	if cfg.Host != "localhost" {
+		t.Errorf("Expected Host 'localhost' (from file1), got %q", cfg.Host)
+	}
+	if cfg.Mode != "prod" {
+		t.Errorf("Expected Mode 'prod' (from file2), got %q", cfg.Mode)
+	}
+}
+
+// Test FromTOMLFiles with nested structures
+func TestFromTOMLFilesNestedMerge(t *testing.T) {
+	type Database struct {
+		Host string `toml:"host"`
+		Port int    `toml:"port"`
+	}
+	type Config struct {
+		Database Database `toml:"database"`
+		Port     int      `toml:"port"`
+	}
+
+	file1 := writeTempTOML(t, "port = 8080\n[database]\nhost = \"db1.local\"\nport = 5432")
+	file2 := writeTempTOML(t, "port = 9000\n[database]\nhost = \"db2.local\"")
+	defer os.Remove(file1)
+	defer os.Remove(file2)
+
+	cfg, err := Load[Config](FromTOMLFiles(file1, file2))
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+	if cfg.Port != 9000 {
+		t.Errorf("Expected Port 9000, got %d", cfg.Port)
+	}
+	if cfg.Database.Host != "db2.local" {
+		t.Errorf("Expected Database.Host 'db2.local', got %q", cfg.Database.Host)
+	}
+	if cfg.Database.Port != 5432 {
+		t.Errorf("Expected Database.Port 5432, got %d", cfg.Database.Port)
+	}
+}
+
+// Test FromYAMLFiles with multiple sources precedence
+func TestMultipleYAMLFilesPrecedence(t *testing.T) {
+	type Config struct {
+		A string `yaml:"a"`
+		B string `yaml:"b"`
+		C string `yaml:"c"`
+	}
+
+	file1 := writeTempYAML(t, "a: from-file1\nb: from-file1\nc: from-file1")
+	file2 := writeTempYAML(t, "b: from-file2\nc: from-file2")
+	file3 := writeTempYAML(t, "c: from-file3")
+	defer os.Remove(file1)
+	defer os.Remove(file2)
+	defer os.Remove(file3)
+
+	cfg, err := Load[Config](FromYAMLFiles(file1, file2, file3))
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+	// Each field should be from the last file that defines it
+	if cfg.A != "from-file1" {
+		t.Errorf("Expected A from-file1, got %q", cfg.A)
+	}
+	if cfg.B != "from-file2" {
+		t.Errorf("Expected B from-file2, got %q", cfg.B)
+	}
+	if cfg.C != "from-file3" {
+		t.Errorf("Expected C from-file3, got %q", cfg.C)
+	}
+}
+
+// Test FromYAMLFiles with malformed YAML
+func TestFromYAMLFilesMalformed(t *testing.T) {
+	type Config struct {
+		Port int `yaml:"port"`
+	}
+
+	tmpFile := writeTempYAML(t, "port: [invalid yaml: here:")
+	defer os.Remove(tmpFile)
+
+	_, err := Load[Config](FromYAMLFiles(tmpFile))
+	if err == nil {
+		t.Fatal("Expected error for malformed YAML")
+	}
+}
+
+// Test FromJSONFiles with malformed JSON
+func TestFromJSONFilesMalformed(t *testing.T) {
+	type Config struct {
+		Port int `json:"port"`
+	}
+
+	tmpFile := writeTempJSON(t, `{"port": [invalid json}`)
+	defer os.Remove(tmpFile)
+
+	_, err := Load[Config](FromJSONFiles(tmpFile))
+	if err == nil {
+		t.Fatal("Expected error for malformed JSON")
+	}
+}
+
+// Test FromTOMLFiles with malformed TOML
+func TestFromTOMLFilesMalformed(t *testing.T) {
+	type Config struct {
+		Port int `toml:"port"`
+	}
+
+	tmpFile := writeTempTOML(t, "port = [invalid toml")
+	defer os.Remove(tmpFile)
+
+	_, err := Load[Config](FromTOMLFiles(tmpFile))
+	if err == nil {
+		t.Fatal("Expected error for malformed TOML")
+	}
+}

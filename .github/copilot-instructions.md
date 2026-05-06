@@ -48,10 +48,12 @@ This is confkit, a Go library for **typed, validated configuration loading** fro
 ## File Structure
 
 - `load.go` — Core Load[T], LoadWithOptions[T], LoadWithWatcher[T] functions
-- `field_info.go` — FieldInfo type and struct tag scanning
+- `fieldinfo.go` — FieldInfo type and struct tag scanning
 - `parser.go` — Type parsing (int, float, bool, duration, slices, etc.)
 - `sources.go` — Source interface definition
-- `*_source.go` — Individual source implementations (env, yaml, json, toml, flags, k8s)
+- `file_sources.go` — File format sources (YAML, JSON, TOML merging)
+- `*_source.go` — Individual source implementations (env, flags)
+- `k8s/`, `aws/`, `vault/`, `consul/`, `etcd/` — Enterprise sources (separate modules)
 - `validation.go` — Validation engine and built-in validators
 - `errors.go` — ErrorReport, FieldError, Explain() function
 - `options.go` — Functional options (WithSource, WithValidator, WithMiddleware)

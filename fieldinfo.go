@@ -3,7 +3,7 @@ package confkit
 import (
 	"reflect"
 
-	"github.com/MimoJanra/confkit/tagutil"
+	"github.com/MimoJanra/confkit/structtags"
 )
 
 type FieldInfo struct {
@@ -43,7 +43,7 @@ func scanFieldsRecursive(val reflect.Value, typ reflect.Type, pathPrefix string,
 			path = pathPrefix + "." + name
 		}
 
-		tags := tagutil.ParseStructTags(field.Tag)
+		tags := structtags.ParseStructTags(field.Tag)
 
 		info := FieldInfo{
 			Name:         name,
@@ -61,7 +61,7 @@ func scanFieldsRecursive(val reflect.Value, typ reflect.Type, pathPrefix string,
 			fieldType = fieldType.Elem()
 		}
 
-		if fieldType.Kind() == reflect.Struct && !tagutil.IsSpecialType(fieldType) {
+		if fieldType.Kind() == reflect.Struct && !structtags.IsSpecialType(fieldType) {
 			info.IsNested = true
 			if fieldVal.Kind() == reflect.Ptr && fieldVal.IsNil() {
 				fieldVal = reflect.New(fieldType)

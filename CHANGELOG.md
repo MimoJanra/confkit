@@ -5,6 +5,138 @@ All notable changes to confkit are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.2] - 2026-05-06
+
+### Changed
+
+- **Code structure refactoring** — Improved Go naming conventions:
+  - `field_info.go` → `fieldinfo.go` (single word per Go standard library style)
+  - `sources_registry.go` → `registry.go` (shorter, clearer name)
+  - `composition.go` → `file_sources.go` (explicit: file format merging)
+  - `v04_integration_test.go` → `integration_test.go` (version not needed in filename)
+  - `tagutil/` → `structtags/` (more descriptive package name)
+- **Module organization** — Enterprise sources now properly separated:
+  - `k8s/` is now a separate go module (like aws, vault, consul, etcd)
+  - Added `k8s/go.mod`, `k8s/go.sum`, `k8s/doc.go`
+  - Updated `go.work` to include all submodules
+- **Documentation updates** — Fixed all references to renamed files across:
+  - CLAUDE.md
+  - CONTRIBUTING.md
+  - AGENTS.md
+  - Docss/code-review.md
+  - Docss/roadmap-to-v1.0.md
+  - .github/copilot-instructions.md
+
+### Fixed
+
+- **Import cycle** — Moved `Source` interface to core package (removed `sources/` package)
+- **Kubernetes tests** — Moved K8s-specific integration tests to `k8s/k8s_source_test.go` to prevent circular dependencies
+
+---
+
+## [0.8.1] - 2026-05-05
+
+### Fixed
+
+- **AWS SSM nested field lookups** — Field path round-trip no longer lossy; cache stores by full parameter path to
+  preserve Go field casing
+- **AWS multi-region region parameter** — Region argument now passed to AWS config loader instead of being ignored
+- **AWS multi-region error handling** — Preserves last region error when all sources fail (instead of swallowing it)
+- **Rotation engine IsRotating() state** — Now correctly set to true during rotation and false on completion
+- **Watcher SetPollInterval race condition** — Uses atomic.Value to safely track interval changes; no more silent
+  failures when interval changed after Start()
+- **Watcher Stop() double-call panic** — Added sync.Once guard for idempotent shutdown
+- **Watcher listener concurrent modification race** — Deep copies listener slice to prevent append corruption
+- **Interpolation regex compilation** — Moved regex to package level and converted environment to map for O(1) variable
+  lookup
+- **Field scanning append footgun** — Explicitly allocates ancestor tag slices to prevent shared backing array
+  corruption in nested structs
+- **Kubernetes ConfigMap source** — Tag-based key resolution (env/yaml/json tags) with exact field name and snake_case
+  fallbacks
+- **Variable naming clarity** — Renamed inverted `interpolationErrors` flag to `interpolationOK`
+- **Middleware error handling** — Continues to next source on middleware failure instead of breaking
+- **Multi-region SSM path normalization** — Path prefix now normalized consistently with single-region helper
+
+---
+
+## [0.8.0] - 2026-05-05
+
+### Added — Observability
+
+- **Audit logging** (`WithAuditLogger`)
+    - Callback receives `[]AuditEntry` after every successful load
+    - Each entry has `Field`, `Source`, and `Value` (secrets redacted)
+- **Load hooks** (`WithLoadHook`)
+    - Low-level hook called after every load with `success bool`, `duration`, `errCount`
+    - Used by Prometheus and OTel submodules
+- **Prometheus submodule** (`confkit/prometheus`)
+    - `NewMetrics(reg)` registers `confkit_loads_total`, `confkit_load_duration_seconds`, `confkit_errors_total`
+    - `Metrics.Hook()` returns a `confkit.Option` — drop-in, no wrapping needed
+- **OpenTelemetry submodule** (`confkit/otel`)
+    - `otel.Load[T](ctx, tracer, sources...)` — wraps Load with a span
+    - `otel.LoadWithOptions[T](ctx, tracer, options...)` — same for options form
+    - Span attributes: `confkit.sources`, `confkit.success`
+
+---
+
+## [0.7.0] - 2026-05-05
+
+### Added — Advanced Validation
+
+- **18 built-in format validators** (no external dependencies):
+    - `email` — valid email address
+    - `url` — valid URL (any scheme)
+    - `http_url` — valid HTTP or HTTPS URL
+    - `ip` — valid IPv4 or IPv6 address
+    - `ipv4` — valid IPv4 address
+    - `ipv6` — valid IPv6 address
+    - `uuid` — valid UUID (v1–v5)
+    - `hostname` — valid hostname (RFC 1123)
+    - `port` — valid port number (1–65535), works on int and string fields
+    - `regex=pattern` — value must match the given regular expression
+    - `len=N` — string must be exactly N characters (Unicode-aware)
+    - `contains=str` — string must contain substring
+    - `startswith=str` — string must start with prefix
+    - `endswith=str` — string must end with suffix
+    - `alpha` — letters only
+    - `alphanum` — letters and digits only
+    - `numeric` — digits only
+    - `lowercase` — all lowercase
+    - `uppercase` — all uppercase
+    - `notempty` — must not be blank (non-whitespace)
+
+- **Model validators** (`WithModelValidator[T](fn func(*T) error)`)
+    - Cross-field validation: runs after all field validators pass
+    - Receives a pointer to the fully populated config struct
+    - Multiple model validators can be registered; all run independently
+
+---
+
+## [0.6.0] - 2026-05-05
+
+### Added — Config Composition
+
+- **Multi-file YAML** (`FromYAMLFiles(paths ...string)`)
+    - Merges multiple YAML files; later files override earlier ones
+    - Nested maps are merged recursively (deep merge)
+- **Multi-file JSON** (`FromJSONFiles(paths ...string)`)
+    - Same semantics as `FromYAMLFiles` for JSON
+- **Multi-file TOML** (`FromTOMLFiles(paths ...string)`)
+    - Same semantics as `FromYAMLFiles` for TOML
+
+**Usage pattern:**
+
+```go
+cfg, err := confkit.Load[Config](
+    confkit.FromYAMLFiles(
+        "config/base.yaml",      // defaults
+        "config/production.yaml", // env-specific overrides
+        "config/local.yaml",      // developer local overrides
+    ),
+    confkit.FromEnv(),
+)
+```
+
 ## [0.5.0] - 2026-05-05
 
 ### Added - Enterprise Secret Sources
@@ -187,113 +319,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - 26/26 core tests passing
 - 80%+ code coverage on core logic
-
----
-
-## Roadmap
-
-## [0.8.1] - 2026-05-05
-
-### Fixed
-
-- **AWS SSM nested field lookups** — Field path round-trip no longer lossy; cache stores by full parameter path to
-  preserve Go field casing
-- **AWS multi-region region parameter** — Region argument now passed to AWS config loader instead of being ignored
-- **AWS multi-region error handling** — Preserves last region error when all sources fail (instead of swallowing it)
-- **Rotation engine IsRotating() state** — Now correctly set to true during rotation and false on completion
-- **Watcher SetPollInterval race condition** — Uses atomic.Value to safely track interval changes; no more silent
-  failures when interval changed after Start()
-- **Watcher Stop() double-call panic** — Added sync.Once guard for idempotent shutdown
-- **Watcher listener concurrent modification race** — Deep copies listener slice to prevent append corruption
-- **Interpolation regex compilation** — Moved regex to package level and converted environment to map for O(1) variable
-  lookup
-- **Field scanning append footgun** — Explicitly allocates ancestor tag slices to prevent shared backing array
-  corruption in nested structs
-- **Kubernetes ConfigMap source** — Tag-based key resolution (env/yaml/json tags) with exact field name and snake_case
-  fallbacks
-- **Variable naming clarity** — Renamed inverted `interpolationErrors` flag to `interpolationOK`
-- **Middleware error handling** — Continues to next source on middleware failure instead of breaking
-- **Multi-region SSM path normalization** — Path prefix now normalized consistently with single-region helper
-
----
-
-## [0.8.0] - 2026-05-05
-
-### Added — Observability
-
-- **Audit logging** (`WithAuditLogger`)
-    - Callback receives `[]AuditEntry` after every successful load
-    - Each entry has `Field`, `Source`, and `Value` (secrets redacted)
-- **Load hooks** (`WithLoadHook`)
-    - Low-level hook called after every load with `success bool`, `duration`, `errCount`
-    - Used by Prometheus and OTel submodules
-- **Prometheus submodule** (`confkit/prometheus`)
-    - `NewMetrics(reg)` registers `confkit_loads_total`, `confkit_load_duration_seconds`, `confkit_errors_total`
-    - `Metrics.Hook()` returns a `confkit.Option` — drop-in, no wrapping needed
-- **OpenTelemetry submodule** (`confkit/otel`)
-    - `otel.Load[T](ctx, tracer, sources...)` — wraps Load with a span
-    - `otel.LoadWithOptions[T](ctx, tracer, options...)` — same for options form
-    - Span attributes: `confkit.sources`, `confkit.success`
-
----
-
-## [0.7.0] - 2026-05-05
-
-### Added — Advanced Validation
-
-- **18 built-in format validators** (no external dependencies):
-    - `email` — valid email address
-    - `url` — valid URL (any scheme)
-    - `http_url` — valid HTTP or HTTPS URL
-    - `ip` — valid IPv4 or IPv6 address
-    - `ipv4` — valid IPv4 address
-    - `ipv6` — valid IPv6 address
-    - `uuid` — valid UUID (v1–v5)
-    - `hostname` — valid hostname (RFC 1123)
-    - `port` — valid port number (1–65535), works on int and string fields
-    - `regex=pattern` — value must match the given regular expression
-    - `len=N` — string must be exactly N characters (Unicode-aware)
-    - `contains=str` — string must contain substring
-    - `startswith=str` — string must start with prefix
-    - `endswith=str` — string must end with suffix
-    - `alpha` — letters only
-    - `alphanum` — letters and digits only
-    - `numeric` — digits only
-    - `lowercase` — all lowercase
-    - `uppercase` — all uppercase
-    - `notempty` — must not be blank (non-whitespace)
-
-- **Model validators** (`WithModelValidator[T](fn func(*T) error)`)
-    - Cross-field validation: runs after all field validators pass
-    - Receives a pointer to the fully populated config struct
-    - Multiple model validators can be registered; all run independently
-
----
-
-## [0.6.0] - 2026-05-05
-
-### Added — Config Composition
-
-- **Multi-file YAML** (`FromYAMLFiles(paths ...string)`)
-    - Merges multiple YAML files; later files override earlier ones
-    - Nested maps are merged recursively (deep merge)
-- **Multi-file JSON** (`FromJSONFiles(paths ...string)`)
-    - Same semantics as `FromYAMLFiles` for JSON
-- **Multi-file TOML** (`FromTOMLFiles(paths ...string)`)
-    - Same semantics as `FromYAMLFiles` for TOML
-
-**Usage pattern:**
-
-```go
-cfg, err := confkit.Load[Config](
-    confkit.FromYAMLFiles(
-        "config/base.yaml",      // defaults
-        "config/production.yaml", // env-specific overrides
-        "config/local.yaml",      // developer local overrides
-    ),
-    confkit.FromEnv(),
-)
-```
 
 ---
 

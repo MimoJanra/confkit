@@ -1,4 +1,4 @@
-package tagutil
+package structtags
 
 import (
 	"reflect"
