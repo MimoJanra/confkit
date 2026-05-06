@@ -1,25 +1,3 @@
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "ComparisonChart",
-  "name": "confkit vs koanf",
-  "description": "Feature comparison between confkit and koanf Go configuration libraries",
-  "itemListElement": [
-    {
-      "@type": "SoftwareApplication",
-      "name": "confkit",
-      "url": "https://github.com/MimoJanra/confkit",
-      "applicationCategory": "ConfigurationManagement"
-    },
-    {
-      "@type": "SoftwareApplication",
-      "name": "koanf",
-      "url": "https://github.com/knadh/koanf",
-      "applicationCategory": "ConfigurationManagement"
-    }
-  ]
-}
-</script>
 
 # confkit vs koanf
 

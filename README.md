@@ -1,25 +1,5 @@
 # confkit
 
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "SoftwareApplication",
-  "name": "confkit",
-  "description": "Type-safe configuration toolkit for Go: load, merge, validate, and redact config from structs, files, environment variables, flags, and secret stores (Vault, AWS, Kubernetes, Consul, etcd).",
-  "url": "https://github.com/MimoJanra/confkit",
-  "applicationCategory": "DeveloperApplication",
-  "programmingLanguage": "Go",
-  "codeRepository": "https://github.com/MimoJanra/confkit",
-  "license": "https://opensource.org/license/mit",
-  "runtimePlatform": "Go 1.21+",
-  "softwareVersion": "0.5.0",
-  "author": {"@type": "Organization", "name": "confkit Contributors"},
-  "keywords": "configuration, Go, config loader, type-safe, validation, secrets management",
-  "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"},
-  "downloadUrl": "https://github.com/MimoJanra/confkit/releases"
-}
-</script>
-
 [![Go Version](https://img.shields.io/badge/go-1.22%2B-blue)](https://golang.org/doc/devel/release)
 [![Go Reference](https://pkg.go.dev/badge/github.com/MimoJanra/confkit.svg)](https://pkg.go.dev/github.com/MimoJanra/confkit)
 [![Tests](https://github.com/MimoJanra/confkit/actions/workflows/test.yml/badge.svg)](https://github.com/MimoJanra/confkit/actions/workflows/test.yml)

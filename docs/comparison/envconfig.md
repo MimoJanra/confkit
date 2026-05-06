@@ -1,25 +1,3 @@
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "ComparisonChart",
-  "name": "confkit vs envconfig",
-  "description": "Feature comparison between confkit and envconfig Go libraries for environment variable configuration",
-  "itemListElement": [
-    {
-      "@type": "SoftwareApplication",
-      "name": "confkit",
-      "url": "https://github.com/MimoJanra/confkit",
-      "applicationCategory": "ConfigurationManagement"
-    },
-    {
-      "@type": "SoftwareApplication",
-      "name": "envconfig",
-      "url": "https://github.com/kelseyhightower/envconfig",
-      "applicationCategory": "ConfigurationManagement"
-    }
-  ]
-}
-</script>
 
 # confkit vs envconfig
 

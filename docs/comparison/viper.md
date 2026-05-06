@@ -1,25 +1,3 @@
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "ComparisonChart",
-  "name": "confkit vs Viper",
-  "description": "Feature-by-feature comparison between confkit and Viper Go configuration libraries",
-  "itemListElement": [
-    {
-      "@type": "SoftwareApplication",
-      "name": "confkit",
-      "url": "https://github.com/MimoJanra/confkit",
-      "applicationCategory": "ConfigurationManagement"
-    },
-    {
-      "@type": "SoftwareApplication",
-      "name": "Viper",
-      "url": "https://github.com/spf13/viper",
-      "applicationCategory": "ConfigurationManagement"
-    }
-  ]
-}
-</script>
 
 # confkit vs Viper
 

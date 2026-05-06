@@ -3,35 +3,6 @@ layout: default
 title: confkit — Typed Configuration for Go
 ---
 
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "SoftwareApplication",
-  "name": "confkit",
-  "description": "Type-safe configuration toolkit for Go. Load, merge, validate, and redact configuration from structs, files, environment variables, CLI flags, and secret stores like Vault, AWS Secrets Manager, Consul, and etcd.",
-  "url": "https://mimojanra.github.io/confkit/",
-  "applicationCategory": "DeveloperApplication",
-  "programmingLanguage": "Go",
-  "codeRepository": "https://github.com/MimoJanra/confkit",
-  "license": "https://opensource.org/license/mit",
-  "runtimePlatform": "Go 1.21+",
-  "softwareVersion": "0.5.0",
-  "author": {
-    "@type": "Organization",
-    "name": "confkit Contributors"
-  },
-  "operatingSystem": ["Linux", "macOS", "Windows"],
-  "keywords": "configuration, Go, config loader, type-safe, validation, secrets, Vault, AWS",
-  "offers": {
-    "@type": "Offer",
-    "price": "0",
-    "priceCurrency": "USD"
-  },
-  "image": "https://img.shields.io/badge/go-1.22%2B-blue",
-  "downloadUrl": "https://github.com/MimoJanra/confkit/releases",
-  "fileFormat": "application/x-golang"
-}
-</script>
 
 # confkit
 
