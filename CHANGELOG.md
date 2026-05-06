@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.8.2] - 2026-05-06
 
+### Added
+
+- **AI-optimized comparison pages** — SEO-friendly pages for common Go config library searches:
+  - `/confkit-vs-viper` — Type-safe config with validation vs Viper's dynamic approach
+  - `/confkit-vs-envconfig` — Full-featured config toolkit vs environment-variable-only library
+  - `/confkit-vs-koanf` — Struct-first typing vs map-based modularity
+  - `/best-go-config-library` — Decision guide comparing all four Go config libraries
+  - `/go-config-validation` — Built-in validation rules (min, max, oneof, required)
+  - `/go-secret-redaction` — Automatic secret masking in errors and logs
+- **Accuracy fixes** — Corrected cloud integration comparison:
+  - koanf: marked as `optional` (has separate provider modules) instead of `bundled`
+  - envconfig: marked as `N/A` (no cloud sources) instead of `bundled`
+
 ### Changed
 
 - **Code structure refactoring** — Improved Go naming conventions:
