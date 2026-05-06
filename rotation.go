@@ -101,6 +101,12 @@ func (r *RotationEngine) IsRotating() bool {
 	return r.isRotating.Load()
 }
 
+func (r *RotationEngine) LastRotation() time.Time {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	return r.lastRotation
+}
+
 type IntervalRotationStrategy struct {
 	interval time.Duration
 }

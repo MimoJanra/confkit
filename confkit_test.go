@@ -1215,7 +1215,7 @@ func TestFromYAMLFilesSingle(t *testing.T) {
 	}
 
 	tmpFile := writeTempYAML(t, "port: 8080\nhost: localhost")
-	defer os.Remove(tmpFile)
+	defer func() { _ = os.Remove(tmpFile) }()
 
 	cfg, err := Load[Config](FromYAMLFiles(tmpFile))
 	if err != nil {
@@ -1239,8 +1239,8 @@ func TestFromYAMLFilesMultiple(t *testing.T) {
 
 	file1 := writeTempYAML(t, "port: 8080\nhost: localhost\nmode: dev")
 	file2 := writeTempYAML(t, "port: 9000\nmode: prod")
-	defer os.Remove(file1)
-	defer os.Remove(file2)
+	defer func() { _ = os.Remove(file1) }()
+	defer func() { _ = os.Remove(file2) }()
 
 	cfg, err := Load[Config](FromYAMLFiles(file1, file2))
 	if err != nil {

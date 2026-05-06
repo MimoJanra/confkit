@@ -368,12 +368,12 @@
         }
 
         .code-block {
-            background: linear-gradient(135deg, rgba(10, 14, 39, 0.95) 0%, rgba(157, 78, 221, 0.1) 100%);
+            background: rgba(255, 255, 255, 0.9);
             padding: 2rem;
             border-radius: 15px;
             overflow-x: auto;
-            border: 2px solid rgba(255, 107, 53, 0.2);
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            border: 2px solid var(--color-primary);
+            box-shadow: 0 10px 40px rgba(255, 107, 53, 0.1);
         }
 
         .code-block code {
@@ -455,87 +455,6 @@
             margin-right: 0.8rem;
             font-weight: bold;
             color: #FF6B35;
-        }
-
-        /* Testimonials */
-        .testimonials {
-            padding: 120px 5%;
-            background: linear-gradient(135deg, #FFF0D9 0%, #FFE6D5 50%, #FFF5E6 100%);
-            position: relative;
-        }
-
-        .testimonials::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            right: 0;
-            width: 400px;
-            height: 400px;
-            background: radial-gradient(circle, rgba(255, 107, 53, 0.1) 0%, transparent 70%);
-            border-radius: 50%;
-        }
-
-        .testimonial-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 2rem;
-            max-width: 1200px;
-            margin: 0 auto;
-            position: relative;
-            z-index: 1;
-        }
-
-        .testimonial {
-            background: rgba(255, 255, 255, 0.9);
-            padding: 2rem;
-            border-radius: 15px;
-            border-left: 4px solid var(--color-primary);
-            backdrop-filter: blur(10px);
-            transition: all 0.3s ease;
-        }
-
-        .testimonial:hover {
-            box-shadow: 0 10px 30px rgba(255, 107, 53, 0.15);
-            transform: translateY(-5px);
-        }
-
-        .testimonial p {
-            color: #666;
-            margin-bottom: 1.5rem;
-            font-style: italic;
-            line-height: 1.8;
-        }
-
-        .testimonial-author {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        .author-avatar {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            background: var(--gradient-warm);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: bold;
-            font-size: 1.2rem;
-        }
-
-        .author-info h4 {
-            font-size: 1rem;
-            color: var(--color-text);
-            margin-bottom: 0.2rem;
-        }
-
-        .author-info p {
-            font-size: 0.85rem;
-            color: #999;
-            margin: 0;
-            font-style: normal;
         }
 
         /* CTA Section */
@@ -805,42 +724,6 @@ cfg, err := confkit.Load[Config](
         </div>
     </section>
 
-    <!-- Testimonials -->
-    <section class="testimonials">
-        <h2 class="section-title">Trusted by Go Teams</h2>
-        <div class="testimonial-grid">
-            <div class="testimonial scroll-reveal">
-                <p>"confkit eliminated so much boilerplate from our config loading. The error messages alone are worth it."</p>
-                <div class="testimonial-author">
-                    <div class="author-avatar">JD</div>
-                    <div class="author-info">
-                        <h4>James Developer</h4>
-                        <p>Senior Engineer, TechCorp</p>
-                    </div>
-                </div>
-            </div>
-            <div class="testimonial scroll-reveal">
-                <p>"Type-safe config with automatic secret redaction is exactly what we needed for our microservices."</p>
-                <div class="testimonial-author">
-                    <div class="author-avatar">SA</div>
-                    <div class="author-info">
-                        <h4>Sarah Architect</h4>
-                        <p>Lead Architect, CloudScale</p>
-                    </div>
-                </div>
-            </div>
-            <div class="testimonial scroll-reveal">
-                <p>"The validation rules in tags are genius. No more stringly-typed validation code scattered everywhere."</p>
-                <div class="testimonial-author">
-                    <div class="author-avatar">MB</div>
-                    <div class="author-info">
-                        <h4>Marcus Builder</h4>
-                        <p>DevOps Engineer, InfraWorks</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
 
     <!-- CTA Section -->
     <section class="cta-section">
@@ -924,7 +807,7 @@ cfg, err := confkit.Load[Config](
             button.addEventListener('click', function() {
                 const text = this.textContent.trim();
                 if (text.includes('Start') || text.includes('Get')) {
-                    window.location.href = './docs/docs/installation.html';
+                    window.location.href = '/docs/installation.html';
                 } else if (text.includes('Documentation')) {
                     window.location.href = './docs/';
                 } else if (text.includes('Read')) {

@@ -191,43 +191,47 @@ func TestRotationEngineStop_BeforeStart(t *testing.T) {
 }
 
 func TestRotationEngineCallback_InvokedOnRotation(t *testing.T) {
-	callbackCalled := false
-	var receivedErr error
+	var callbackCalled atomic.Bool
+	var receivedErr atomic.Value
 
 	engine := NewRotationEngine(RotateOnInterval(50 * time.Millisecond))
 	engine.AddCallback(func(oldCfg, newCfg any, err error) {
-		callbackCalled = true
-		receivedErr = err
+		callbackCalled.Store(true)
+		if err != nil {
+			receivedErr.Store(err)
+		}
 	})
 
 	engine.Start(context.Background(), 30*time.Millisecond)
 	time.Sleep(150 * time.Millisecond)
 	engine.Stop()
+	time.Sleep(50 * time.Millisecond) // Wait for callback goroutine
 
-	if !callbackCalled {
+	if !callbackCalled.Load() {
 		t.Error("Expected callback to be invoked")
 	}
-	if receivedErr != nil {
-		t.Errorf("Expected no error in callback, got %v", receivedErr)
+	if val := receivedErr.Load(); val != nil {
+		t.Errorf("Expected no error in callback, got %v", val)
 	}
 }
 
 func TestRotationEngineCallback_ReceivesError(t *testing.T) {
-	errorReceived := false
+	var errorReceived atomic.Bool
 
 	strategy := &testErrorStrategy{err: errors.New("test error")}
 	engine := NewRotationEngine(strategy)
 	engine.AddCallback(func(oldCfg, newCfg any, err error) {
 		if err != nil {
-			errorReceived = true
+			errorReceived.Store(true)
 		}
 	})
 
 	engine.Start(context.Background(), 30*time.Millisecond)
 	time.Sleep(100 * time.Millisecond)
 	engine.Stop()
+	time.Sleep(50 * time.Millisecond) // Wait for callback goroutine
 
-	if !errorReceived {
+	if !errorReceived.Load() {
 		t.Error("Expected callback to receive error")
 	}
 }
@@ -264,15 +268,17 @@ func TestRotationEngine_ConcurrentCallbacks(t *testing.T) {
 func TestRotationEngine_LastRotationUpdated(t *testing.T) {
 	engine := NewRotationEngine(RotateOnInterval(50 * time.Millisecond))
 
-	initialTime := engine.lastRotation
+	initialTime := engine.LastRotation()
 	engine.Start(context.Background(), 30*time.Millisecond)
 	time.Sleep(150 * time.Millisecond)
 	engine.Stop()
+	time.Sleep(50 * time.Millisecond) // Wait for rotation goroutine
 
-	if engine.lastRotation.Equal(initialTime) {
+	finalTime := engine.LastRotation()
+	if finalTime.Equal(initialTime) {
 		t.Error("Expected lastRotation to be updated")
 	}
-	if engine.lastRotation.Before(initialTime) {
+	if finalTime.Before(initialTime) {
 		t.Error("Expected lastRotation to be after initial time")
 	}
 }
