@@ -25,8 +25,8 @@ type Config struct {
 
 func main() {
     cfg, watcher, err := confkit.LoadWithWatcher[Config]("config.yaml",
-        confkit.FromYAML("config.yaml"),
         confkit.FromEnv(),
+        confkit.FromYAML("config.yaml"),
     )
     if err != nil {
         log.Fatal(err)
@@ -145,9 +145,9 @@ You can only watch one file at a time with `LoadWithWatcher()`, but you can comb
 
 ```go
 cfg, watcher, err := confkit.LoadWithWatcher[Config]("config.yaml",
+    confkit.FromEnv(),                   // highest priority, not watched
     confkit.FromYAML("config.yaml"),     // watched
-    confkit.FromYAML("defaults.yaml"),   // not watched (static)
-    confkit.FromEnv(),                   // not watched (env)
+    confkit.FromYAML("defaults.yaml"),   // fallback defaults, not watched
 )
 ```
 
@@ -272,8 +272,8 @@ func (s *Server) HandleStatus(w http.ResponseWriter, r *http.Request) {
 
 func main() {
     cfg, watcher, err := confkit.LoadWithWatcher[Config]("config.yaml",
-        confkit.FromYAML("config.yaml"),
         confkit.FromEnv(),
+        confkit.FromYAML("config.yaml"),
     )
     if err != nil {
         log.Fatal(err)

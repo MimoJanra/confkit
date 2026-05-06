@@ -1,6 +1,7 @@
 package confkit
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -42,7 +43,7 @@ func (y *yamlSource) Name() string {
 	return "yaml"
 }
 
-func (y *yamlSource) Lookup(field *FieldInfo) (any, bool, error) {
+func (y *yamlSource) Lookup(_ context.Context, field *FieldInfo) (any, bool, error) {
 	tagName := field.Tags["yaml"]
 	if tagName == "" {
 		tagName = field.Tags["json"]
@@ -50,20 +51,19 @@ func (y *yamlSource) Lookup(field *FieldInfo) (any, bool, error) {
 	if tagName == "" {
 		return "", false, nil
 	}
-	value, ok := y.lookupNested(tagName, field.Path, field.AncestorTags)
+	value, ok := lookupNested(y.data, tagName, field.Path, field.AncestorTags, "yaml")
 	if !ok {
 		return "", false, nil
 	}
 	return value, true, nil
 }
 
-// lookupNested navigates the yaml map using AncestorTags (yaml-first, then json/toml, then snake_case).
-func (y *yamlSource) lookupNested(tagName, fieldPath string, ancestorTags []map[string]string) (any, bool) {
+func lookupNested(data map[string]any, tagName, fieldPath string, ancestorTags []map[string]string, preferredTag string) (any, bool) {
 	parts := strings.Split(fieldPath, ".")
-	current := any(y.data)
+	current := any(data)
 
 	for i := 0; i < len(parts)-1; i++ {
-		key := ancestorKey(parts[i], i, ancestorTags, "yaml")
+		key := ancestorKey(parts[i], i, ancestorTags, preferredTag)
 		m, ok := current.(map[string]any)
 		if !ok {
 			return nil, false
@@ -82,13 +82,11 @@ func (y *yamlSource) lookupNested(tagName, fieldPath string, ancestorTags []map[
 	return nil, false
 }
 
-// ancestorKey returns the map key for ancestor level i, preferring preferredTag format.
 func ancestorKey(fieldName string, i int, ancestorTags []map[string]string, preferredTag string) string {
 	if i >= len(ancestorTags) || ancestorTags[i] == nil {
 		return structtags.SnakeCase(fieldName)
 	}
 	tags := ancestorTags[i]
-	// Try preferred format first, then the other two, then snake_case
 	order := []string{preferredTag}
 	for _, t := range []string{"yaml", "json", "toml"} {
 		if t != preferredTag {

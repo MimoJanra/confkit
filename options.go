@@ -9,17 +9,14 @@ type Option interface {
 	apply(*loadConfig)
 }
 
-// AuditEntry records a single field's resolved value and its source.
 type AuditEntry struct {
 	Field  string
 	Source string
-	Value  string // redacted when field is secret
+	Value  string
 }
 
-// AuditLogger is called after a successful load with the full list of resolved fields.
 type AuditLogger func(entries []AuditEntry)
 
-// LoadHookFunc is called after every load attempt with the outcome.
 type LoadHookFunc func(success bool, duration time.Duration, errCount int)
 
 type loadConfig struct {
@@ -52,8 +49,6 @@ func WithValidator(name string, fn func(reflect.Value) error) Option {
 	})
 }
 
-// WithModelValidator registers a cross-field validator that runs after all field validators pass.
-// The function receives a pointer to the fully populated config struct.
 func WithModelValidator[T any](fn func(*T) error) Option {
 	return optionFunc(func(cfg *loadConfig) {
 		cfg.ModelValidators = append(cfg.ModelValidators, func(v any) error {
@@ -79,15 +74,12 @@ func WithInterpolationMaxDepth(depth int) Option {
 	})
 }
 
-// WithAuditLogger registers a callback that receives every resolved field after a successful load.
 func WithAuditLogger(fn AuditLogger) Option {
 	return optionFunc(func(cfg *loadConfig) {
 		cfg.AuditLogger = fn
 	})
 }
 
-// WithLoadHook registers a callback invoked after every load with success status and duration.
-// Useful for metrics collection (see confkit/prometheus and confkit/otel submodules).
 func WithLoadHook(fn LoadHookFunc) Option {
 	return optionFunc(func(cfg *loadConfig) {
 		cfg.LoadHooks = append(cfg.LoadHooks, fn)

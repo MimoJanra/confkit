@@ -21,7 +21,6 @@ type AWSSecretsManagerSource struct {
 	cacheMutex  sync.RWMutex
 	cacheTTL    time.Duration
 	lastCacheAt time.Time
-	ctx         context.Context
 }
 
 func NewAWSSecretsManagerSource(secretName string, region string, cacheTTL time.Duration) (*AWSSecretsManagerSource, error) {
@@ -41,7 +40,6 @@ func NewAWSSecretsManagerSource(secretName string, region string, cacheTTL time.
 		client:     secretsmanager.NewFromConfig(cfg),
 		cache:      make(map[string]any),
 		cacheTTL:   cacheTTL,
-		ctx:        ctx,
 	}, nil
 }
 
@@ -49,8 +47,8 @@ func (a *AWSSecretsManagerSource) Name() string {
 	return "aws-secrets-manager"
 }
 
-func (a *AWSSecretsManagerSource) Lookup(field *confkit.FieldInfo) (any, bool, error) {
-	if err := a.ensureCached(); err != nil {
+func (a *AWSSecretsManagerSource) Lookup(ctx context.Context, field *confkit.FieldInfo) (any, bool, error) {
+	if err := a.ensureCached(ctx); err != nil {
 		return "", false, err
 	}
 
@@ -61,7 +59,7 @@ func (a *AWSSecretsManagerSource) Lookup(field *confkit.FieldInfo) (any, bool, e
 	return value, ok, nil
 }
 
-func (a *AWSSecretsManagerSource) ensureCached() error {
+func (a *AWSSecretsManagerSource) ensureCached(ctx context.Context) error {
 	a.cacheMutex.Lock()
 	defer a.cacheMutex.Unlock()
 
@@ -73,7 +71,7 @@ func (a *AWSSecretsManagerSource) ensureCached() error {
 		SecretId: awssdk.String(a.secretName),
 	}
 
-	result, err := a.client.GetSecretValue(a.ctx, input)
+	result, err := a.client.GetSecretValue(ctx, input)
 	if err != nil {
 		return fmt.Errorf("cannot fetch secret %s: %w", a.secretName, err)
 	}

@@ -37,8 +37,8 @@ type Config struct {
 
 func main() {
     cfg, err := confkit.Load[Config](
-        etcd.FromEtcd([]string{"localhost:2379"}),
         confkit.FromEnv(),
+        etcd.FromEtcd([]string{"localhost:2379"}),
     )
     if err != nil {
         log.Fatal(confkit.Explain(err))
@@ -194,11 +194,11 @@ type Config struct {
 
 func main() {
     cfg, err := confkit.Load[Config](
+        confkit.FromEnv(),
         etcd.FromEtcdWithPrefix(
             []string{"etcd.internal:2379"},
             "config/myapp/",
         ),
-        confkit.FromEnv(),
     )
     if err != nil {
         log.Fatal(confkit.Explain(err))
@@ -211,11 +211,13 @@ func main() {
 
 ## Combining with Other Sources
 
+The first source to provide a value wins; later sources fill in only unset fields:
+
 ```go
 cfg, err := confkit.Load[Config](
-    confkit.FromYAML("config.yaml"),           // Base defaults
-    etcd.FromEtcdWithPrefix(endpoints, prefix), // Shared config
-    confkit.FromEnv(),                         // Overrides
+    confkit.FromEnv(),                         // Highest priority — checked first
+    etcd.FromEtcdWithPrefix(endpoints, prefix), // Shared config fills in what env did not set
+    confkit.FromYAML("config.yaml"),           // Base fallback
 )
 ```
 

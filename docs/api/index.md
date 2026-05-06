@@ -235,7 +235,7 @@ func FromJSONFiles(paths ...string) Source
 func FromTOMLFiles(paths ...string) Source
 ```
 
-Merges multiple files of the same format into a single source. Later files override earlier ones; nested maps are deep-merged.
+Merges multiple files of the same format into a single source. First file to provide a value wins; later files fill in only unset fields. Nested maps are deep-merged.
 
 **Example:**
 ```go
@@ -255,9 +255,16 @@ func FromFlags() Source
 
 Loads configuration from command-line flags. Field names are converted to kebab-case flags.
 
+Supported flag formats:
+- `--key=value` — long flag with `=` separator
+- `--key value` — long flag with space separator
+- `-k value` — short flag with space separator
+- `-k=value` — short flag with `=` separator
+- `--flag` — boolean flag (sets field to `"true"`)
+
 **Example:**
 ```go
-// Run: go run main.go --database-url=... --port=3000
+// Run: go run main.go --database-url=... --port=3000 --verbose
 cfg, _ := confkit.Load[Config](confkit.FromFlags())
 ```
 
@@ -373,6 +380,8 @@ Configuration is driven by struct tags. Common tags:
 | `validate` | Validation rules | `validate:"required,min=1,max=65535"` |
 | `secret` | Mark as sensitive (redacted) | `secret:"true"` |
 | `desc` | Help text / description | `desc:"Database connection URL"` |
+| `flag` | CLI long flag name | `flag:"database-url"` |
+| `short` | CLI short flag (single char) | `short:"d"` |
 
 ### Validation Rules
 
@@ -434,8 +443,10 @@ func (e *ErrorReport) Error() string  // Implements error interface
 
 **Methods:**
 - `AddError(err FieldError)` — Add a field error
-- `HasErrors() bool` — Check if there are errors
-- `FieldErrors() []FieldError` — Get all errors
+- `IsEmpty() bool` — Check if there are no errors
+- `Error() string` — Return a formatted error string (implements `error`)
+- `Unwrap() []error` — Return individual field errors as a slice (for use with `errors.As`/`errors.Is`)
+- `Format() string` — Return a human-readable, multi-line error report
 
 ---
 
@@ -446,10 +457,12 @@ Represents a single field validation or loading error.
 ```go
 type FieldError struct {
     Path    string
-    Kind    ErrorKind
+    Source  string
+    Kind    ErrorKind  // parse | validation | io
+    Rule    string
     Message string
     Value   string
-    Source  string
+    Secret  bool
 }
 ```
 
@@ -462,7 +475,7 @@ Interface for configuration sources. Implement to create custom sources.
 ```go
 type Source interface {
     Name() string
-    Lookup(field *FieldInfo) (Value, bool, error)
+    Lookup(ctx context.Context, field *FieldInfo) (any, bool, error)
 }
 ```
 
@@ -474,7 +487,7 @@ func (s *MySource) Name() string {
     return "custom"
 }
 
-func (s *MySource) Lookup(field *FieldInfo) (confkit.Value, bool, error) {
+func (s *MySource) Lookup(ctx context.Context, field *FieldInfo) (any, bool, error) {
     // Return value, found, error
     return "value", true, nil
 }
@@ -509,7 +522,7 @@ type Config struct {
 1. **Mark secrets with `secret:"true"`** — Automatically redacted in errors and logs
 2. **Use `validate:"required"`** — Catch missing config early
 3. **Provide sensible defaults** — Reduce configuration burden
-4. **Source order matters** — Left-to-right precedence (later sources override earlier)
+4. **Source order matters** — first source wins; list highest-priority sources first
 5. **Use custom validators for complex logic** — Keep validation rules simple and composable
 
 ---

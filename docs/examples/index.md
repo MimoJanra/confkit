@@ -453,7 +453,7 @@ func (s *CustomSource) Name() string {
     return "custom"
 }
 
-func (s *CustomSource) Lookup(field *confkit.FieldInfo) (confkit.Value, bool, error) {
+func (s *CustomSource) Lookup(ctx context.Context, field *confkit.FieldInfo) (any, bool, error) {
     val, ok := s.data[field.Path]
     return val, ok, nil
 }

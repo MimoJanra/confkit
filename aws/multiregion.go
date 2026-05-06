@@ -1,6 +1,7 @@
 package aws
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"sync"
@@ -42,7 +43,7 @@ func (r *RegionFailoverSource) Name() string {
 	return "multiregion"
 }
 
-func (r *RegionFailoverSource) Lookup(field *confkit.FieldInfo) (any, bool, error) {
+func (r *RegionFailoverSource) Lookup(ctx context.Context, field *confkit.FieldInfo) (any, bool, error) {
 	r.cacheMutex.RLock()
 	startRegion := r.currentRegion
 	r.cacheMutex.RUnlock()
@@ -52,7 +53,7 @@ func (r *RegionFailoverSource) Lookup(field *confkit.FieldInfo) (any, bool, erro
 		regionIdx := (startRegion + i) % len(r.regions)
 		source := r.sources[regionIdx]
 
-		value, ok, err := source.Lookup(field)
+		value, ok, err := source.Lookup(ctx, field)
 		if err == nil && ok {
 			r.cacheMutex.Lock()
 			r.currentRegion = regionIdx

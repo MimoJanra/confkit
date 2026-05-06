@@ -43,8 +43,8 @@ type Config struct {
 
 func main() {
     cfg, err := confkit.Load[Config](
+        confkit.FromEnv(),  // Highest priority — env vars override ConfigMap
         k8s.FromKubernetesConfigMap("default", "app-config"),
-        confkit.FromEnv(),  // Override with env vars
     )
     if err != nil {
         log.Fatal(confkit.Explain(err))
@@ -136,8 +136,8 @@ If you prefer to load from files instead of environment variables:
 
 ```go
 cfg, err := confkit.Load[Config](
-    confkit.FromYAML("/etc/app/config.yaml"),  // Mounted ConfigMap
     confkit.FromEnv(),
+    confkit.FromYAML("/etc/app/config.yaml"),  // Mounted ConfigMap — fallback
 )
 ```
 
@@ -277,13 +277,13 @@ spec:
             name: app-secrets      # Secrets
 ```
 
-In code, combine sources:
+In code, combine sources. The first source to provide a value wins; later sources fill in only unset fields:
 
 ```go
 cfg, err := confkit.Load[Config](
-    k8s.FromKubernetesConfigMap("default", "app-config"),      // Base
-    k8s.FromKubernetesConfigMap("default", "app-config-prod"), // Override
-    confkit.FromEnv(),                                           // Highest priority
+    confkit.FromEnv(),                                           // Highest priority — checked first
+    k8s.FromKubernetesConfigMap("default", "app-config-prod"), // Environment-specific overrides
+    k8s.FromKubernetesConfigMap("default", "app-config"),      // Base defaults
 )
 ```
 
@@ -397,8 +397,8 @@ type Config struct {
 
 func main() {
     cfg, err := confkit.Load[Config](
-        k8s.FromKubernetesConfigMap("default", "myapp-config"),
         confkit.FromEnv(),
+        k8s.FromKubernetesConfigMap("default", "myapp-config"),
     )
     if err != nil {
         log.Fatal(confkit.Explain(err))

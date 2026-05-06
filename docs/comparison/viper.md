@@ -69,13 +69,13 @@ type Config struct {
 
 ### Multi-Source Merging
 
-**confkit:** Explicit source precedence — last source wins per field.
+**confkit:** Explicit source precedence — first source wins per field.
 
 ```go
 cfg, err := confkit.Load[Config](
-    confkit.FromYAML("defaults.yaml"),    // lowest
-    confkit.FromEnv(),                    // overrides file
     confkit.FromFlags(),                  // highest
+    confkit.FromEnv(),                    // overrides file
+    confkit.FromYAML("defaults.yaml"),    // lowest
 )
 ```
 
@@ -162,4 +162,4 @@ If you're moving from Viper to confkit:
 ## Maturity
 
 - **Viper:** Mature, widely used, large community
-- **confkit:** Production-ready v0.5.0, focused on a specific use case (type-safe, validated, struct-first)
+- **confkit:** Production-ready v0.9.0, focused on a specific use case (type-safe, validated, struct-first)

@@ -11,9 +11,9 @@ confkit is a type-safe configuration toolkit for Go projects that want struct-ba
 
 ```go
 cfg, err := confkit.Load[Config](
-    confkit.FromYAML("config.yaml"),
-    confkit.FromEnv(),
     confkit.FromFlags(),
+    confkit.FromEnv(),
+    confkit.FromYAML("config.yaml"),
 )
 ```
 
@@ -101,8 +101,8 @@ type Config struct {
 
 ```go
 cfg, err := confkit.Load[Config](
-    confkit.FromYAML("defaults.yaml"),
     confkit.FromEnv(),
+    confkit.FromYAML("defaults.yaml"),
 )
 ```
 
@@ -226,13 +226,13 @@ type Config struct {
 
 ```go
 cfg, err := confkit.Load[Config](
-    confkit.FromYAML("config.yaml"),
+    vault.FromVault(...),  // optional, highest priority
     confkit.FromEnv(),
-    vault.FromVault(...),  // optional
+    confkit.FromYAML("config.yaml"),
 )
 ```
 
 ## Maturity
 
 - **envconfig:** Lightweight, stable, minimal changes
-- **confkit:** Production-ready v0.5.0, actively developed with cloud integrations
+- **confkit:** Production-ready v0.9.0, actively developed with cloud integrations

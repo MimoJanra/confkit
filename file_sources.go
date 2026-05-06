@@ -1,11 +1,11 @@
 package confkit
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/pelletier/go-toml/v2"
 	"gopkg.in/yaml.v3"
@@ -80,7 +80,7 @@ type multiFileSource struct {
 
 func (m *multiFileSource) Name() string { return m.name }
 
-func (m *multiFileSource) Lookup(field *FieldInfo) (any, bool, error) {
+func (m *multiFileSource) Lookup(_ context.Context, field *FieldInfo) (any, bool, error) {
 	tagName := field.Tags[m.name]
 	if tagName == "" {
 		tagName = field.Tags["json"]
@@ -88,31 +88,9 @@ func (m *multiFileSource) Lookup(field *FieldInfo) (any, bool, error) {
 	if tagName == "" {
 		return "", false, nil
 	}
-	value, ok := multiFileLookup(m.data, tagName, field.Path, field.AncestorTags, m.name)
+	value, ok := lookupNested(m.data, tagName, field.Path, field.AncestorTags, m.name)
 	if !ok {
 		return "", false, nil
 	}
 	return value, true, nil
-}
-
-func multiFileLookup(data map[string]any, tagName, fieldPath string, ancestorTags []map[string]string, preferredTag string) (any, bool) {
-	parts := strings.Split(fieldPath, ".")
-	current := any(data)
-	for i := 0; i < len(parts)-1; i++ {
-		key := ancestorKey(parts[i], i, ancestorTags, preferredTag)
-		m, ok := current.(map[string]any)
-		if !ok {
-			return nil, false
-		}
-		current, ok = m[key]
-		if !ok {
-			return nil, false
-		}
-	}
-	if m, ok := current.(map[string]any); ok {
-		if v, found := m[tagName]; found {
-			return v, true
-		}
-	}
-	return nil, false
 }

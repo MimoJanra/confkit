@@ -42,8 +42,8 @@ Host: localhost
 	}
 
 	cfg, err := LoadWithOptions[Config](
-		WithSource(FromYAML(tmpFile)),
 		WithSource(FromEnv()),
+		WithSource(FromYAML(tmpFile)),
 	)
 	if err != nil {
 		t.Fatalf("LoadWithOptions failed: %v", err)

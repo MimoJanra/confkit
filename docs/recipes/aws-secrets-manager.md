@@ -37,8 +37,8 @@ type Config struct {
 
 func main() {
     cfg, err := confkit.Load[Config](
-        aws.FromAWSSecretsManager("prod/database"),
         confkit.FromEnv(),
+        aws.FromAWSSecretsManager("prod/database"),
     )
     if err != nil {
         log.Fatal(confkit.Explain(err))
@@ -205,11 +205,13 @@ func main() {
 
 ## Combining with Other Sources
 
+The first source to provide a value wins; later sources fill in only unset fields:
+
 ```go
 cfg, err := confkit.Load[Config](
-    confkit.FromYAML("config.yaml"),              // Base
-    aws.FromAWSSecretsManager("prod/database"),  // Secrets
-    confkit.FromEnv(),                           // Env overrides
+    confkit.FromEnv(),                           // Highest priority — checked first
+    aws.FromAWSSecretsManager("prod/database"),  // Secrets fill in what env did not set
+    confkit.FromYAML("config.yaml"),              // Base fallback
 )
 ```
 
@@ -257,8 +259,8 @@ type Config struct {
 func main() {
     // Load from Secrets Manager with 10-minute cache
     cfg, err := confkit.Load[Config](
-        aws.FromAWSSecretsManagerWithOptions("prod/database", "us-east-1", 10*time.Minute),
         confkit.FromEnv(),
+        aws.FromAWSSecretsManagerWithOptions("prod/database", "us-east-1", 10*time.Minute),
     )
     if err != nil {
         log.Fatal(confkit.Explain(err))

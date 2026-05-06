@@ -6,10 +6,19 @@ import (
 )
 
 func SnakeCase(s string) string {
+	runes := []rune(s)
 	var result strings.Builder
-	for i, r := range s {
+	for i, r := range runes {
 		if i > 0 && r >= 'A' && r <= 'Z' {
-			result.WriteRune('_')
+			prev := runes[i-1]
+			if prev >= 'a' && prev <= 'z' {
+				result.WriteRune('_')
+			} else if prev >= 'A' && prev <= 'Z' && i+1 < len(runes) {
+				next := runes[i+1]
+				if next >= 'a' && next <= 'z' {
+					result.WriteRune('_')
+				}
+			}
 		}
 		result.WriteRune(r)
 	}

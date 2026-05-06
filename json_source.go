@@ -1,10 +1,10 @@
 package confkit
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
-	"strings"
 )
 
 func FromJSON(path string) Source {
@@ -39,7 +39,7 @@ func (j *jsonSource) Name() string {
 	return "json"
 }
 
-func (j *jsonSource) Lookup(field *FieldInfo) (any, bool, error) {
+func (j *jsonSource) Lookup(_ context.Context, field *FieldInfo) (any, bool, error) {
 	tagName := field.Tags["json"]
 	if tagName == "" {
 		tagName = field.Tags["yaml"]
@@ -47,33 +47,9 @@ func (j *jsonSource) Lookup(field *FieldInfo) (any, bool, error) {
 	if tagName == "" {
 		return "", false, nil
 	}
-	value, ok := j.lookupNested(tagName, field.Path, field.AncestorTags)
+	value, ok := lookupNested(j.data, tagName, field.Path, field.AncestorTags, "json")
 	if !ok {
 		return "", false, nil
 	}
 	return value, true, nil
-}
-
-func (j *jsonSource) lookupNested(tagName, fieldPath string, ancestorTags []map[string]string) (any, bool) {
-	parts := strings.Split(fieldPath, ".")
-	current := any(j.data)
-
-	for i := 0; i < len(parts)-1; i++ {
-		key := ancestorKey(parts[i], i, ancestorTags, "json")
-		m, ok := current.(map[string]any)
-		if !ok {
-			return nil, false
-		}
-		current, ok = m[key]
-		if !ok {
-			return nil, false
-		}
-	}
-
-	if m, ok := current.(map[string]any); ok {
-		if v, found := m[tagName]; found {
-			return v, true
-		}
-	}
-	return nil, false
 }

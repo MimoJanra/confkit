@@ -51,6 +51,8 @@ func main() {
 
 ## CLI Usage
 
+All three flag forms are supported:
+
 ```bash
 # Show help
 go run main.go -h
@@ -58,28 +60,28 @@ go run main.go -h
 # Required argument
 go run main.go --input data.txt
 
-# With defaults
-go run main.go -i data.txt -o output.json
+# --key=value form (equals sign)
+go run main.go --input=data.txt --output=output.json
 
-# Long form
+# --key value form (space-separated)
 go run main.go --input data.txt --output output.json --format yaml
 
-# Short form
+# -k value short form (space-separated)
 go run main.go -i data.txt -o output.json -f yaml -v
 
-# With numbers
-go run main.go --input data.txt --threads 8 --max-size 500
+# Mixed: long and short, equals and space
+go run main.go --input=data.txt -o output.json --threads 8 --max-size=500
 ```
 
 ## Mixed Sources (YAML + Env + Flags)
 
-Combine flags with files and environment:
+Combine flags with files and environment. The first source to provide a value wins; later sources fill in only unset fields:
 
 ```go
 cfg, err := confkit.Load[Config](
-    confkit.FromYAML("config.yaml"),    // Lowest priority
-    confkit.FromEnv(),                  // Override file
-    confkit.FromFlags(),                // Highest priority
+    confkit.FromFlags(),                // Highest priority — checked first
+    confkit.FromEnv(),                  // Fills in what flags did not set
+    confkit.FromYAML("config.yaml"),    // Fallback file defaults
 )
 ```
 
@@ -89,7 +91,7 @@ Usage:
 # Base config from file, override with env, then flags
 export OUTPUT=env-output.json
 go run main.go -i data.txt -o flag-output.json
-# Result: Uses flag-output.json (flags win)
+# Result: Uses flag-output.json (flags win because they are checked first)
 ```
 
 ## Real-World Example: Image Processor
@@ -242,10 +244,12 @@ type Config struct {
 
 ## Environment + Flags Precedence
 
+The first source to provide a value wins. Put flags first so they take priority over env vars:
+
 ```go
 cfg, err := confkit.Load[Config](
-    confkit.FromEnv(),      // Lower priority
-    confkit.FromFlags(),    // Higher priority
+    confkit.FromFlags(),    // Higher priority — checked first
+    confkit.FromEnv(),      // Fills in what flags did not set
 )
 ```
 
@@ -254,7 +258,7 @@ Usage:
 ```bash
 export OUTPUT=env-output.json
 go run main.go --output flag-output.json
-# Result: Uses flag-output.json (flag wins)
+# Result: Uses flag-output.json (flag wins because it is checked first)
 ```
 
 ## Building a Complete CLI Tool

@@ -134,13 +134,13 @@ koanf's modularity means it can support many more formats, but confkit covers th
 
 ### Configuration Composition
 
-**confkit:** Explicit source precedence — last one wins per field.
+**confkit:** Explicit source precedence — first one wins per field.
 
 ```go
 cfg, err := confkit.Load[Config](
-    confkit.FromYAML("defaults.yaml"),    // base
-    confkit.FromYAML("config.yaml"),      // overrides
     confkit.FromEnv(),                    // highest priority
+    confkit.FromYAML("config.yaml"),      // overrides defaults
+    confkit.FromYAML("defaults.yaml"),    // base
 )
 ```
 
@@ -314,4 +314,4 @@ value := k.Get("some.dynamic.key")
 ## Maturity
 
 - **koanf:** Stable, widely used for flexible configurations
-- **confkit:** Production-ready v0.5.0, focused on typed, validated, struct-first config
+- **confkit:** Production-ready v0.9.0, focused on typed, validated, struct-first config

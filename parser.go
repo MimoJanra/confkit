@@ -41,6 +41,8 @@ func (p *Parser) Parse(value string, targetType reflect.Type) (any, error) {
 		return parseFloat(value, targetType)
 	case reflect.Slice:
 		return p.parseSlice(value, targetType)
+	case reflect.Map:
+		return p.parseMap(value, targetType)
 	default:
 		return nil, fmt.Errorf("unsupported type: %v", targetType)
 	}
@@ -143,7 +145,6 @@ func parseDuration(value string) (any, error) {
 }
 
 func parseTime(value string) (any, error) {
-	// RFC3339 only in v0.1
 	t, err := time.Parse(time.RFC3339, value)
 	if err != nil {
 		return nil, fmt.Errorf("invalid time: %q (use RFC3339 format: 2006-01-02T15:04:05Z07:00)", value)
@@ -166,6 +167,39 @@ func (p *Parser) parseSlice(value string, targetType reflect.Type) (any, error) 
 			return nil, fmt.Errorf("slice element parse error: %w", err)
 		}
 		result = reflect.Append(result, reflect.ValueOf(parsed))
+	}
+
+	return result.Interface(), nil
+}
+
+func (p *Parser) parseMap(value string, targetType reflect.Type) (any, error) {
+	if targetType.Key().Kind() != reflect.String {
+		return nil, fmt.Errorf("map key must be string, got %v", targetType.Key().Kind())
+	}
+
+	result := reflect.MakeMap(targetType)
+	if strings.TrimSpace(value) == "" {
+		return result.Interface(), nil
+	}
+
+	for _, pair := range strings.Split(value, ",") {
+		pair = strings.TrimSpace(pair)
+		if pair == "" {
+			continue
+		}
+		eq := strings.Index(pair, "=")
+		if eq == -1 {
+			return nil, fmt.Errorf("invalid map entry %q: expected key=value", pair)
+		}
+		k := pair[:eq]
+		v := pair[eq+1:]
+
+		parsedVal, err := p.Parse(v, targetType.Elem())
+		if err != nil {
+			return nil, fmt.Errorf("map value parse error for key %q: %w", k, err)
+		}
+
+		result.SetMapIndex(reflect.ValueOf(k), reflect.ValueOf(parsedVal))
 	}
 
 	return result.Interface(), nil

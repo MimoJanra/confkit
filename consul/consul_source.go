@@ -1,6 +1,7 @@
 package consul
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -42,7 +43,7 @@ func (c *ConsulSource) Name() string {
 	return "consul"
 }
 
-func (c *ConsulSource) Lookup(field *confkit.FieldInfo) (any, bool, error) {
+func (c *ConsulSource) Lookup(_ context.Context, field *confkit.FieldInfo) (any, bool, error) {
 	key := c.buildKey(field.Path)
 
 	opts := &api.QueryOptions{

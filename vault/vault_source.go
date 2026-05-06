@@ -47,8 +47,8 @@ func (v *VaultSource) Name() string {
 	return "vault"
 }
 
-func (v *VaultSource) Lookup(field *confkit.FieldInfo) (any, bool, error) {
-	token, err := v.ensureAuthed(context.Background())
+func (v *VaultSource) Lookup(ctx context.Context, field *confkit.FieldInfo) (any, bool, error) {
+	token, err := v.ensureAuthed(ctx)
 	if err != nil {
 		return "", false, err
 	}
@@ -114,7 +114,7 @@ func VaultTokenAuth(token string) VaultAuth {
 	return &vaultTokenAuth{token: token}
 }
 
-func (a *vaultTokenAuth) Authenticate(ctx context.Context, client *api.Client) (string, error) {
+func (a *vaultTokenAuth) Authenticate(_ context.Context, _ *api.Client) (string, error) {
 	return a.token, nil
 }
 

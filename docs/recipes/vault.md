@@ -57,8 +57,8 @@ func main() {
     auth := vault.VaultTokenAuth(token)
     
     cfg, err := confkit.Load[Config](
+        confkit.FromEnv(),  // Highest priority — env vars override Vault
         vault.FromVault("https://vault.example.com", auth, "/secret/myapp"),
-        confkit.FromEnv(),  // Override with env vars
     )
     if err != nil {
         log.Fatal(confkit.Explain(err))
@@ -220,11 +220,13 @@ cfg, err := confkit.Load[Config](
 
 ## Combining with Other Sources
 
+The first source to provide a value wins; later sources fill in only unset fields:
+
 ```go
 cfg, err := confkit.Load[Config](
-    confkit.FromYAML("config.yaml"),        // Base config
-    vault.FromVault(addr, auth, "/secret/myapp"), // Secrets
-    confkit.FromEnv(),                      // Env overrides
+    confkit.FromEnv(),                      // Highest priority — checked first
+    vault.FromVault(addr, auth, "/secret/myapp"), // Secrets fill in what env did not set
+    confkit.FromYAML("config.yaml"),        // Base config fallback
 )
 ```
 
@@ -281,8 +283,8 @@ func main() {
     auth := vault.VaultTokenAuth(vaultToken)
     
     cfg, err := confkit.Load[Config](
-        vault.FromVault(vaultAddr, auth, "/secret/myapp"),
         confkit.FromEnv(),
+        vault.FromVault(vaultAddr, auth, "/secret/myapp"),
     )
     if err != nil {
         log.Fatal(confkit.Explain(err))

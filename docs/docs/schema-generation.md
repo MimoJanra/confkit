@@ -85,9 +85,11 @@ fmt.Println(md)
 
 | Field | Type | Required | Default | Validation | Description |
 |-------|------|----------|---------|-----------|-------------|
-| Port | int | no | 8080 | min=1,max=65535 | Server port |
 | Host | string | no | localhost | | Server hostname |
+| Port | int | no | 8080 | min=1,max=65535 | Server port |
 ```
+
+Fields are output in **alphabetical order**, making the output deterministic across runs and Go versions.
 
 ## CLI Help Text
 
@@ -109,10 +111,12 @@ fmt.Println(help)
 **Output:**
 ```
 Options:
-  -v, --verbose      Enable verbose output
-  -o, --output       Output file (default: stdout)
       --input        Input file (required)
+  -o, --output       Output file (default: stdout)
+  -v, --verbose      Enable verbose output
 ```
+
+Fields are output in **alphabetical order**, making the output deterministic across runs and Go versions.
 
 ## Struct Tags for Schema
 

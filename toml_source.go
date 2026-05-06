@@ -1,9 +1,9 @@
 package confkit
 
 import (
+	"context"
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/pelletier/go-toml/v2"
 )
@@ -37,7 +37,7 @@ func (t *tomlSource) Name() string {
 	return "toml"
 }
 
-func (t *tomlSource) Lookup(field *FieldInfo) (any, bool, error) {
+func (t *tomlSource) Lookup(_ context.Context, field *FieldInfo) (any, bool, error) {
 	tagName := field.Tags["toml"]
 	if tagName == "" {
 		tagName = field.Tags["json"]
@@ -48,33 +48,9 @@ func (t *tomlSource) Lookup(field *FieldInfo) (any, bool, error) {
 	if tagName == "" {
 		return "", false, nil
 	}
-	value, ok := t.lookupNested(tagName, field.Path, field.AncestorTags)
+	value, ok := lookupNested(t.data, tagName, field.Path, field.AncestorTags, "toml")
 	if !ok {
 		return "", false, nil
 	}
 	return value, true, nil
-}
-
-func (t *tomlSource) lookupNested(tagName, fieldPath string, ancestorTags []map[string]string) (any, bool) {
-	parts := strings.Split(fieldPath, ".")
-	current := any(t.data)
-
-	for i := 0; i < len(parts)-1; i++ {
-		key := ancestorKey(parts[i], i, ancestorTags, "toml")
-		m, ok := current.(map[string]any)
-		if !ok {
-			return nil, false
-		}
-		current, ok = m[key]
-		if !ok {
-			return nil, false
-		}
-	}
-
-	if m, ok := current.(map[string]any); ok {
-		if v, found := m[tagName]; found {
-			return v, true
-		}
-	}
-	return nil, false
 }

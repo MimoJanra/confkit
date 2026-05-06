@@ -26,6 +26,27 @@ func ScanFields(v any) []FieldInfo {
 	return scanFieldsRecursive(val, val.Type(), "", nil)
 }
 
+func initEmbeddedPointers(val reflect.Value, typ reflect.Type) {
+	for i := 0; i < typ.NumField(); i++ {
+		field := typ.Field(i)
+		fieldVal := val.Field(i)
+		if !field.IsExported() {
+			continue
+		}
+		if field.Anonymous && field.Type.Kind() == reflect.Ptr {
+			elemType := field.Type.Elem()
+			if elemType.Kind() == reflect.Struct && !structtags.IsSpecialType(elemType) {
+				if fieldVal.IsNil() {
+					fieldVal.Set(reflect.New(elemType))
+				}
+				initEmbeddedPointers(fieldVal.Elem(), elemType)
+			}
+		} else if field.Type.Kind() == reflect.Struct && !structtags.IsSpecialType(field.Type) {
+			initEmbeddedPointers(fieldVal, field.Type)
+		}
+	}
+}
+
 func scanFieldsRecursive(val reflect.Value, typ reflect.Type, pathPrefix string, ancestorTags []map[string]string) []FieldInfo {
 	var fields []FieldInfo
 
@@ -34,6 +55,22 @@ func scanFieldsRecursive(val reflect.Value, typ reflect.Type, pathPrefix string,
 		fieldVal := val.Field(i)
 
 		if !field.IsExported() {
+			continue
+		}
+
+		fieldType := field.Type
+		if fieldType.Kind() == reflect.Ptr {
+			fieldType = fieldType.Elem()
+		}
+
+		if field.Anonymous && fieldType.Kind() == reflect.Struct && !structtags.IsSpecialType(fieldType) {
+			if fieldVal.Kind() == reflect.Ptr {
+				if fieldVal.IsNil() {
+					fieldVal = reflect.New(fieldType)
+				}
+				fieldVal = fieldVal.Elem()
+			}
+			fields = append(fields, scanFieldsRecursive(fieldVal, fieldType, pathPrefix, ancestorTags)...)
 			continue
 		}
 
@@ -54,11 +91,6 @@ func scanFieldsRecursive(val reflect.Value, typ reflect.Type, pathPrefix string,
 			AncestorTags: ancestorTags,
 			IsSecret:     tags["secret"] == "true",
 			HasDefault:   tags["default"] != "",
-		}
-
-		fieldType := field.Type
-		if fieldType.Kind() == reflect.Ptr {
-			fieldType = fieldType.Elem()
 		}
 
 		if fieldType.Kind() == reflect.Struct && !structtags.IsSpecialType(fieldType) {

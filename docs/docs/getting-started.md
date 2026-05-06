@@ -10,7 +10,7 @@ Install confkit and load your first configuration in 5 minutes.
 ## Installation
 
 ```bash
-go get github.com/MimoJanra/confkit@v0.5.1
+go get github.com/MimoJanra/confkit@v0.9.0
 ```
 
 **Requirements:** Go 1.24 or later
@@ -76,8 +76,8 @@ Load from YAML, JSON, or TOML files:
 
 ```go
 cfg, err := confkit.Load[Config](
-    confkit.FromYAML("config.yaml"),
-    confkit.FromEnv(), // Override with env vars
+    confkit.FromEnv(),                 // env vars take priority
+    confkit.FromYAML("config.yaml"),   // file provides fallback values
 )
 ```
 
@@ -135,13 +135,13 @@ APIKey
 
 ## Multiple Sources & Precedence
 
-Sources are evaluated left-to-right. Later sources override earlier ones:
+Sources use **first-wins** semantics: the first source that provides a value for a field wins. List your highest-priority source first.
 
 ```go
 cfg, err := confkit.Load[Config](
-    confkit.FromYAML("defaults.yaml"),    // Base defaults
-    confkit.FromYAML("config.yaml"),      // Environment-specific
-    confkit.FromEnv(),                    // Runtime overrides
+    confkit.FromEnv(),                    // highest priority — runtime overrides
+    confkit.FromYAML("config.yaml"),      // fallback
+    confkit.FromYAML("defaults.yaml"),    // base defaults
 )
 ```
 

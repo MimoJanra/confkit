@@ -1,6 +1,7 @@
 package confkit
 
 import (
+	"context"
 	"testing"
 )
 
@@ -12,7 +13,7 @@ func (m *MemorySource) Name() string {
 	return "memory"
 }
 
-func (m *MemorySource) Lookup(field *FieldInfo) (any, bool, error) {
+func (m *MemorySource) Lookup(_ context.Context, field *FieldInfo) (any, bool, error) {
 	v, ok := m.data[field.Name]
 	return v, ok, nil
 }

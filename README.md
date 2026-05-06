@@ -25,10 +25,10 @@ type Config struct {
     Database string `env:"DATABASE_URL" validate:"required" secret:"true"`
 }
 
-// Load from YAML + env, get typed value or clear error
+// Load from env + YAML, get typed value or clear error
 cfg, err := confkit.Load[Config](
+    confkit.FromEnv(),           // env wins — checked first
     confkit.FromYAML("config.yaml"),
-    confkit.FromEnv(),  // env overrides YAML
 )
 if err != nil {
     log.Fatal(confkit.Explain(err))
@@ -55,7 +55,7 @@ No custom error handling. No secret leaks in logs. Types are checked at compile 
 ✅ **Secret redaction** — mark sensitive fields with `secret:"true"`, they're automatically hidden  
 ✅ **Multiple sources** — load from YAML, env, JSON, TOML, Kubernetes, AWS, Vault with explicit precedence  
 ✅ **Lightweight** — only 2 core dependencies, cloud integrations are optional modules  
-✅ **Production-ready** — v0.5.0 with full test coverage, used in real services
+✅ **Production-ready** — v0.9.0 with full test coverage, used in real services
 
 ```go
 type Config struct {
@@ -64,8 +64,8 @@ type Config struct {
 }
 
 cfg, err := confkit.Load[Config](
-    confkit.FromYAML("config.yaml"),
     confkit.FromEnv(),
+    confkit.FromYAML("config.yaml"),
 )
 if err != nil {
     log.Fatal(confkit.Explain(err))
@@ -169,9 +169,9 @@ type Config struct {
 
 func main() {
 	cfg, err := confkit.Load[Config](
-		confkit.FromYAML("config.yaml"), // lowest priority
+		confkit.FromFlags(),             // highest priority — checked first
 		confkit.FromEnv(),               // overrides file
-		confkit.FromFlags(),             // highest priority
+		confkit.FromYAML("config.yaml"), // fallback
 	)
 	if err != nil {
 		log.Fatal(confkit.Explain(err))
@@ -246,11 +246,11 @@ cfg, err := confkit.Load[Config](
 
 ```go
 cfg, err := confkit.Load[Config](
-    confkit.FromYAML("config.defaults.yaml"),      // base defaults
+    confkit.FromEnv(),                                         // runtime overrides — highest priority
     confkit.FromYAML("config." + os.Getenv("ENV") + ".yaml"), // prod/dev specific
-    confkit.FromEnv(),                             // runtime overrides
+    confkit.FromYAML("config.defaults.yaml"),                  // base defaults — fallback
 )
-// Loads: config.defaults.yaml → config.prod.yaml → env vars
+// Loads: env vars → config.prod.yaml → config.defaults.yaml
 ```
 
 ---
@@ -273,7 +273,7 @@ hidden:"true"           — hide from CLI help output
 
 ## Sources
 
-Built-in sources — pass any combination, last one wins per field:
+Built-in sources — pass any combination, first one to provide a value wins per field:
 
 ```go
 confkit.FromYAML(path string) Source
@@ -391,10 +391,12 @@ type ErrorReport struct {
     Errors []FieldError
 }
 
+func (r *ErrorReport) Unwrap() []error
+
 type FieldError struct {
     Path    string    // "Database.Password"
     Source  string    // "env", "yaml", "validation"
-    Kind    ErrorKind // parse | validation | missing | io
+    Kind    ErrorKind // parse | validation | io
     Rule    string    // "required", "min", ...
     Message string
     Value   string    // empty if Secret == true
@@ -499,10 +501,7 @@ The watcher polls `mtime`. When the file changes, all listeners are called with 
 // The complete Source interface — implement these two methods:
 type Source interface {
     Name() string
-    Lookup(field *FieldInfo) (any, bool, error)
-    // return ("", false, nil)  — field not found in this source
-    // return (value, true, nil) — found
-    // return ("", false, err)  — source error
+    Lookup(ctx context.Context, field *FieldInfo) (any, bool, error)
 }
 
 // FieldInfo fields available to your Lookup implementation:
@@ -549,6 +548,7 @@ help := schema.GenerateCLIHelp[Config]()
 | `time.Duration`                                   | `"5s"` `"1m30s"` `"2h"`           |
 | `[]string`                                        | comma-separated `"a,b,c"`         |
 | `[]int`                                           | comma-separated `"1,2,3"`         |
+| `map[string]string` / `map[string]int` etc.       | `KEY=val,KEY2=val2` format        |
 
 ---
 

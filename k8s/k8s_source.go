@@ -1,6 +1,7 @@
 package k8s
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -28,18 +29,20 @@ func (k *KubernetesConfigMapSource) Name() string {
 	return "kubernetes-configmap"
 }
 
-func (k *KubernetesConfigMapSource) Lookup(field *confkit.FieldInfo) (any, bool, error) {
+func (k *KubernetesConfigMapSource) Lookup(_ context.Context, field *confkit.FieldInfo) (any, bool, error) {
 	var keys []string
 
-	keys = append(keys, field.Name)
-
 	for _, tag := range []string{"env", "yaml", "json"} {
-		if tagKey, ok := field.Tags[tag]; ok {
+		if tagKey, ok := field.Tags[tag]; ok && tagKey != "" {
 			keys = append(keys, tagKey)
 		}
 	}
 
-	keys = append(keys, structtags.SnakeCase(field.Name))
+	snakeKey := structtags.SnakeCase(field.Name)
+	keys = append(keys, snakeKey)
+	if field.Name != snakeKey {
+		keys = append(keys, field.Name)
+	}
 
 	for _, key := range keys {
 		if strings.Contains(key, "/") || strings.Contains(key, string(filepath.Separator)) || strings.Contains(key, "..") {

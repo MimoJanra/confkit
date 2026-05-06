@@ -41,9 +41,9 @@ func (v *Validator) ValidateConfig(cfg any, fields []FieldInfo) *ErrorReport {
 		rules := parseValidationRules(validateTag)
 		for _, rule := range rules {
 			fieldErr := v.validateField(fieldVal, field, rule)
-			if fieldErr.Message != "" { // empty Message = no error
+			if fieldErr.Message != "" {
 				report.AddError(fieldErr)
-				break // first error per field
+				break
 			}
 		}
 	}
@@ -306,24 +306,6 @@ func getFieldByPath(val reflect.Value, path string) reflect.Value {
 	return current
 }
 
-func splitPath(path string) []string {
-	var parts []string
-	var cur strings.Builder
-	for _, ch := range path {
-		if ch == '.' {
-			if cur.Len() > 0 {
-				parts = append(parts, cur.String())
-				cur.Reset()
-			}
-		} else {
-			cur.WriteRune(ch)
-		}
-	}
-	if cur.Len() > 0 {
-		parts = append(parts, cur.String())
-	}
-	return parts
-}
 
 func fieldValueToString(val reflect.Value, isSecret bool) string {
 	if isSecret {

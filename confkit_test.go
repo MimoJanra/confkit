@@ -362,14 +362,14 @@ func TestLoadMultipleSources(t *testing.T) {
 	t.Setenv("MODE", "test")
 
 	cfg, err := Load[Config](
-		FromYAML("testdata/config.yaml"),
 		FromEnv(),
+		FromYAML("testdata/config.yaml"),
 	)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	// YAML provides port and host, env overrides mode
+	// env (first/highest priority) provides mode=test; yaml provides port and host
 	if cfg.Port != 3000 {
 		t.Errorf("expected Port 3000 from YAML, got %d", cfg.Port)
 	}
@@ -377,7 +377,7 @@ func TestLoadMultipleSources(t *testing.T) {
 		t.Errorf("expected Host 'localhost' from YAML, got %q", cfg.Host)
 	}
 	if cfg.Mode != "test" {
-		t.Errorf("expected Mode 'test' from env override, got %q", cfg.Mode)
+		t.Errorf("expected Mode 'test' from env, got %q", cfg.Mode)
 	}
 }
 

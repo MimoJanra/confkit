@@ -1,6 +1,7 @@
 package confkit
 
 import (
+	"context"
 	"os"
 	"strings"
 )
@@ -15,7 +16,7 @@ func (e *envSource) Name() string {
 	return "env"
 }
 
-func (e *envSource) Lookup(field *FieldInfo) (any, bool, error) {
+func (e *envSource) Lookup(_ context.Context, field *FieldInfo) (any, bool, error) {
 	envName := field.Tags["env"]
 	if envName == "" {
 		return "", false, nil
@@ -49,7 +50,7 @@ func (e *errorSource) Name() string {
 	return "error"
 }
 
-func (e *errorSource) Lookup(_ *FieldInfo) (any, bool, error) {
+func (e *errorSource) Lookup(_ context.Context, _ *FieldInfo) (any, bool, error) {
 	return "", false, e.err
 }
 

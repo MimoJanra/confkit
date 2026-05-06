@@ -138,18 +138,18 @@ Database: yaml_db
 	}
 
 	cfg, err := Load[Config](
-		FromYAML(tmpFile),
 		FromEnv(),
+		FromYAML(tmpFile),
 	)
 	if err != nil {
 		t.Fatalf("Load failed: %v", err)
 	}
 
 	if cfg.Port != 8000 {
-		t.Errorf("Expected Port=8000 (from env, overrides yaml), got %d", cfg.Port)
+		t.Errorf("Expected Port=8000 (from env, first-wins), got %d", cfg.Port)
 	}
 	if cfg.Host != "env.host" {
-		t.Errorf("Expected Host='env.host' (from env, overrides yaml), got '%s'", cfg.Host)
+		t.Errorf("Expected Host='env.host' (from env, first-wins), got '%s'", cfg.Host)
 	}
 	if cfg.Database != "yaml_db" {
 		t.Errorf("Expected Database='yaml_db' (from yaml, no env source), got '%s'", cfg.Database)

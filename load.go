@@ -1,6 +1,7 @@
 package confkit
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"strings"
@@ -34,6 +35,7 @@ func LoadWithWatcher[T any](filePath string, sources ...Source) (T, *ConfigWatch
 func LoadWithOptions[T any](options ...Option) (T, error) {
 	start := time.Now()
 	var cfg T
+	ctx := context.Background()
 
 	fields := ScanFields(cfg)
 	report := &ErrorReport{}
@@ -64,7 +66,7 @@ func LoadWithOptions[T any](options ...Option) (T, error) {
 	for _, field := range fields {
 		var sourceErr error
 		for _, source := range config.Sources {
-			value, ok, err := source.Lookup(&field)
+			value, ok, err := source.Lookup(ctx, &field)
 			if err != nil {
 				sourceErr = err
 				continue
@@ -88,11 +90,12 @@ func LoadWithOptions[T any](options ...Option) (T, error) {
 				}
 
 				if !middlewareOK {
-					continue
+					break
 				}
 
 				fieldValues[field.Path] = strVal
 				fieldSources[field.Path] = source.Name()
+				break
 			}
 		}
 		if _, found := fieldValues[field.Path]; !found && sourceErr != nil {
@@ -113,14 +116,17 @@ func LoadWithOptions[T any](options ...Option) (T, error) {
 
 	interpolationOK := performInterpolation(fieldValues, resolver, report)
 	if !interpolationOK {
+		callAuditLogger(config, fieldValues, fieldSources, fields)
 		fireHooks(config, false, start, len(report.Errors))
 		return cfg, report
 	}
 
 	val := reflect.ValueOf(&cfg).Elem()
+	initEmbeddedPointers(val, val.Type())
 	setStructFields(val, fields, fieldValues, fieldSources, parser, report)
 
 	if !report.IsEmpty() {
+		callAuditLogger(config, fieldValues, fieldSources, fields)
 		fireHooks(config, false, start, len(report.Errors))
 		return cfg, report
 	}
@@ -130,7 +136,6 @@ func LoadWithOptions[T any](options ...Option) (T, error) {
 		report.Errors = append(report.Errors, validationErrors.Errors...)
 	}
 
-	// Run model (cross-field) validators only when field validation passed.
 	if report.IsEmpty() {
 		for _, mv := range config.ModelValidators {
 			if err := mv(&cfg); err != nil {
@@ -144,29 +149,33 @@ func LoadWithOptions[T any](options ...Option) (T, error) {
 	}
 
 	if !report.IsEmpty() {
+		callAuditLogger(config, fieldValues, fieldSources, fields)
 		fireHooks(config, false, start, len(report.Errors))
 		return cfg, report
 	}
 
-	// Audit: record which source each field came from.
-	if config.AuditLogger != nil {
-		entries := make([]AuditEntry, 0, len(fields))
-		for _, field := range fields {
-			src, ok := fieldSources[field.Path]
-			if !ok {
-				continue
-			}
-			val := anyToString(fieldValues[field.Path])
-			if field.IsSecret {
-				val = "<redacted>"
-			}
-			entries = append(entries, AuditEntry{Field: field.Path, Source: src, Value: val})
-		}
-		config.AuditLogger(entries)
-	}
-
+	callAuditLogger(config, fieldValues, fieldSources, fields)
 	fireHooks(config, true, start, 0)
 	return cfg, nil
+}
+
+func callAuditLogger(config *loadConfig, fieldValues map[string]any, fieldSources map[string]string, fields []FieldInfo) {
+	if config.AuditLogger == nil {
+		return
+	}
+	entries := make([]AuditEntry, 0, len(fields))
+	for _, field := range fields {
+		src, ok := fieldSources[field.Path]
+		if !ok {
+			continue
+		}
+		val := anyToString(fieldValues[field.Path])
+		if field.IsSecret {
+			val = "<redacted>"
+		}
+		entries = append(entries, AuditEntry{Field: field.Path, Source: src, Value: val})
+	}
+	config.AuditLogger(entries)
 }
 
 func fireHooks(config *loadConfig, success bool, start time.Time, errCount int) {

@@ -62,8 +62,8 @@ type Config struct {
 }
 
 cfg, err := confkit.Load[Config](
-    confkit.FromYAML("config.yaml"),    // if config.yaml has Host="example.com"
-    confkit.FromEnv(),                  // if env has PORT=9000
+    confkit.FromEnv(),                  // if env has PORT=9000 (higher priority)
+    confkit.FromYAML("config.yaml"),    // if config.yaml has Host="example.com" (lower priority)
 )
 // Result: Host="example.com" (from YAML), Port=9000 (from env)
 // Default "localhost" not used (YAML provided Host)
@@ -255,7 +255,7 @@ Defaults are lowest priority — environment variables override them:
 4. Defaults      (lowest)
 ```
 
-Last source wins per field.
+First source wins per field.
 
 ## Best Practices
 

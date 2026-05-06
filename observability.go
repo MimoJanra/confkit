@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"strings"
 	"time"
 )
 
@@ -35,7 +36,7 @@ func DumpConfig(cfg any, fields []FieldInfo) ([]byte, error) {
 }
 
 func getFieldValue(val reflect.Value, path string) any {
-	parts := parseFieldPath(path)
+	parts := splitPath(path)
 	current := val
 
 	for _, part := range parts {
@@ -60,28 +61,6 @@ func getFieldValue(val reflect.Value, path string) any {
 	return nil
 }
 
-func parseFieldPath(path string) []string {
-	parts := make([]string, 0)
-	current := ""
-
-	for _, c := range path {
-		if c == '.' {
-			if current != "" {
-				parts = append(parts, current)
-				current = ""
-			}
-		} else {
-			current += string(c)
-		}
-	}
-
-	if current != "" {
-		parts = append(parts, current)
-	}
-
-	return parts
-}
-
 func LogLoadStart(sources []string) string {
 	payload := map[string]any{
 		"event":     "config_load_start",
@@ -99,4 +78,23 @@ func LogLoadComplete(duration time.Duration, fieldCount int, errorCount int) str
 func toJSON(data any) string {
 	b, _ := json.Marshal(data)
 	return string(b)
+}
+
+func splitPath(path string) []string {
+	var parts []string
+	var cur strings.Builder
+	for _, ch := range path {
+		if ch == '.' {
+			if cur.Len() > 0 {
+				parts = append(parts, cur.String())
+				cur.Reset()
+			}
+		} else {
+			cur.WriteRune(ch)
+		}
+	}
+	if cur.Len() > 0 {
+		parts = append(parts, cur.String())
+	}
+	return parts
 }

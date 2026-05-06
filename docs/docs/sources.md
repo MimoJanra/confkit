@@ -30,7 +30,7 @@ export DATABASE_URL="postgres://localhost/db"
 
 ### With Prefix
 
-Use `envPrefix` tag to automatically add a prefix to all env vars in a struct:
+Use `prefix:` tag to automatically add a prefix to all env vars in a struct:
 
 ```go
 type DatabaseConfig struct {
@@ -39,7 +39,7 @@ type DatabaseConfig struct {
 }
 
 type Config struct {
-    DB DatabaseConfig `envPrefix:"DB_"`
+    DB DatabaseConfig `prefix:"DB_"`
 }
 
 // Reads from DB_HOST, DB_PORT
@@ -133,13 +133,15 @@ go run main.go --port=3000 --database-url="postgres://..."
 
 ## Kubernetes ConfigMap
 
-**Function:** `FromK8sConfigMap(namespace, name string)`
+**Function:** `k8s.FromKubernetesConfigMap(namespace, name string)`
 
 Load configuration from a Kubernetes ConfigMap.
 
 ```go
+import "github.com/MimoJanra/confkit/k8s"
+
 cfg, err := confkit.Load[Config](
-    confkit.FromK8sConfigMap("default", "app-config"),
+    k8s.FromKubernetesConfigMap("default", "app-config"),
 )
 ```
 
@@ -155,27 +157,19 @@ data:
   database: "postgres://..."
 ```
 
-### With Secrets
-
-Use `FromK8sSecret()` for Kubernetes Secrets:
-
-```go
-cfg, err := confkit.Load[Config](
-    confkit.FromK8sSecret("default", "app-secrets"),
-)
-```
-
 ---
 
 ## AWS Systems Manager Parameter Store
 
-**Function:** `FromAWSSSM(parameterPath string)`
+**Function:** `aws.FromAWSSSMParameterStore(parameterPath string)`
 
 Load configuration from AWS Systems Manager Parameter Store.
 
 ```go
+import "github.com/MimoJanra/confkit/aws"
+
 cfg, err := confkit.Load[Config](
-    confkit.FromAWSSSM("/prod/app/config"),
+    aws.FromAWSSSMParameterStore("/prod/app/config"),
 )
 ```
 
@@ -192,7 +186,7 @@ Use `/` for nested structures:
 ```go
 // Loads from: /app/db/host, /app/db/port
 cfg, err := confkit.Load[Config](
-    confkit.FromAWSSSM("/app"),
+    aws.FromAWSSSMParameterStore("/app"),
 )
 ```
 
@@ -200,45 +194,45 @@ cfg, err := confkit.Load[Config](
 
 ## HashiCorp Vault
 
-**Function:** `FromVault(addr, secretPath string)`
+**Function:** `vault.FromVault(addr string, auth vault.AuthMethod, secretPath string)`
 
 Load secrets from HashiCorp Vault.
 
 ```go
+import (
+    "os"
+    "github.com/MimoJanra/confkit/vault"
+)
+
+auth := vault.VaultTokenAuth(os.Getenv("VAULT_TOKEN"))
+
 cfg, err := confkit.Load[Config](
-    confkit.FromVault("https://vault.example.com:8200", "/secret/app"),
+    vault.FromVault("https://vault.example.com", auth, "/secret/myapp"),
 )
 ```
 
 **Vault Secret:**
 ```
-path: secret/app
+path: secret/myapp
 data:
   port: 8080
   database: postgres://...
   api_key: ***
 ```
 
-### With Authentication
-
-```go
-vault := confkit.NewVaultSource("https://vault.example.com", "/secret/app")
-vault.SetToken("s.xxxxxxxxxxxx")
-
-cfg, err := confkit.Load[Config](vault)
-```
-
 ---
 
 ## AWS Secrets Manager
 
-**Function:** `FromAWSSecretsManager(secretName string)`
+**Function:** `aws.FromAWSSecretsManager(secretName string)`
 
 Load secrets from AWS Secrets Manager.
 
 ```go
+import "github.com/MimoJanra/confkit/aws"
+
 cfg, err := confkit.Load[Config](
-    confkit.FromAWSSecretsManager("prod/app-secrets"),
+    aws.FromAWSSecretsManager("prod/app-secrets"),
 )
 ```
 
@@ -246,39 +240,43 @@ cfg, err := confkit.Load[Config](
 
 ## Consul KV
 
-**Function:** `FromConsul(addr string)`
+**Function:** `consul.FromConsul(addr string)`
 
 Load configuration from Consul KV store.
 
 ```go
+import "github.com/MimoJanra/confkit/consul"
+
 cfg, err := confkit.Load[Config](
-    confkit.FromConsul("consul.example.com:8500"),
+    consul.FromConsul("consul.example.com:8500"),
 )
 ```
 
 ### With Options
 
 ```go
-consul := confkit.FromConsulWithOptions(
-    "consul.example.com:8500",
-    "your-token",
-    "dc1", // datacenter
+cfg, err := confkit.Load[Config](
+    consul.FromConsulWithOptions(
+        "consul.example.com:8500",
+        "your-token",
+        "dc1", // datacenter
+    ),
 )
-
-cfg, err := confkit.Load[Config](consul)
 ```
 
 ---
 
 ## etcd
 
-**Function:** `FromEtcd(endpoints []string)`
+**Function:** `etcd.FromEtcd(endpoints []string)`
 
 Load configuration from etcd v3.
 
 ```go
+import "github.com/MimoJanra/confkit/etcd"
+
 cfg, err := confkit.Load[Config](
-    confkit.FromEtcd([]string{
+    etcd.FromEtcd([]string{
         "etcd1.example.com:2379",
         "etcd2.example.com:2379",
     }),
@@ -288,12 +286,12 @@ cfg, err := confkit.Load[Config](
 ### With Prefix
 
 ```go
-etcd := confkit.FromEtcdWithPrefix(
-    []string{"etcd.example.com:2379"},
-    "/myapp",
+cfg, err := confkit.Load[Config](
+    etcd.FromEtcdWithPrefix(
+        []string{"etcd.example.com:2379"},
+        "/myapp",
+    ),
 )
-
-cfg, err := confkit.Load[Config](etcd)
 ```
 
 ---
@@ -337,13 +335,13 @@ cfg, err := confkit.Load[Config](
 
 ## Source Precedence
 
-When using multiple sources, they are evaluated left-to-right. Later sources override earlier ones:
+Sources use **first-wins** semantics: the first source that provides a value for a field wins. Sources listed later are only consulted for fields not yet set by an earlier source. Put your highest-priority sources first.
 
 ```go
 cfg, err := confkit.Load[Config](
-    confkit.FromYAML("defaults.yaml"),     // 1st: base defaults
-    confkit.FromYAML("config.yaml"),       // 2nd: env-specific
-    confkit.FromEnv(),                     // 3rd: runtime overrides
+    confkit.FromEnv(),                     // 1st: highest priority — runtime overrides
+    confkit.FromYAML("config.yaml"),       // 2nd: env-specific config
+    confkit.FromYAML("defaults.yaml"),     // 3rd: base defaults (fallback)
 )
 ```
 
@@ -351,7 +349,7 @@ cfg, err := confkit.Load[Config](
 - `defaults.yaml` has `port: 8080`
 - `config.yaml` has `port: 3000`
 - Environment has `PORT=9000`
-- Result: `port = 9000` (highest precedence)
+- Result: `port = 9000` — `PORT=9000` from env wins because it is the first source
 
 ---
 
@@ -368,7 +366,7 @@ func (s *MySource) Name() string {
     return "custom"
 }
 
-func (s *MySource) Lookup(field *confkit.FieldInfo) (confkit.Value, bool, error) {
+func (s *MySource) Lookup(ctx context.Context, field *confkit.FieldInfo) (any, bool, error) {
     val, ok := s.data[field.Path]
     return val, ok, nil
 }
@@ -387,9 +385,11 @@ cfg, err := confkit.Load[Config](&MySource{
 
 ### Source Order
 
-1. **Start with defaults** — Files or defaults for base configuration
+Sources are first-wins: list the highest-priority source first.
+
+1. **Start with runtime overrides** — Environment variables or flags for highest-priority values
 2. **Add environment-specific** — Different configs for dev/staging/prod
-3. **Override with runtime** — Environment variables or flags for final tweaks
+3. **End with defaults** — Files with base defaults as a final fallback
 
 ### Secrets
 
@@ -408,7 +408,7 @@ cfg, err := confkit.Load[Config](&MySource{
 ### Environment Variables
 
 - Use for runtime overrides
-- Use `envPrefix` for organized namespacing
+- Use `prefix:` for organized namespacing
 - Use ALL_CAPS naming convention
 - Document available variables in README
 

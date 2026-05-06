@@ -8,7 +8,7 @@ title: Installation — confkit
 ## Core Library
 
 ```bash
-go get github.com/MimoJanra/confkit@v0.5.0
+go get github.com/MimoJanra/confkit@v0.9.0
 ```
 
 Then import:
@@ -187,7 +187,7 @@ If you see version conflicts with other dependencies (especially AWS SDK):
 
 ```bash
 go mod tidy
-go get github.com/MimoJanra/confkit@v0.5.0  # pin explicit version
+go get github.com/MimoJanra/confkit@v0.9.0  # pin explicit version
 ```
 
 ## Next Steps

@@ -119,7 +119,7 @@ func TestLogLoadComplete(t *testing.T) {
 	}
 }
 
-func TestParseFieldPath(t *testing.T) {
+func TestSplitPath(t *testing.T) {
 	tests := []struct {
 		path     string
 		expected []string
@@ -131,7 +131,7 @@ func TestParseFieldPath(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.path, func(t *testing.T) {
-			result := parseFieldPath(tt.path)
+			result := splitPath(tt.path)
 			if len(result) != len(tt.expected) {
 				t.Errorf("Expected %d parts, got %d", len(tt.expected), len(result))
 				return

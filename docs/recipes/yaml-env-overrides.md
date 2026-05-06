@@ -36,8 +36,8 @@ type Config struct {
 
 func main() {
     cfg, err := confkit.Load[Config](
-        confkit.FromYAML("config.yaml"),  // Base config from file
-        confkit.FromEnv(),                 // Override with env vars
+        confkit.FromEnv(),                 // Highest priority — env vars checked first
+        confkit.FromYAML("config.yaml"),  // Fallback: values from file fill in unset fields
     )
     if err != nil {
         log.Fatal(confkit.Explain(err))
@@ -92,8 +92,10 @@ Port from file (5432) is used because `DB_PORT` was not set in env.
 
 ## Load Order
 
-1. **YAML file loaded** — All values from config.yaml
-2. **Environment variables override** — Any env var matching a tag overrides the YAML value
+The first source to provide a value wins; later sources fill in only unset fields:
+
+1. **Environment variables checked first** — Any env var matching a tag is used immediately
+2. **YAML file fills in the rest** — Fields not set by env vars receive their YAML values
 3. **Defaults applied** — Only if neither source provided a value
 4. **Validation** — All values validated against rules
 

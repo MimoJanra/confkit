@@ -36,8 +36,8 @@ type Config struct {
 
 func main() {
     cfg, err := confkit.Load[Config](
-        consul.FromConsul("localhost:8500"),
         confkit.FromEnv(),
+        consul.FromConsul("localhost:8500"),
     )
     if err != nil {
         log.Fatal(confkit.Explain(err))
@@ -244,8 +244,8 @@ type Config struct {
 
 func main() {
     cfg, err := confkit.Load[Config](
-        consul.FromConsul("consul.internal:8500"),
         confkit.FromEnv(),
+        consul.FromConsul("consul.internal:8500"),
     )
     if err != nil {
         log.Fatal(confkit.Explain(err))
@@ -257,11 +257,13 @@ func main() {
 
 ## Combining with Other Sources
 
+The first source to provide a value wins; later sources fill in only unset fields:
+
 ```go
 cfg, err := confkit.Load[Config](
-    confkit.FromYAML("config.yaml"),        // Base
-    consul.FromConsul("consul:8500"),       // Consul KV
-    confkit.FromEnv(),                      // Overrides
+    confkit.FromEnv(),                      // Highest priority — checked first
+    consul.FromConsul("consul:8500"),       // Consul KV fills in what env did not set
+    confkit.FromYAML("config.yaml"),        // Base fallback
 )
 ```
 

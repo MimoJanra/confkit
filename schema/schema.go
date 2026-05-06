@@ -3,10 +3,12 @@ package schema
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/MimoJanra/confkit/structtags"
 	"reflect"
+	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/MimoJanra/confkit/structtags"
 )
 
 type Schema struct {
@@ -160,9 +162,6 @@ func getTypeString(typ reflect.Type) string {
 	}
 }
 
-// applyValidationRules applies validate tag constraints to the schema.
-// oneof values contain commas (e.g. oneof=debug,info,warn) which conflict with the
-// rule separator, so they are extracted before splitting.
 func applyValidationRules(validate string, typ reflect.Type, s *Schema, required *[]string, propName string) {
 	var rules []string
 	var oneofValue string
@@ -316,7 +315,14 @@ func GenerateMarkdown[T any]() (string, error) {
 }
 
 func addMarkdownProperties(sb *strings.Builder, props map[string]*Schema, prefix string) {
-	for propName, prop := range props {
+	keys := make([]string, 0, len(props))
+	for k := range props {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	for _, propName := range keys {
+		prop := props[propName]
 		fieldName := propName
 		if prefix != "" {
 			fieldName = prefix + "." + propName
@@ -347,7 +353,14 @@ func GenerateCLIHelp[T any]() (string, error) {
 }
 
 func addCLIHelpOptions(sb *strings.Builder, props map[string]*Schema, prefix string, required []string) {
-	for propName, prop := range props {
+	keys := make([]string, 0, len(props))
+	for k := range props {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	for _, propName := range keys {
+		prop := props[propName]
 		if prop.Hidden {
 			continue
 		}

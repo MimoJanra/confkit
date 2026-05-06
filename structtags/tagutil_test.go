@@ -13,7 +13,8 @@ func TestSnakeCase(t *testing.T) {
 	}{
 		{"Port", "port"},
 		{"HostName", "host_name"},
-		{"DatabaseURL", "database_u_r_l"},
+		{"DatabaseURL", "database_url"},
+		{"HTTPServer", "http_server"},
 		{"already_lower", "already_lower"},
 		{"A", "a"},
 		{"", ""},

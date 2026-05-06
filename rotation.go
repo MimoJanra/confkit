@@ -89,7 +89,8 @@ func (r *RotationEngine) run(ctx context.Context) {
 
 func (r *RotationEngine) notifyCallbacks(oldCfg, newCfg any, err error) {
 	r.callbackMutex.RLock()
-	callbacks := r.callbacks
+	callbacks := make([]RotationCallback, len(r.callbacks))
+	copy(callbacks, r.callbacks)
 	r.callbackMutex.RUnlock()
 
 	for _, cb := range callbacks {
@@ -115,7 +116,7 @@ func RotateOnInterval(interval time.Duration) RotationStrategy {
 	return &IntervalRotationStrategy{interval: interval}
 }
 
-func (i *IntervalRotationStrategy) ShouldRotate(ctx context.Context, lastRotation time.Time) (bool, error) {
+func (i *IntervalRotationStrategy) ShouldRotate(_ context.Context, lastRotation time.Time) (bool, error) {
 	return time.Since(lastRotation) >= i.interval, nil
 }
 
@@ -127,7 +128,7 @@ func RotateOnEvent(eventChan <-chan struct{}) RotationStrategy {
 	return &EventRotationStrategy{eventChan: eventChan}
 }
 
-func (e *EventRotationStrategy) ShouldRotate(ctx context.Context, lastRotation time.Time) (bool, error) {
+func (e *EventRotationStrategy) ShouldRotate(ctx context.Context, _ time.Time) (bool, error) {
 	select {
 	case <-e.eventChan:
 		return true, nil
@@ -138,14 +139,6 @@ func (e *EventRotationStrategy) ShouldRotate(ctx context.Context, lastRotation t
 	}
 }
 
-type TTLRotationStrategy struct {
-	minTTL time.Duration
-}
-
 func RotateOnMinTTL(minTTL time.Duration) RotationStrategy {
-	return &TTLRotationStrategy{minTTL: minTTL}
-}
-
-func (t *TTLRotationStrategy) ShouldRotate(ctx context.Context, lastRotation time.Time) (bool, error) {
-	return time.Since(lastRotation) >= t.minTTL, nil
+	return RotateOnInterval(minTTL)
 }

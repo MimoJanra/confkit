@@ -35,10 +35,10 @@ func (e *EtcdSource) Name() string {
 	return "etcd"
 }
 
-func (e *EtcdSource) Lookup(field *confkit.FieldInfo) (any, bool, error) {
+func (e *EtcdSource) Lookup(ctx context.Context, field *confkit.FieldInfo) (any, bool, error) {
 	key := e.buildKey(field.Path)
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(e.timeout)*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, time.Duration(e.timeout)*time.Second)
 	defer cancel()
 
 	resp, err := e.client.Get(ctx, key)

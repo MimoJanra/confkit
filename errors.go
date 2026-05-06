@@ -7,7 +7,6 @@ type ErrorKind string
 const (
 	ErrorKindParse      ErrorKind = "parse"
 	ErrorKindValidation ErrorKind = "validation"
-	ErrorKindMissing    ErrorKind = "missing"
 	ErrorKindIO         ErrorKind = "io"
 )
 
@@ -27,6 +26,22 @@ type ErrorReport struct {
 
 func (er *ErrorReport) Error() string {
 	return er.Format()
+}
+
+func (er *ErrorReport) Unwrap() []error {
+	errs := make([]error, len(er.Errors))
+	for i, fe := range er.Errors {
+		errs[i] = &singleFieldError{fe}
+	}
+	return errs
+}
+
+type singleFieldError struct {
+	FieldError
+}
+
+func (e *singleFieldError) Error() string {
+	return e.Message
 }
 
 func (er *ErrorReport) Format() string {

@@ -5,6 +5,36 @@ All notable changes to confkit are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.0] - 2026-05-06
+
+### Added
+
+- **`map[string]V` field support** — parse map fields from `KEY1=val1,KEY2=val2` format; supports any scalar value type
+- **`ErrorReport.Unwrap() []error`** — enables `errors.Is` / `errors.As` traversal on multi-field error reports
+- **`AuditLogger` called on failure** — audit callback now fires on validation and source errors in addition to successful loads
+
+### Changed
+
+- **`Source.Lookup` signature** — `context.Context` added as first parameter (breaking change, intentional before v1.0 API freeze)
+- **Source priority changed to first-wins** — first source to provide a value wins; later sources are only consulted for fields not yet set (previously last-wins)
+- **`FlagsSource` properly implemented** — parses `--key=value`, `--key value`, `-k value`, `-k=value`, and boolean `--flag` forms
+- **Embedded struct field promotion** — anonymous (embedded) struct fields are promoted without an extra path prefix
+- **SnakeCase acronym handling fixed** — `DatabaseURL` → `database_url`, `HTTPServer` → `http_server`
+- **Middleware error handling** — a middleware error now skips the field entirely instead of falling through to the next source
+- **Schema generation deterministic** — map iteration is now sorted, producing stable JSON Schema output across runs
+- **Code deduplication** — `lookupNested` / `ancestorKey` shared across YAML/JSON/TOML/file sources; single `splitPath` implementation used throughout
+- **`setFieldValue` nil-pointer initialisation** — nil pointer fields are now initialised when setting a nested path
+
+### Removed
+
+- **`ErrorKindMissing` constant** — dead constant removed from the public API
+
+### Tests
+
+- Core coverage: 90.1%
+
+---
+
 ## [0.8.2] - 2026-05-06
 
 ### Added

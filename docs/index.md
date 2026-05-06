@@ -19,8 +19,8 @@ type Config struct {
 }
 
 cfg, err := confkit.Load[Config](
-    confkit.FromYAML("config.yaml"),
     confkit.FromEnv(),
+    confkit.FromYAML("config.yaml"),
 )
 if err != nil {
     log.Fatal(confkit.Explain(err))
@@ -57,7 +57,7 @@ Invalid configuration:
 ## Install
 
 ```bash
-go get github.com/MimoJanra/confkit@v0.5.0
+go get github.com/MimoJanra/confkit@v0.9.0
 ```
 
 ## Resources
