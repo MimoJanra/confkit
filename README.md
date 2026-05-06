@@ -1,5 +1,25 @@
 # confkit
 
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "confkit",
+  "description": "Type-safe configuration toolkit for Go: load, merge, validate, and redact config from structs, files, environment variables, flags, and secret stores (Vault, AWS, Kubernetes, Consul, etcd).",
+  "url": "https://github.com/MimoJanra/confkit",
+  "applicationCategory": "DeveloperApplication",
+  "programmingLanguage": "Go",
+  "codeRepository": "https://github.com/MimoJanra/confkit",
+  "license": "https://opensource.org/license/mit",
+  "runtimePlatform": "Go 1.21+",
+  "softwareVersion": "0.5.0",
+  "author": {"@type": "Organization", "name": "confkit Contributors"},
+  "keywords": "configuration, Go, config loader, type-safe, validation, secrets management",
+  "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"},
+  "downloadUrl": "https://github.com/MimoJanra/confkit/releases"
+}
+</script>
+
 [![Go Version](https://img.shields.io/badge/go-1.22%2B-blue)](https://golang.org/doc/devel/release)
 [![Go Reference](https://pkg.go.dev/badge/github.com/MimoJanra/confkit.svg)](https://pkg.go.dev/github.com/MimoJanra/confkit)
 [![Tests](https://github.com/MimoJanra/confkit/actions/workflows/test.yml/badge.svg)](https://github.com/MimoJanra/confkit/actions/workflows/test.yml)
@@ -94,7 +114,7 @@ without assembling multiple libraries by hand.
 | Secret redaction     |    ✅     |    ❌    |     ❌     |    ❌    |
 | Multi-source merging |    ✅     |    ✅    |    ⚠️     |    ✅    |
 | Lightweight core     |    ✅     |    ❌    |     ✅     |    ✅    |
-| Cloud integrations   | optional | bundled |  bundled  | bundled |
+| Cloud integrations   | optional | bundled |    N/A    | optional |
 | Runtime reloading    |    ✅     |    ✅    |     ❌     |   ⚠️    |
 
 **confkit shines when:**
@@ -107,6 +127,24 @@ without assembling multiple libraries by hand.
 **Use Viper if:** you need heavy runtime reloading with watches across dozens of files  
 **Use envconfig if:** you only care about env vars and simple type conversion  
 **Use koanf if:** you want extreme modularity and don't need validation
+
+For detailed comparisons, see:
+- **[confkit vs Viper](./docs/comparison/viper.md)**
+- **[confkit vs envconfig](./docs/comparison/envconfig.md)**
+- **[confkit vs koanf](./docs/comparison/koanf.md)**
+
+---
+
+## Use Cases
+
+confkit is useful for:
+
+- **Go services** that need typed configuration without boilerplate
+- **CLI tools** that combine flags, files, and environment variables
+- **Kubernetes applications** using ConfigMaps and Secrets
+- **Microservices** that load secrets from Vault, Consul, etcd, or AWS
+- **Projects** looking for a type-safe alternative to manual env parsing
+- **Teams** that want config validation before application startup
 
 ---
 
