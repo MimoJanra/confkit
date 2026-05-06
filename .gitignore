@@ -33,9 +33,3 @@ claude.md
 Docss/
 data.md
 main.go
-
-# Generated files
-docs/index.html
-llms-full.txt
-robots.txt
-sitemap.xml

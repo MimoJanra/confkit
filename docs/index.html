@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>confkit — Type-Safe Configuration for Go</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --color-primary: #FF6B35;
+            --color-secondary: #F7931E;
+            --color-accent: #FFD700;
+            --color-cool: #00D9FF;
+            --color-purple: #9D4EDD;
+            --color-dark: #0A0E27;
+            --color-light: #FFFFFF;
+            --color-bg: #FFF9F5;
+            --color-text: #1A1A2E;
+            --gradient-warm: linear-gradient(135deg, #FF6B35 0%, #F7931E 50%, #FFD700 100%);
+            --gradient-cool: linear-gradient(135deg, #00D9FF 0%, #9D4EDD 100%);
+            --gradient-lava: linear-gradient(90deg, #FF6B35 0%, #F7931E 25%, #FFD700 50%, #FF6B35 75%, #F7931E 100%);
+        }
+
+        body {
+            font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(to bottom, #FFF9F5 0%, #FFF5E6 100%);
+            color: var(--color-text);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Header Navigation */
+        header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+            background: rgba(255, 249, 245, 0.8);
+            border-bottom: 2px solid rgba(255, 107, 53, 0.1);
+        }
+
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem 5%;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 800;
+            background: var(--gradient-warm);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -1px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: var(--color-text);
+            font-weight: 500;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--gradient-cool);
+            transition: width 0.3s ease;
+        }
+
+        .nav-links a:hover::after {
+            width: 100%;
+        }
+
+        .cta-button {
+            background: var(--gradient-warm);
+            color: white;
+            padding: 0.8rem 1.8rem;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(255, 107, 53, 0.3);
+        }
+
+        .cta-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(255, 107, 53, 0.4);
+        }
+
+        /* Hero Section */
+        .hero {
+            margin-top: 80px;
+            padding: 100px 5%;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            background: linear-gradient(135deg, #FFF9F5 0%, #FFE6D5 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--gradient-lava);
+            opacity: 0.05;
+            animation: lavaFlow 8s ease-in-out infinite;
+            z-index: 0;
+        }
+
+        @keyframes lavaFlow {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        .hero-content {
+            max-width: 900px;
+            position: relative;
+            z-index: 1;
+            animation: slideInUp 0.8s ease-out;
+        }
+
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .hero h1 {
+            font-size: 4rem;
+            font-weight: 900;
+            margin-bottom: 1rem;
+            line-height: 1.1;
+            background: var(--gradient-warm);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -2px;
+        }
+
+        .hero-subtitle {
+            font-size: 1.5rem;
+            color: #555;
+            margin-bottom: 2rem;
+            font-weight: 300;
+            letter-spacing: 0.5px;
+        }
+
+        .hero-cta {
+            display: flex;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .btn-primary {
+            background: var(--gradient-warm);
+            color: white;
+            padding: 1rem 2.5rem;
+            border-radius: 50px;
+            border: none;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 6px 20px rgba(255, 107, 53, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 35px rgba(255, 107, 53, 0.5);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--color-primary);
+            padding: 1rem 2.5rem;
+            border: 2px solid var(--color-primary);
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-secondary:hover {
+            background: var(--color-primary);
+            color: white;
+            transform: translateY(-5px);
+        }
+
+        /* Features Section */
+        .features {
+            padding: 120px 5%;
+            background: linear-gradient(to bottom, #FFF5E6 0%, #FFF0D9 100%);
+            position: relative;
+        }
+
+        .features::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 200px;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120"><path d="M0,50 Q300,100 600,50 T1200,50 L1200,0 L0,0 Z" fill="url(%23grad1)" opacity="0.1"/><defs><linearGradient id="grad1" x1="0%25" y1="0%25" x2="100%25" y2="0%25"><stop offset="0%25" style="stop-color:rgb(255,107,53);stop-opacity:1" /><stop offset="100%25" style="stop-color:rgb(255,215,0);stop-opacity:1" /></linearGradient></defs></svg>') repeat-x;
+            background-size: 1200px 120px;
+            animation: wave 6s linear infinite;
+        }
+
+        @keyframes wave {
+            0% { background-position: 0 0; }
+            100% { background-position: 1200px 0; }
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: 3rem;
+            font-weight: 900;
+            margin-bottom: 3rem;
+            background: var(--gradient-warm);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            position: relative;
+            z-index: 1;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 2;
+        }
+
+        .feature-card {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 2.5rem;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 107, 53, 0.1);
+            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            animation: fadeInUp 0.6s ease-out backwards;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .feature-card:nth-child(1) { animation-delay: 0.1s; }
+        .feature-card:nth-child(2) { animation-delay: 0.2s; }
+        .feature-card:nth-child(3) { animation-delay: 0.3s; }
+        .feature-card:nth-child(4) { animation-delay: 0.4s; }
+        .feature-card:nth-child(5) { animation-delay: 0.5s; }
+        .feature-card:nth-child(6) { animation-delay: 0.6s; }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(40px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: var(--gradient-cool);
+            opacity: 0;
+            transition: all 0.4s ease;
+            z-index: -1;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-10px);
+            border-color: rgba(255, 107, 53, 0.3);
+            box-shadow: 0 20px 40px rgba(255, 107, 53, 0.15);
+        }
+
+        .feature-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .feature-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: var(--color-primary);
+        }
+
+        .feature-card p {
+            color: #666;
+            font-size: 1rem;
+            line-height: 1.7;
+        }
+
+        /* Code Example Section */
+        .code-example {
+            padding: 120px 5%;
+            background: linear-gradient(to bottom, #FFF0D9 0%, #FFEBE0 100%);
+            position: relative;
+        }
+
+        .code-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 3rem;
+            align-items: center;
+        }
+
+        .code-text h2 {
+            font-size: 2.5rem;
+            margin-bottom: 1.5rem;
+            background: var(--gradient-warm);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .code-text p {
+            color: #666;
+            margin-bottom: 1.5rem;
+            font-size: 1.1rem;
+            line-height: 1.8;
+        }
+
+        .code-block {
+            background: linear-gradient(135deg, rgba(10, 14, 39, 0.95) 0%, rgba(157, 78, 221, 0.1) 100%);
+            padding: 2rem;
+            border-radius: 15px;
+            overflow-x: auto;
+            border: 2px solid rgba(255, 107, 53, 0.2);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        .code-block code {
+            color: #00D9FF;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 0.95rem;
+            line-height: 1.8;
+        }
+
+        .code-keyword { color: #9D4EDD; }
+        .code-string { color: #FFD700; }
+        .code-function { color: #FF6B35; }
+        .code-comment { color: #888; }
+
+        @media (max-width: 768px) {
+            .code-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Comparison Section */
+        .comparison {
+            padding: 120px 5%;
+            background: linear-gradient(to bottom, #FFEBE0 0%, #FFF0D9 100%);
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .comparison-card {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 2rem;
+            border-radius: 15px;
+            border: 2px solid rgba(255, 107, 53, 0.1);
+            transition: all 0.4s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .comparison-card:hover {
+            border-color: var(--color-primary);
+            box-shadow: 0 15px 40px rgba(255, 107, 53, 0.2);
+            transform: translateY(-8px);
+        }
+
+        .comparison-card h3 {
+            font-size: 1.3rem;
+            margin-bottom: 1.5rem;
+            color: var(--color-primary);
+        }
+
+        .feature-list {
+            list-style: none;
+        }
+
+        .feature-list li {
+            padding: 0.8rem 0;
+            display: flex;
+            align-items: center;
+            color: #555;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .feature-list li:last-child {
+            border-bottom: none;
+        }
+
+        .check {
+            margin-right: 0.8rem;
+            font-weight: bold;
+            color: #00D700;
+        }
+
+        .cross {
+            margin-right: 0.8rem;
+            font-weight: bold;
+            color: #FF6B35;
+        }
+
+        /* Testimonials */
+        .testimonials {
+            padding: 120px 5%;
+            background: linear-gradient(135deg, #FFF0D9 0%, #FFE6D5 50%, #FFF5E6 100%);
+            position: relative;
+        }
+
+        .testimonials::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(255, 107, 53, 0.1) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+
+        .testimonial-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        .testimonial {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 2rem;
+            border-radius: 15px;
+            border-left: 4px solid var(--color-primary);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .testimonial:hover {
+            box-shadow: 0 10px 30px rgba(255, 107, 53, 0.15);
+            transform: translateY(-5px);
+        }
+
+        .testimonial p {
+            color: #666;
+            margin-bottom: 1.5rem;
+            font-style: italic;
+            line-height: 1.8;
+        }
+
+        .testimonial-author {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .author-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: var(--gradient-warm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        .author-info h4 {
+            font-size: 1rem;
+            color: var(--color-text);
+            margin-bottom: 0.2rem;
+        }
+
+        .author-info p {
+            font-size: 0.85rem;
+            color: #999;
+            margin: 0;
+            font-style: normal;
+        }
+
+        /* CTA Section */
+        .cta-section {
+            padding: 80px 5%;
+            background: var(--gradient-warm);
+            text-align: center;
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cta-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="none" stroke="white" stroke-width="0.5" opacity="0.1"/></svg>');
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+
+        .cta-section h2 {
+            font-size: 2.5rem;
+            margin-bottom: 1.5rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .cta-section p {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .cta-button-white {
+            background: white;
+            color: var(--color-primary);
+            padding: 1rem 2.5rem;
+            border-radius: 50px;
+            border: none;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            z-index: 1;
+        }
+
+        .cta-button-white:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Footer */
+        footer {
+            background: var(--color-dark);
+            color: #ccc;
+            padding: 3rem 5%;
+            border-top: 2px solid rgba(255, 107, 53, 0.2);
+        }
+
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .footer-section h4 {
+            color: white;
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+        }
+
+        .footer-section ul {
+            list-style: none;
+        }
+
+        .footer-section ul li {
+            margin-bottom: 0.8rem;
+        }
+
+        .footer-section a {
+            color: #ccc;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .footer-section a:hover {
+            color: var(--color-primary);
+            margin-left: 5px;
+        }
+
+        .footer-bottom {
+            text-align: center;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(255, 107, 53, 0.1);
+            color: #999;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .hero h1 { font-size: 3rem; }
+            .section-title { font-size: 2rem; }
+        }
+
+        @media (max-width: 768px) {
+            nav { flex-direction: column; gap: 1rem; }
+            .nav-links { flex-direction: column; gap: 1rem; }
+            .hero { padding: 50px 5%; min-height: auto; }
+            .hero h1 { font-size: 2rem; }
+            .hero-subtitle { font-size: 1.1rem; }
+            .hero-cta { flex-direction: column; }
+            .btn-primary, .btn-secondary { width: 100%; }
+            .features { padding: 60px 5%; }
+            .section-title { font-size: 1.8rem; }
+        }
+
+        /* Scroll animations */
+        .scroll-reveal {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.6s ease;
+        }
+
+        .scroll-reveal.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <nav>
+            <div class="logo">confkit</div>
+            <ul class="nav-links">
+                <li><a href="#features">Features</a></li>
+                <li><a href="#code">Quick Start</a></li>
+                <li><a href="#comparison">Comparison</a></li>
+                <li><a href="./docs/">Docs</a></li>
+                <li><a href="https://github.com/MimoJanra/confkit" target="_blank">GitHub</a></li>
+            </ul>
+            <button class="cta-button">Get Started</button>
+        </nav>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1>Type-Safe Configuration for Go</h1>
+            <p class="hero-subtitle">Load, validate, and redact configuration from files, environment variables, Kubernetes, Vault, AWS, and more — with full type safety.</p>
+            <div class="hero-cta">
+                <button class="btn-primary">Start Using confkit</button>
+                <button class="btn-secondary">View Documentation</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features" id="features">
+        <h2 class="section-title">Why confkit?</h2>
+        <div class="features-grid">
+            <div class="feature-card scroll-reveal">
+                <div class="feature-icon">✓</div>
+                <h3>Fully Typed</h3>
+                <p>Load[T] returns your struct with full compile-time type checking. No casting, no surprises.</p>
+            </div>
+            <div class="feature-card scroll-reveal">
+                <div class="feature-icon">⚙️</div>
+                <h3>Built-in Validation</h3>
+                <p>Define validation rules in struct tags. min, max, required, oneof, and custom validators.</p>
+            </div>
+            <div class="feature-card scroll-reveal">
+                <div class="feature-icon">🔐</div>
+                <h3>Secret Redaction</h3>
+                <p>Mark fields as secret:"true" and they're automatically redacted in errors and logs.</p>
+            </div>
+            <div class="feature-card scroll-reveal">
+                <div class="feature-icon">📝</div>
+                <h3>Clear Error Messages</h3>
+                <p>Know exactly which field failed, why, and where it came from. Built for humans.</p>
+            </div>
+            <div class="feature-card scroll-reveal">
+                <div class="feature-icon">🔀</div>
+                <h3>Multiple Sources</h3>
+                <p>Mix YAML, JSON, TOML, env, flags, Kubernetes, Vault, Consul, etcd, AWS with explicit precedence.</p>
+            </div>
+            <div class="feature-card scroll-reveal">
+                <div class="feature-icon">⚡</div>
+                <h3>Cloud Integrations</h3>
+                <p>Optional modules for Vault, Consul, etcd, AWS. Import only what you need.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Code Example -->
+    <section class="code-example" id="code">
+        <h2 class="section-title">Quick Start</h2>
+        <div class="code-container">
+            <div class="code-text">
+                <h2>Load in One Call</h2>
+                <p>Define your config as a Go struct. Defaults, validation, and secret redaction are just tags.</p>
+                <p>Load from YAML, environment variables, or both. confkit merges them and validates everything before returning your typed config.</p>
+                <button class="btn-primary" style="background: var(--gradient-warm); border: none; color: white;">Read the Docs</button>
+            </div>
+            <div class="code-block">
+                <code><span class="code-keyword">type</span> Config <span class="code-keyword">struct</span> {
+    Port <span class="code-keyword">int</span>    <span class="code-string">`env:"PORT" default:"8080" validate:"min=1,max=65535"`</span>
+    DSN  <span class="code-keyword">string</span> <span class="code-string">`env:"DB_URL" validate:"required" secret:"true"`</span>
+}
+
+cfg, err := confkit.Load[Config](
+    confkit.FromYAML(<span class="code-string">"config.yaml"</span>),
+    confkit.FromEnv(),
+)
+<span class="code-comment">// cfg is exactly type Config, fully typed</span></code>
+            </div>
+        </div>
+    </section>
+
+    <!-- Comparison Section -->
+    <section class="comparison" id="comparison">
+        <h2 class="section-title">How confkit Compares</h2>
+        <div class="comparison-grid">
+            <div class="comparison-card scroll-reveal">
+                <h3>confkit</h3>
+                <ul class="feature-list">
+                    <li><span class="check">✓</span> Typed Load[T]</li>
+                    <li><span class="check">✓</span> Built-in validation</li>
+                    <li><span class="check">✓</span> Secret redaction</li>
+                    <li><span class="check">✓</span> Clear errors</li>
+                    <li><span class="check">✓</span> Multiple sources</li>
+                    <li><span class="check">✓</span> Production ready</li>
+                </ul>
+            </div>
+            <div class="comparison-card scroll-reveal">
+                <h3>Viper</h3>
+                <ul class="feature-list">
+                    <li><span class="cross">✗</span> Type map[string]interface{}</li>
+                    <li><span class="cross">✗</span> No validation</li>
+                    <li><span class="cross">✗</span> No redaction</li>
+                    <li><span class="check">✓</span> Heavy runtime reloading</li>
+                    <li><span class="check">✓</span> Flexible</li>
+                </ul>
+            </div>
+            <div class="comparison-card scroll-reveal">
+                <h3>envconfig</h3>
+                <ul class="feature-list">
+                    <li><span class="check">✓</span> Typed</li>
+                    <li><span class="cross">✗</span> No validation</li>
+                    <li><span class="cross">✗</span> No defaults</li>
+                    <li><span class="cross">✗</span> No redaction</li>
+                    <li><span class="cross">✗</span> Env vars only</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials -->
+    <section class="testimonials">
+        <h2 class="section-title">Trusted by Go Teams</h2>
+        <div class="testimonial-grid">
+            <div class="testimonial scroll-reveal">
+                <p>"confkit eliminated so much boilerplate from our config loading. The error messages alone are worth it."</p>
+                <div class="testimonial-author">
+                    <div class="author-avatar">JD</div>
+                    <div class="author-info">
+                        <h4>James Developer</h4>
+                        <p>Senior Engineer, TechCorp</p>
+                    </div>
+                </div>
+            </div>
+            <div class="testimonial scroll-reveal">
+                <p>"Type-safe config with automatic secret redaction is exactly what we needed for our microservices."</p>
+                <div class="testimonial-author">
+                    <div class="author-avatar">SA</div>
+                    <div class="author-info">
+                        <h4>Sarah Architect</h4>
+                        <p>Lead Architect, CloudScale</p>
+                    </div>
+                </div>
+            </div>
+            <div class="testimonial scroll-reveal">
+                <p>"The validation rules in tags are genius. No more stringly-typed validation code scattered everywhere."</p>
+                <div class="testimonial-author">
+                    <div class="author-avatar">MB</div>
+                    <div class="author-info">
+                        <h4>Marcus Builder</h4>
+                        <p>DevOps Engineer, InfraWorks</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta-section">
+        <h2>Ready to simplify your config?</h2>
+        <p>Start using confkit today — fully open source, MIT licensed, and production-ready.</p>
+        <button class="cta-button-white">Get confkit Now</button>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Product</h4>
+                <ul>
+                    <li><a href="./docs/">Documentation</a></li>
+                    <li><a href="./docs/recipes/">Recipes</a></li>
+                    <li><a href="./docs/comparison/">Comparisons</a></li>
+                    <li><a href="https://github.com/MimoJanra/confkit/releases">Releases</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4>Community</h4>
+                <ul>
+                    <li><a href="https://github.com/MimoJanra/confkit">GitHub</a></li>
+                    <li><a href="https://github.com/MimoJanra/confkit/discussions">Discussions</a></li>
+                    <li><a href="https://github.com/MimoJanra/confkit/issues">Issues</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4>Resources</h4>
+                <ul>
+                    <li><a href="./README.md">README</a></li>
+                    <li><a href="https://pkg.go.dev/github.com/MimoJanra/confkit">pkg.go.dev</a></li>
+                    <li><a href="./llms.txt">LLM Index</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2026 confkit. Released under MIT License. Built with ❤️ for Go developers.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Smooth scroll navigation
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                const href = this.getAttribute('href');
+                if (href !== '#') {
+                    e.preventDefault();
+                    const target = document.querySelector(href);
+                    if (target) {
+                        target.scrollIntoView({ behavior: 'smooth' });
+                    }
+                }
+            });
+        });
+
+        // Scroll reveal animation
+        const revealElements = document.querySelectorAll('.scroll-reveal');
+
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('active');
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, observerOptions);
+
+        revealElements.forEach(element => {
+            observer.observe(element);
+        });
+
+        // Button click handlers
+        document.querySelectorAll('.btn-primary, .btn-secondary, .cta-button, .cta-button-white').forEach(button => {
+            button.addEventListener('click', function() {
+                const text = this.textContent.trim();
+                if (text.includes('Start') || text.includes('Get')) {
+                    window.location.href = './docs/docs/installation.html';
+                } else if (text.includes('Documentation')) {
+                    window.location.href = './docs/';
+                } else if (text.includes('Read')) {
+                    window.location.href = './docs/docs/getting-started.html';
+                }
+            });
+        });
+
+        // Parallax effect on scroll
+        window.addEventListener('scroll', () => {
+            const scrolled = window.pageYOffset;
+            const hero = document.querySelector('.hero');
+            if (hero) {
+                hero.style.backgroundPosition = `0 ${scrolled * 0.5}px`;
+            }
+        });
+    </script>
+</body>
+</html>

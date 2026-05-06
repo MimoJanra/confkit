@@ -1,0 +1,61 @@
+# confkit Website Robots Configuration
+# https://mimojanra.github.io/confkit
+
+# Allow all search engines to crawl the site
+User-agent: *
+Allow: /
+
+# Specific rules for common bots
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 0
+
+User-agent: Bingbot
+Allow: /
+Crawl-delay: 1
+
+User-agent: Slurp
+Allow: /
+Crawl-delay: 1
+
+# Disallow bot aggregators and scrapers
+User-agent: AhrefsBot
+Disallow: /
+
+User-agent: SemrushBot
+Disallow: /
+
+User-agent: MJ12bot
+Disallow: /
+
+User-agent: DotBot
+Disallow: /
+
+# Disallow AI crawlers that don't respect robots.txt
+User-agent: GPTBot
+Disallow: /
+
+User-agent: CCBot
+Disallow: /
+
+User-agent: anthropic-ai
+Disallow: /
+
+User-agent: Claude-Web
+Disallow: /
+
+# Allow LLM-friendly indexing (confkit documentation is meant for LLMs)
+User-agent: *
+Allow: /llms.txt
+Allow: /llms-full.txt
+
+# Sitemap location
+Sitemap: https://mimojanra.github.io/confkit/sitemap.xml
+
+# Crawl delay (seconds) to avoid overloading server
+Crawl-delay: 0.5
+Request-rate: 1/5
+
+# Cache settings
+# Let crawlers cache content aggressively—docs change infrequently
+Cache-Control: public, max-age=86400
