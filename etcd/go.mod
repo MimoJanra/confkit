@@ -5,7 +5,7 @@ go 1.24.0
 toolchain go1.24.2
 
 require (
-	github.com/MimoJanra/confkit v0.5.0
+	github.com/MimoJanra/confkit v0.8.3
 	go.etcd.io/etcd/client/v3 v3.5.15
 )
 
@@ -30,4 +30,4 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace github.com/MimoJanra/confkit v0.5.0 => ../
+replace github.com/MimoJanra/confkit v0.8.3 => ../
