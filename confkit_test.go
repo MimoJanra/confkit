@@ -1271,8 +1271,8 @@ func TestFromYAMLFilesNestedMerge(t *testing.T) {
 
 	file1 := writeTempYAML(t, "port: 8080\ndatabase:\n  host: db1.local\n  port: 5432")
 	file2 := writeTempYAML(t, "port: 9000\ndatabase:\n  host: db2.local")
-	defer os.Remove(file1)
-	defer os.Remove(file2)
+	defer func() { _ = os.Remove(file1) }()
+	defer func() { _ = os.Remove(file2) }()
 
 	cfg, err := Load[Config](FromYAMLFiles(file1, file2))
 	if err != nil {
@@ -1325,7 +1325,7 @@ func TestFromJSONFilesSingle(t *testing.T) {
 	}
 
 	tmpFile := writeTempJSON(t, `{"port":8080,"host":"localhost"}`)
-	defer os.Remove(tmpFile)
+	defer func() { _ = os.Remove(tmpFile) }()
 
 	cfg, err := Load[Config](FromJSONFiles(tmpFile))
 	if err != nil {
@@ -1349,8 +1349,8 @@ func TestFromJSONFilesMultiple(t *testing.T) {
 
 	file1 := writeTempJSON(t, `{"port":8080,"host":"localhost","mode":"dev"}`)
 	file2 := writeTempJSON(t, `{"port":9000,"mode":"prod"}`)
-	defer os.Remove(file1)
-	defer os.Remove(file2)
+	defer func() { _ = os.Remove(\1) }()
+	defer func() { _ = os.Remove(\1) }()
 
 	cfg, err := Load[Config](FromJSONFiles(file1, file2))
 	if err != nil {
@@ -1380,8 +1380,8 @@ func TestFromJSONFilesNestedMerge(t *testing.T) {
 
 	file1 := writeTempJSON(t, `{"port":8080,"database":{"host":"db1.local","port":5432}}`)
 	file2 := writeTempJSON(t, `{"port":9000,"database":{"host":"db2.local"}}`)
-	defer os.Remove(file1)
-	defer os.Remove(file2)
+	defer func() { _ = os.Remove(\1) }()
+	defer func() { _ = os.Remove(\1) }()
 
 	cfg, err := Load[Config](FromJSONFiles(file1, file2))
 	if err != nil {
@@ -1406,7 +1406,7 @@ func TestFromTOMLFilesSingle(t *testing.T) {
 	}
 
 	tmpFile := writeTempTOML(t, "port = 8080\nhost = \"localhost\"")
-	defer os.Remove(tmpFile)
+	defer func() { _ = os.Remove(\1) }()
 
 	cfg, err := Load[Config](FromTOMLFiles(tmpFile))
 	if err != nil {
@@ -1430,8 +1430,8 @@ func TestFromTOMLFilesMultiple(t *testing.T) {
 
 	file1 := writeTempTOML(t, "port = 8080\nhost = \"localhost\"\nmode = \"dev\"")
 	file2 := writeTempTOML(t, "port = 9000\nmode = \"prod\"")
-	defer os.Remove(file1)
-	defer os.Remove(file2)
+	defer func() { _ = os.Remove(\1) }()
+	defer func() { _ = os.Remove(\1) }()
 
 	cfg, err := Load[Config](FromTOMLFiles(file1, file2))
 	if err != nil {
@@ -1461,8 +1461,8 @@ func TestFromTOMLFilesNestedMerge(t *testing.T) {
 
 	file1 := writeTempTOML(t, "port = 8080\n[database]\nhost = \"db1.local\"\nport = 5432")
 	file2 := writeTempTOML(t, "port = 9000\n[database]\nhost = \"db2.local\"")
-	defer os.Remove(file1)
-	defer os.Remove(file2)
+	defer func() { _ = os.Remove(\1) }()
+	defer func() { _ = os.Remove(\1) }()
 
 	cfg, err := Load[Config](FromTOMLFiles(file1, file2))
 	if err != nil {
@@ -1490,9 +1490,9 @@ func TestMultipleYAMLFilesPrecedence(t *testing.T) {
 	file1 := writeTempYAML(t, "a: from-file1\nb: from-file1\nc: from-file1")
 	file2 := writeTempYAML(t, "b: from-file2\nc: from-file2")
 	file3 := writeTempYAML(t, "c: from-file3")
-	defer os.Remove(file1)
-	defer os.Remove(file2)
-	defer os.Remove(file3)
+	defer func() { _ = os.Remove(\1) }()
+	defer func() { _ = os.Remove(\1) }()
+	defer func() { _ = os.Remove(\1) }()
 
 	cfg, err := Load[Config](FromYAMLFiles(file1, file2, file3))
 	if err != nil {
@@ -1517,7 +1517,7 @@ func TestFromYAMLFilesMalformed(t *testing.T) {
 	}
 
 	tmpFile := writeTempYAML(t, "port: [invalid yaml: here:")
-	defer os.Remove(tmpFile)
+	defer func() { _ = os.Remove(\1) }()
 
 	_, err := Load[Config](FromYAMLFiles(tmpFile))
 	if err == nil {
@@ -1532,7 +1532,7 @@ func TestFromJSONFilesMalformed(t *testing.T) {
 	}
 
 	tmpFile := writeTempJSON(t, `{"port": [invalid json}`)
-	defer os.Remove(tmpFile)
+	defer func() { _ = os.Remove(\1) }()
 
 	_, err := Load[Config](FromJSONFiles(tmpFile))
 	if err == nil {
@@ -1547,7 +1547,7 @@ func TestFromTOMLFilesMalformed(t *testing.T) {
 	}
 
 	tmpFile := writeTempTOML(t, "port = [invalid toml")
-	defer os.Remove(tmpFile)
+	defer func() { _ = os.Remove(\1) }()
 
 	_, err := Load[Config](FromTOMLFiles(tmpFile))
 	if err == nil {
