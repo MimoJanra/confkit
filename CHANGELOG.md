@@ -5,13 +5,21 @@ All notable changes to confkit are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.10.0] - 2026-05-08
 
 ### Added
 
 - **`FromYAMLOptional()` function** — loads YAML config without failing if the file doesn't exist; useful for optional config files with env-var overrides. Uses `errors.Is()` to properly detect file-not-found errors through fmt.Errorf wrapping.
 - **Automatic snake_case ↔ CamelCase mapping in YAML/JSON/TOML** — if a field doesn't have an explicit `yaml:`, `json:`, or `toml:` tag, confkit automatically tries the snake_case version (e.g., `shutdown_timeout` in YAML matches `ShutdownTimeout` struct field). Implemented in all file sources: `yaml_source.go`, `json_source.go`, `toml_source.go`, `file_sources.go`.
 - **Detailed error sources in all contexts** — validation errors now consistently include the `source` field (showing "validation" as origin), matching parse/io error reporting. All FieldError types track where the configuration value came from.
+- **Production-ready examples suite** — 5 complete, tested examples demonstrating real-world usage:
+  - Web service with database, cache, logging
+  - Microservice with PostgreSQL, Redis, RabbitMQ, JWT, observability
+  - CLI tool with flags, file processing, validation
+  - Cloud-native with Kubernetes ConfigMaps, AWS Secrets Manager, Vault, mTLS
+  - Full setup with JSON Schema, Markdown docs, CLI help generation
+- **Comprehensive examples documentation** — examples/README.md with setup instructions, environment variables, key patterns, and testing
+- **Examples integrated into all documentation** — links to production examples in README, all 9 docs, and llms-full.txt
 
 ### Changed
 
@@ -23,6 +31,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - **Optional YAML file detection** — FromYAMLOptional now properly detects os.ErrNotExist through wrapped errors using `errors.As()`, not just surface-level `os.IsNotExist()`
+- **time.Duration parsing** — fully supports Go duration format ("5s", "10m", "1h30m") out of the box
+- **Supported types documentation** — added comprehensive "Supported Types" section to getting-started guide with time.Duration examples
 
 ### Documentation
 
@@ -30,17 +40,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Examples of multi-level nesting with prefixes** — clarified how prefixes accumulate across nested structs (MAIN_SUB_VALUE example)
 - **Updated all installation commands** — all `go get` commands now specify `@latest` to get current version with breaking changes
 - **Complete LLM reference** — llms-full.txt now contains 6500+ lines of exhaustive documentation covering every API, type, validation rule, source type, example, and design decision
+- **Production examples throughout** — links to examples directory in all documentation files
 
 ### Migration Guide
 
-For users upgrading from v0.5:
+For users upgrading from v0.9:
 
 ```go
-// v0.5 code
+// v0.9 code
 cfg, err := Load[Config](sources...)
 // cfg type: Config
 
-// v0.6+ code (requires recompilation only)
+// v0.10+ code (requires recompilation only)
 cfg, err := Load[Config](sources...)
 // cfg type: *Config (pointer)
 
@@ -49,6 +60,11 @@ log.Printf("Port: %d", cfg.Port)  // Still works — Go auto-dereferences
 ```
 
 No logic changes needed in most code; only type signatures change. This is a compile-time breaking change, not a runtime one.
+
+**New features:**
+- Use `FromYAMLOptional()` for optional config files
+- Use snake_case in YAML files — automatic mapping to CamelCase fields
+- See `examples/` directory for production-ready configurations
 
 ---
 
