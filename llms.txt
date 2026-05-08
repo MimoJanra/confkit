@@ -21,7 +21,7 @@ confkit loads configuration from multiple sources (YAML, JSON, TOML, env, flags,
 ## Install
 
 ```bash
-go get github.com/MimoJanra/confkit@v0.5.0
+go get github.com/MimoJanra/confkit@vlatest
 ```
 
 ## Core API

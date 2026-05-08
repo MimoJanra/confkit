@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/MimoJanra/confkit/structtags"
 	"github.com/pelletier/go-toml/v2"
 	"gopkg.in/yaml.v3"
 )
@@ -85,10 +86,15 @@ func (m *multiFileSource) Lookup(_ context.Context, field *FieldInfo) (any, bool
 	if tagName == "" {
 		tagName = field.Tags["json"]
 	}
-	if tagName == "" {
-		return "", false, nil
+	if tagName != "" {
+		value, ok := lookupNested(m.data, tagName, field.Path, field.AncestorTags, m.name)
+		if ok {
+			return value, true, nil
+		}
 	}
-	value, ok := lookupNested(m.data, tagName, field.Path, field.AncestorTags, m.name)
+
+	snakeCaseTagName := structtags.SnakeCase(field.Name)
+	value, ok := lookupNested(m.data, snakeCaseTagName, field.Path, field.AncestorTags, m.name)
 	if !ok {
 		return "", false, nil
 	}

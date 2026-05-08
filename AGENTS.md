@@ -186,7 +186,7 @@ go func() {
 
 ## Key Files to Reference
 
-- `llms.txt` — LLM-readable API summary (this file is served at `https://mimojanra.github.io/confkit/llms.txt`)
+- `llms.txt` — LLM-readable API summary (this file is served at `https://confkit.xyz/llms.txt`)
 - `README.md` — Project overview, quick start, examples
 - `SECURITY.md` — Vulnerability reporting, security best practices
 - `docs/` — Full documentation (Getting Started, API Reference, Examples)

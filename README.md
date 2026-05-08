@@ -6,7 +6,7 @@
 [![codecov](https://codecov.io/gh/MimoJanra/confkit/branch/main/graph/badge.svg)](https://codecov.io/gh/MimoJanra/confkit)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Go Report Card](https://goreportcard.com/badge/github.com/MimoJanra/confkit)](https://goreportcard.com/report/github.com/MimoJanra/confkit)
-[![Documentation](https://img.shields.io/badge/docs-mimojanra.github.io-blue)](https://mimojanra.github.io/confkit/)
+[![Documentation](https://img.shields.io/badge/docs-confkit.xyz-blue)](https://confkit.xyz/)
 [![LLM Context](https://img.shields.io/badge/llms.txt-reference-brightgreen)](./llms.txt)
 
 **Typed, validated configuration loading for Go** — no more stringly-typed config, boilerplate, or cryptic error
@@ -362,13 +362,13 @@ cfg, err := confkit.LoadWithOptions[Config](
 
 ```go
 // Load using variadic sources — shorthand for the common case
-func Load[T any](sources ...Source) (T, error)
+func Load[T any](sources ...Source) (*T, error)
 
 // Load with fine-grained options (validators, middleware, interpolation depth)
-func LoadWithOptions[T any](options ...Option) (T, error)
+func LoadWithOptions[T any](options ...Option) (*T, error)
 
 // Load and set up a file watcher in one call
-func LoadWithWatcher[T any](filePath string, sources ...Source) (T, *ConfigWatcher, error)
+func LoadWithWatcher[T any](filePath string, sources ...Source) (*T, *ConfigWatcher, error)
 
 // Option constructors
 func WithSource(source Source) Option
@@ -464,6 +464,44 @@ type DBConfig struct {
 ```
 
 Nesting is unlimited. Prefixes from all ancestor structs are concatenated.
+
+### Prefix Mapping Rules
+
+The `prefix` tag applies to all fields in a nested struct. When combined with `env` tags, the final environment variable name is constructed as: **`<prefix><env_tag_name>`**
+
+| Struct Definition | env Tag | Prefix | Result Env Var |
+|---|---|---|---|
+| `Host string` | `env:"HOST"` | `prefix:"DB_"` | `DB_HOST` |
+| `Port int` | `env:"PORT"` | `prefix:"DB_"` | `DB_PORT` |
+| `timeout int` | `env:"TIMEOUT"` | `prefix:"CACHE_"` | `CACHE_TIMEOUT` |
+
+If you omit the `env` tag on a field in a prefixed struct, the field **will not be loaded from environment variables** — the prefix alone is not enough. You must explicitly define `env:"FIELD_NAME"`.
+
+```go
+type Config struct {
+    Database struct {
+        Host     string `env:"HOST" default:"localhost"`   // reads DB_HOST
+        Port     int    `env:"PORT" default:"5432"`        // reads DB_PORT
+        User     string // ❌ not read from env (no tag)
+        Password string `env:"PASSWORD" secret:"true"`     // reads DB_PASSWORD
+    } `prefix:"DB_"`
+}
+
+// Valid env vars: DB_HOST, DB_PORT, DB_PASSWORD
+// User must be set via config file or default
+```
+
+For multiple levels of nesting, prefixes accumulate:
+
+```go
+type Config struct {
+    Main struct {
+        Sub struct {
+            Value string `env:"VALUE"` // reads: MAIN_SUB_VALUE
+        } `prefix:"SUB_"`
+    } `prefix:"MAIN_"`
+}
+```
 
 ---
 
@@ -564,11 +602,11 @@ vault.VaultKubernetesAuth(role, jwt string) VaultAuth
 
 ## Documentation
 
-- **[Full Documentation](https://mimojanra.github.io/)** — Getting started, guides, API reference
-- **[Getting Started](https://mimojanra.github.io/docs/getting-started/)** — 5-minute quick start
-- **[API Reference](https://mimojanra.github.io/api/)** — Complete function and type reference
-- **[Examples](https://mimojanra.github.io/examples/)** — Runnable code examples
-- **[Sources Guide](https://mimojanra.github.io/docs/sources/)** — All configuration sources
+- **[Full Documentation](https://confkit.xyz/)** — Getting started, guides, API reference
+- **[Getting Started](https://confkit.xyz/docs/)** — 5-minute quick start
+- **[API Reference](https://confkit.xyz/api/)** — Complete function and type reference
+- **[Examples](https://confkit.xyz/examples/)** — Runnable code examples
+- **[Sources Guide](https://confkit.xyz/docs/#sources)** — All configuration sources
 - **[GitHub Discussions](https://github.com/MimoJanra/confkit/discussions)** — Questions and ideas
 - **[Issues](https://github.com/MimoJanra/confkit/issues)** — Bug reports and feature requests
 

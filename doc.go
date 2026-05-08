@@ -152,7 +152,7 @@
 //
 // # Documentation
 //
-// Full documentation is available at: https://mimojanra.github.io/confkit/
+// Full documentation is available at: https://confkit.xyz/
 //
 // See README.md for more examples, or visit pkg.go.dev for this package's API docs.
 package confkit

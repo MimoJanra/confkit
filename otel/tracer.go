@@ -9,7 +9,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-func Load[T any](ctx context.Context, tracer trace.Tracer, sources ...confkit.Source) (T, error) {
+func Load[T any](ctx context.Context, tracer trace.Tracer, sources ...confkit.Source) (*T, error) {
 	ctx, span := tracer.Start(ctx, "confkit.Load")
 	defer span.End()
 
@@ -27,7 +27,7 @@ func Load[T any](ctx context.Context, tracer trace.Tracer, sources ...confkit.So
 	return cfg, nil
 }
 
-func LoadWithOptions[T any](ctx context.Context, tracer trace.Tracer, options ...confkit.Option) (T, error) {
+func LoadWithOptions[T any](ctx context.Context, tracer trace.Tracer, options ...confkit.Option) (*T, error) {
 	ctx, span := tracer.Start(ctx, "confkit.Load")
 	defer span.End()
 

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/MimoJanra/confkit/structtags"
 	"github.com/pelletier/go-toml/v2"
 )
 
@@ -45,10 +46,15 @@ func (t *tomlSource) Lookup(_ context.Context, field *FieldInfo) (any, bool, err
 	if tagName == "" {
 		tagName = field.Tags["yaml"]
 	}
-	if tagName == "" {
-		return "", false, nil
+	if tagName != "" {
+		value, ok := lookupNested(t.data, tagName, field.Path, field.AncestorTags, "toml")
+		if ok {
+			return value, true, nil
+		}
 	}
-	value, ok := lookupNested(t.data, tagName, field.Path, field.AncestorTags, "toml")
+
+	snakeCaseTagName := structtags.SnakeCase(field.Name)
+	value, ok := lookupNested(t.data, snakeCaseTagName, field.Path, field.AncestorTags, "toml")
 	if !ok {
 		return "", false, nil
 	}

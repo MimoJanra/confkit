@@ -329,6 +329,34 @@ func TestLoadFromYAML(t *testing.T) {
 	}
 }
 
+func TestLoadSnakeCaseYAML(t *testing.T) {
+	type Config struct {
+		ServerAddr   string
+		ShutdownSecs int
+		DatabaseHost string
+	}
+
+	tmpFile, _ := os.CreateTemp("", "test.yaml")
+	defer func() { _ = os.Remove(tmpFile.Name()) }()
+	_, _ = tmpFile.WriteString("server_addr: localhost:8080\nshutdown_secs: 30\ndatabase_host: db.example.com\n")
+	_ = tmpFile.Close()
+
+	cfg, err := Load[Config](FromYAML(tmpFile.Name()))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if cfg.ServerAddr != "localhost:8080" {
+		t.Errorf("expected ServerAddr 'localhost:8080', got %q", cfg.ServerAddr)
+	}
+	if cfg.ShutdownSecs != 30 {
+		t.Errorf("expected ShutdownSecs 30, got %d", cfg.ShutdownSecs)
+	}
+	if cfg.DatabaseHost != "db.example.com" {
+		t.Errorf("expected DatabaseHost 'db.example.com', got %q", cfg.DatabaseHost)
+	}
+}
+
 func TestLoadFromJSON(t *testing.T) {
 	type Config struct {
 		Port int    `json:"port"`
@@ -881,6 +909,41 @@ func TestLoadMissingYAMLFile(t *testing.T) {
 	_, err := Load[Config](FromYAML("testdata/nonexistent.yaml"))
 	if err == nil {
 		t.Fatal("expected error for missing YAML file, got nil")
+	}
+}
+
+func TestLoadOptionalYAMLMissing(t *testing.T) {
+	type Config struct {
+		Port int    `default:"8080"`
+		Mode string `default:"dev"`
+	}
+
+	cfg, err := Load[Config](FromYAMLOptional("testdata/nonexistent.yaml"))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if cfg.Port != 8080 {
+		t.Errorf("expected Port 8080, got %d", cfg.Port)
+	}
+	if cfg.Mode != "dev" {
+		t.Errorf("expected Mode 'dev', got %q", cfg.Mode)
+	}
+}
+
+func TestLoadOptionalYAMLExists(t *testing.T) {
+	type Config struct {
+		Port int    `yaml:"port"`
+		Mode string `yaml:"mode"`
+	}
+
+	cfg, err := Load[Config](FromYAMLOptional("testdata/config.yaml"))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if cfg.Port != 3000 {
+		t.Errorf("expected Port 3000, got %d", cfg.Port)
 	}
 }
 

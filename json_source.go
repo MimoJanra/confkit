@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+
+	"github.com/MimoJanra/confkit/structtags"
 )
 
 func FromJSON(path string) Source {
@@ -44,10 +46,15 @@ func (j *jsonSource) Lookup(_ context.Context, field *FieldInfo) (any, bool, err
 	if tagName == "" {
 		tagName = field.Tags["yaml"]
 	}
-	if tagName == "" {
-		return "", false, nil
+	if tagName != "" {
+		value, ok := lookupNested(j.data, tagName, field.Path, field.AncestorTags, "json")
+		if ok {
+			return value, true, nil
+		}
 	}
-	value, ok := lookupNested(j.data, tagName, field.Path, field.AncestorTags, "json")
+
+	snakeCaseTagName := structtags.SnakeCase(field.Name)
+	value, ok := lookupNested(j.data, snakeCaseTagName, field.Path, field.AncestorTags, "json")
 	if !ok {
 		return "", false, nil
 	}

@@ -2,6 +2,7 @@ package confkit
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -14,6 +15,18 @@ import (
 func FromYAML(path string) Source {
 	source, err := newYAMLSource(path)
 	if err != nil {
+		return &errorSource{err: err}
+	}
+	return source
+}
+
+func FromYAMLOptional(path string) Source {
+	source, err := newYAMLSource(path)
+	if err != nil {
+		var pathErr *os.PathError
+		if errors.As(err, &pathErr) && errors.Is(pathErr.Err, os.ErrNotExist) {
+			return &emptySource{}
+		}
 		return &errorSource{err: err}
 	}
 	return source
@@ -48,10 +61,15 @@ func (y *yamlSource) Lookup(_ context.Context, field *FieldInfo) (any, bool, err
 	if tagName == "" {
 		tagName = field.Tags["json"]
 	}
-	if tagName == "" {
-		return "", false, nil
+	if tagName != "" {
+		value, ok := lookupNested(y.data, tagName, field.Path, field.AncestorTags, "yaml")
+		if ok {
+			return value, true, nil
+		}
 	}
-	value, ok := lookupNested(y.data, tagName, field.Path, field.AncestorTags, "yaml")
+
+	snakeCaseTagName := structtags.SnakeCase(field.Name)
+	value, ok := lookupNested(y.data, snakeCaseTagName, field.Path, field.AncestorTags, "yaml")
 	if !ok {
 		return "", false, nil
 	}

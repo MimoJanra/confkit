@@ -5,6 +5,28 @@ All notable changes to confkit are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **`FromYAMLOptional()` function** — loads YAML config without failing if the file doesn't exist; useful for optional config files with env-var overrides
+- **Automatic snake_case ↔ CamelCase mapping in YAML/JSON/TOML** — if a field doesn't have an explicit tag, we automatically try snake_case version (e.g., `shutdown_timeout` in YAML matches `ShutdownTimeout` struct field)
+- **Detailed error sources in validation** — validation errors now include the `source` field (showing "validation" as origin), matching parse/io error reporting
+
+### Changed
+
+- **`Load[T]` returns pointer** — `Load[T](sources...) (*T, error)` instead of `(T, error)` (breaking change, intentional before v1.0). Go automatically dereferences for field access, so existing code mostly works unchanged. Update: `cfg, err := Load[Config](...)`
+- **`LoadWithOptions[T]` returns pointer** — aligned with `Load[T]` signature
+- **`LoadWithWatcher[T]` returns pointer** — first return value is now `(*T, *ConfigWatcher, error)` instead of `(T, *ConfigWatcher, error)`
+- **`otel.Load[T]` and `otel.LoadWithOptions[T]` return pointers** — wrapper functions updated to match core API
+
+### Documentation
+
+- **Enhanced prefix mapping guide** — added detailed "Prefix Mapping Rules" section in README with table showing how `env:"HOST"` + `prefix:"DB_"` combines to `DB_HOST`, and explaining that `env` tag is required even with prefix
+- **Examples of multi-level nesting with prefixes** — clarified how prefixes accumulate across nested structs
+
+---
+
 ## [0.9.0] - 2026-05-06
 
 ### Added

@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-func Load[T any](sources ...Source) (T, error) {
+func Load[T any](sources ...Source) (*T, error) {
 	options := make([]Option, 0, len(sources))
 	for _, src := range sources {
 		options = append(options, WithSource(src))
@@ -16,25 +16,23 @@ func Load[T any](sources ...Source) (T, error) {
 	return LoadWithOptions[T](options...)
 }
 
-func LoadWithWatcher[T any](filePath string, sources ...Source) (T, *ConfigWatcher, error) {
+func LoadWithWatcher[T any](filePath string, sources ...Source) (*T, *ConfigWatcher, error) {
 	cfg, err := Load[T](sources...)
 	if err != nil {
-		var zero T
-		return zero, nil, err
+		return nil, nil, err
 	}
 
 	watcher, err := NewConfigWatcher(filePath)
 	if err != nil {
-		var zero T
-		return zero, nil, err
+		return nil, nil, err
 	}
 
 	return cfg, watcher, nil
 }
 
-func LoadWithOptions[T any](options ...Option) (T, error) {
+func LoadWithOptions[T any](options ...Option) (*T, error) {
 	start := time.Now()
-	var cfg T
+	cfg := new(T)
 	ctx := context.Background()
 
 	fields := ScanFields(cfg)
@@ -121,7 +119,7 @@ func LoadWithOptions[T any](options ...Option) (T, error) {
 		return cfg, report
 	}
 
-	val := reflect.ValueOf(&cfg).Elem()
+	val := reflect.ValueOf(cfg).Elem()
 	initEmbeddedPointers(val, val.Type())
 	setStructFields(val, fields, fieldValues, fieldSources, parser, report)
 
@@ -138,7 +136,7 @@ func LoadWithOptions[T any](options ...Option) (T, error) {
 
 	if report.IsEmpty() {
 		for _, mv := range config.ModelValidators {
-			if err := mv(&cfg); err != nil {
+			if err := mv(cfg); err != nil {
 				report.AddError(FieldError{
 					Path:    "_model",
 					Kind:    ErrorKindValidation,
