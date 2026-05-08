@@ -1,0 +1,65 @@
+# Microservice Configuration Example
+# Production-ready configuration with all services integrated
+
+service:
+  name: "payment-service"
+  port: 8000
+  debug_key: "${DEBUG_KEY}"
+
+auth:
+  enabled: true
+  jwt_secret: "${JWT_SECRET}"
+  token_expiry: "24h"
+  refresh_expiry: "7d"
+
+postgresql:
+  host: "postgres.infra.svc"
+  port: 5432
+  user: "${DB_USER}"
+  password: "${DB_PASSWORD}"
+  database: "payments"
+  max_open_conn: 25
+  max_idle_conn: 5
+  idle_timeout: "10m"
+  query_timeout: "30s"
+
+redis:
+  host: "redis.infra.svc"
+  port: 6379
+  password: "${REDIS_PASSWORD}"
+  database: 0
+  max_retries: 3
+  pool_size: 10
+  conn_timeout: "5s"
+  read_timeout: "5s"
+  write_timeout: "5s"
+
+message_queue:
+  type: "rabbitmq"
+  host: "rabbitmq.infra.svc"
+  port: 5672
+  user: "${MQ_USER}"
+  password: "${MQ_PASSWORD}"
+  channel_buffer_size: 100
+  prefetch_count: 10
+  connection_timeout: "10s"
+
+observability:
+  log_level: "info"
+  log_format: "json"
+  metrics_port: 8001
+  metrics_path: "/metrics"
+  tracing_enabled: true
+  traces_sampled: 0.1
+
+feature_flags:
+  enable_new_api: false
+  enable_batch_ops: true
+  enable_caching: true
+  enable_compression: false
+
+rate_limiting:
+  enabled: true
+  requests_per_second: 1000
+  burst_size: 10000
+  window_size: "1s"

@@ -1,0 +1,82 @@
+# Default Configuration
+# These are the base defaults used by all examples
+# Environment-specific configs and environment variables override these
+
+# Server defaults
+server:
+  host: "localhost"
+  port: 8080
+  read_timeout: "15s"
+  write_timeout: "15s"
+  graceful_shutdown: "30s"
+  health_check_path: "/health"
+  readiness_path: "/ready"
+  liveness_path: "/live"
+
+# Database defaults
+database:
+  port: 5432
+  max_conn: 20
+  timeout: "30s"
+  ssl_mode: "prefer"
+
+# Cache defaults
+cache:
+  enabled: true
+  backend: "redis"
+  port: 6379
+  database: 0
+  default_ttl: "1h"
+  max_memory: "256mb"
+
+# Logging defaults
+logging:
+  level: "info"
+  format: "json"
+
+# Observability defaults
+observability:
+  log_level: "info"
+  log_format: "json"
+  metrics_enabled: true
+  metrics_port: 8001
+  tracing_enabled: true
+  tracing_sampler: "parentbased_always_on"
+  tracing_exporter: "otlp"
+  trace_otlp_url: "http://otel-collector:4317"
+
+# Security defaults
+security:
+  enable_tls: false
+  enable_mtls: false
+  cors_enabled: false
+
+# Horizontal scaling defaults
+horizontal_scaling:
+  min_replicas: 1
+  max_replicas: 5
+  target_cpu: 80
+  target_memory: 85
+  scale_down_window: "5m"
+  scale_up_window: "1m"
+
+# Resource limits defaults
+resources:
+  cpu_request: "100m"
+  cpu_limit: "500m"
+  memory_request: "128Mi"
+  memory_limit: "512Mi"
+
+# Feature flags defaults
+features:
+  enable_new_api: false
+  enable_beta_features: false
+  enable_metrics_v2: false
+  enable_distributed_tracing: true
+
+# Rate limiting defaults
+rate_limiting:
+  enabled: true
+  requests_per_second: 1000
+  burst_size: 10000
+  window_size: "1s"

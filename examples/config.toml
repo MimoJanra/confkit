@@ -1,3 +1,6 @@
+# Full Setup Example - TOML Configuration
+# This demonstrates a complete application configuration in TOML format
+
 port = 8080
 host = "0.0.0.0"
 log_level = "info"
@@ -7,3 +10,21 @@ url = "postgres://localhost/myapp"
 max_conn = 20
 timeout = "30s"
 password = "super-secret-password"
+
+[server]
+request_timeout = "30s"
+write_timeout = "15s"
+read_timeout = "15s"
+
+[cache]
+enabled = true
+ttl = "1h"
+backend = "redis"
+
+[logging]
+format = "json"
+level = "info"
+
+[observability]
+metrics_enabled = true
+tracing_enabled = true

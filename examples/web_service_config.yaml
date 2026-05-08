@@ -1,0 +1,37 @@
+# Web Service Configuration Example
+# This file demonstrates a typical web service configuration
+# that can be overridden by environment variables
+
+app:
+  name: "api-service"
+  version: "1.0.0"
+  env: "production"
+
+server:
+  host: "0.0.0.0"
+  port: 8080
+  read_timeout: "15s"
+  write_timeout: "15s"
+
+database:
+  host: "postgres.production.svc"
+  port: 5432
+  user: "app_user"
+  password: "${DB_PASSWORD}"  # Will be interpolated from env
+  name: "production_db"
+  max_conn: 30
+  timeout: "30s"
+
+cache:
+  enabled: true
+  ttl: "1h"
+  max_size: 5000
+
+logging:
+  level: "info"
+  format: "json"
+
+features:
+  enable_metrics: true
+  enable_profiling: false
+  enable_tracing: true
