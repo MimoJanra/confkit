@@ -407,7 +407,18 @@ if result.Valid() {
    - Generate Markdown for your docs
    - Use CLI help for users
 
+## Real-World Examples
+
+See schema generation in action:
+
+- **[Full Setup Example](https://github.com/MimoJanra/confkit/tree/main/examples)** — Demonstrates JSON Schema, Markdown docs, and CLI help generation
+  - Generates all three formats automatically
+  - Uses `help:` tags for documentation
+  - Produces human-readable output
+
+All examples in the repository include schema generation capabilities.
+
 ## Next Steps
 
 - **[Sources](./sources.md)** — Configuration sources
-- **[Recipes](../recipes/)** — Real-world examples
+- **[Examples](https://github.com/MimoJanra/confkit/tree/main/examples)** — Full examples including schema generation

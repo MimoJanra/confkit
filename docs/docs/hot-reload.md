@@ -393,7 +393,15 @@ go func() {
    watcher.SetPollInterval(2 * time.Second)  // Balance CPU vs latency
    ```
 
+## Real-World Examples
+
+See hot-reload in action:
+
+- **[Web Service Example](https://github.com/MimoJanra/confkit/tree/main/examples)** — Reload on config file changes
+- **[Microservice Example](https://github.com/MimoJanra/confkit/tree/main/examples)** — Watch database and cache configuration
+- All examples support graceful reloading with listener callbacks and error handling
+
 ## Next Steps
 
 - **[Sources](./sources.md)** — All available configuration sources
-- **[Recipes](../recipes/)** — Real-world hot-reload examples
+- **[Examples](https://github.com/MimoJanra/confkit/tree/main/examples)** — Production examples with hot-reload support

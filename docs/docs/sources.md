@@ -447,4 +447,8 @@ Sources are first-wins: list the highest-priority source first.
 
 - [Getting Started](/docs/getting-started/) — Quick setup guide
 - [API Reference](/api/) — Complete function reference
-- [Examples](/examples/) — More source usage examples
+- **[Examples](https://github.com/MimoJanra/confkit/tree/main/examples)** — Production-ready examples with all sources
+  - Web service with database and cache
+  - Microservice with Postgres, Redis, RabbitMQ
+  - CLI tool with file I/O
+  - Cloud-native with Kubernetes and AWS

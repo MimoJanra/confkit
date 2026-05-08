@@ -175,9 +175,31 @@ cfg, err := confkit.Load[Config](
 )
 ```
 
+## Real-World Examples
+
+Check out the **[examples](https://github.com/MimoJanra/confkit/tree/main/examples)** directory for complete, production-ready examples:
+
+- **Web Service** — Typical API with database, cache, logging
+- **Microservice** — Enterprise setup with PostgreSQL, Redis, RabbitMQ, observability
+- **CLI Tool** — Command-line tool with flags and file processing
+- **Cloud-Native** — Kubernetes + AWS + Vault integration with health checks and mTLS
+- **Full Setup** — Schema generation and comprehensive feature demo
+
+Each example includes:
+- Complete struct definitions with all field types
+- Multiple configuration sources (env, YAML, defaults)
+- Comprehensive test suite
+- Example configuration files
+
+Run tests to see them in action:
+```bash
+go test ./examples -v
+```
+
 ## Next Steps
 
 - [Configuration Sources](./sources/) — Learn about all available sources
 - [Validation Rules](./validation/) — Deep dive into validation
 - [Error Handling](./errors/) — Programmatically handle errors
 - [Cloud Integrations](./cloud/) — Use Kubernetes, AWS, Vault, and more
+- **[Examples](https://github.com/MimoJanra/confkit/tree/main/examples)** — Production-ready code samples

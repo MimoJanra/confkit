@@ -319,8 +319,24 @@ if err != nil {
    Password string `env:"DB_PASSWORD" validate:"required" secret:"true"`
    ```
 
+## Examples in Action
+
+See validation in use across production examples:
+
+- **[Web Service Example](https://github.com/MimoJanra/confkit/tree/main/examples)** — Validation with database config
+  ```go
+  Port int `validate:"min=1,max=65535"`
+  Timeout time.Duration `validate:"min=1s,max=5m"`
+  ```
+
+- **[Microservice Example](https://github.com/MimoJanra/confkit/tree/main/examples)** — Complex validation with multiple rules
+  ```go
+  MaxConn int `validate:"min=1,max=100"`
+  LogLevel string `validate:"oneof=debug,info,warn,error"`
+  ```
+
 ## Next Steps
 
 - **[Defaults](./defaults.md)** — Default values via struct tags
 - **[Secret Redaction](./secret-redaction.md)** — Mark fields as sensitive
-- **[Recipes](../recipes/)** — Real-world validation examples
+- **[Examples](https://github.com/MimoJanra/confkit/tree/main/examples)** — Full production examples with tests

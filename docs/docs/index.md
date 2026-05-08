@@ -9,6 +9,7 @@ title: Documentation
 
 - **[Installation & Quick Start](./getting-started/)** — Set up confkit in 5 minutes
 - **[Core Concepts](./concepts/)** — Understanding sources, validation, and error handling
+- **[Examples](https://github.com/MimoJanra/confkit/tree/main/examples)** — Production-ready code samples
 
 ## Usage Guides
 

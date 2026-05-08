@@ -291,8 +291,18 @@ First source wins per field.
    Retries int `env:"RETRIES" default:"3"` // sensible retry count
    ```
 
+## Real-World Examples
+
+See defaults in action across production examples:
+
+- **[Web Service Example](https://github.com/MimoJanra/confkit/tree/main/examples)** — Complete configuration with sensible defaults
+- **[Microservice Example](https://github.com/MimoJanra/confkit/tree/main/examples)** — Enterprise defaults for all services
+- **[Cloud-Native Example](https://github.com/MimoJanra/confkit/tree/main/examples)** — Kubernetes resource defaults
+
+All examples use a 3-level hierarchy: environment variables override config files, which override `defaults.yaml`.
+
 ## Next Steps
 
 - **[Validation](./validation.md)** — Validation rules and custom validators
 - **[Secret Redaction](./secret-redaction.md)** — Mark sensitive fields
-- **[Recipes](../recipes/)** — Real-world examples with defaults
+- **[Examples](https://github.com/MimoJanra/confkit/tree/main/examples)** — Production-ready code with defaults

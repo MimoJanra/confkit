@@ -253,6 +253,28 @@ cfg, err := confkit.Load[Config](
 // Loads: env vars → config.prod.yaml → config.defaults.yaml
 ```
 
+### Complete Production Examples
+
+See **[`examples/`](./examples/)** directory for fully-working, tested examples:
+
+- **Web Service** — Database, cache, logging configuration
+- **Microservice** — PostgreSQL, Redis, RabbitMQ, observability, JWT
+- **CLI Tool** — Flags, file processing, validation
+- **Cloud-Native** — Kubernetes ConfigMaps, AWS, Vault, mTLS
+- **Full Setup** — Schema generation and feature demonstration
+
+Each example includes:
+- Complete struct definitions
+- Multiple configuration sources
+- Comprehensive test suite (`examples_test.go`)
+- Example configuration files (YAML, TOML)
+- README with setup instructions
+
+Run tests to see them in action:
+```bash
+go test ./examples -v
+```
+
 ---
 
 ## Struct Tags Reference

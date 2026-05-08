@@ -366,8 +366,18 @@ log.Println(dump)
 
 Safe to log or send to external systems.
 
+## Examples in Action
+
+See secret redaction in all production examples:
+
+- **[Web Service Example](https://github.com/MimoJanra/confkit/tree/main/examples)** — Database password marked as secret
+- **[Microservice Example](https://github.com/MimoJanra/confkit/tree/main/examples)** — Multiple secrets (JWT, Redis, RabbitMQ passwords)
+- **[Cloud-Native Example](https://github.com/MimoJanra/confkit/tree/main/examples)** — TLS certificates and credentials
+
+All examples show secure handling of sensitive configuration data.
+
 ## Next Steps
 
 - **[Validation](./validation.md)** — Validation rules
 - **[Defaults](./defaults.md)** — Default values
-- **[Recipes](../recipes/)** — Real-world examples
+- **[Examples](https://github.com/MimoJanra/confkit/tree/main/examples)** — Production examples with secrets
