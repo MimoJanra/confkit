@@ -9,7 +9,6 @@ import (
 	"testing"
 )
 
-
 func TestErrorReportUnwrap(t *testing.T) {
 	report := &ErrorReport{}
 	report.AddError(FieldError{Path: "host", Message: "required"})
@@ -462,4 +461,3 @@ func TestValidationBoolField(t *testing.T) {
 		t.Errorf("unexpected error: %v", err)
 	}
 }
-

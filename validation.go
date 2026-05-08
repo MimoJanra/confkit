@@ -306,7 +306,6 @@ func getFieldByPath(val reflect.Value, path string) reflect.Value {
 	return current
 }
 
-
 func fieldValueToString(val reflect.Value, isSecret bool) string {
 	if isSecret {
 		return "[REDACTED]"
