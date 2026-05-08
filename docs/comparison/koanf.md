@@ -160,7 +160,7 @@ Both are explicit, but koanf loads into a map first, then unmarshals. confkit lo
 **confkit:** Optional modules for Vault, Consul, etcd, AWS.
 
 ```bash
-go get github.com/MimoJanra/confkit/vault
+go get github.com/MimoJanra/confkit/vault@latest
 ```
 
 **koanf:** Optional provider modules for Vault, Consul, etcd, AWS (Parameter Store, AppConfig), and S3.

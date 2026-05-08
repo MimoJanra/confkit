@@ -93,7 +93,7 @@ viper.ReadInConfig()
 **confkit:** Optional modules only when needed (Vault, Consul, etcd, AWS).
 
 ```bash
-go get github.com/MimoJanra/confkit/vault
+go get github.com/MimoJanra/confkit/vault@latest
 ```
 
 **Viper:** Cloud integrations are bundled or require external libraries (increases binary size).

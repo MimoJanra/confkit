@@ -17,7 +17,7 @@ Load secrets from HashiCorp Vault.
 ## Installation
 
 ```bash
-go get github.com/MimoJanra/confkit/vault
+go get github.com/MimoJanra/confkit/vault@latest
 ```
 
 ## Code

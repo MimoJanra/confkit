@@ -10,7 +10,7 @@ Load secrets from AWS Secrets Manager.
 ## Installation
 
 ```bash
-go get github.com/MimoJanra/confkit/aws
+go get github.com/MimoJanra/confkit/aws@latest
 ```
 
 ## Code

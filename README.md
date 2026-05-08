@@ -131,16 +131,16 @@ confkit is useful for:
 ## Install
 
 ```bash
-go get github.com/MimoJanra/confkit
+go get github.com/MimoJanra/confkit@latest
 ```
 
 Enterprise sources (Vault, Consul, etcd, AWS) are separate optional modules:
 
 ```bash
-go get github.com/MimoJanra/confkit/vault
-go get github.com/MimoJanra/confkit/consul
-go get github.com/MimoJanra/confkit/etcd
-go get github.com/MimoJanra/confkit/aws
+go get github.com/MimoJanra/confkit/vault@latest
+go get github.com/MimoJanra/confkit/consul@latest
+go get github.com/MimoJanra/confkit/etcd@latest
+go get github.com/MimoJanra/confkit/aws@latest
 ```
 
 ---

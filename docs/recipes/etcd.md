@@ -10,7 +10,7 @@ Load configuration from etcd v3 distributed key-value store.
 ## Installation
 
 ```bash
-go get github.com/MimoJanra/confkit/etcd
+go get github.com/MimoJanra/confkit/etcd@latest
 ```
 
 ## Code

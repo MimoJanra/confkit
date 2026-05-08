@@ -8,7 +8,7 @@ title: Installation — confkit
 ## Core Library
 
 ```bash
-go get github.com/MimoJanra/confkit@v0.9.0
+go get github.com/MimoJanra/confkit@latest
 ```
 
 Then import:
@@ -24,7 +24,7 @@ confkit's cloud integrations are separate optional modules. Install only what yo
 ### Kubernetes
 
 ```bash
-go get github.com/MimoJanra/confkit/k8s
+go get github.com/MimoJanra/confkit/k8s@latest
 ```
 
 ```go
@@ -34,7 +34,7 @@ import "github.com/MimoJanra/confkit/k8s"
 ### HashiCorp Vault
 
 ```bash
-go get github.com/MimoJanra/confkit/vault
+go get github.com/MimoJanra/confkit/vault@latest
 ```
 
 ```go
@@ -44,7 +44,7 @@ import "github.com/MimoJanra/confkit/vault"
 ### Consul
 
 ```bash
-go get github.com/MimoJanra/confkit/consul
+go get github.com/MimoJanra/confkit/consul@latest
 ```
 
 ```go
@@ -54,7 +54,7 @@ import "github.com/MimoJanra/confkit/consul"
 ### etcd
 
 ```bash
-go get github.com/MimoJanra/confkit/etcd
+go get github.com/MimoJanra/confkit/etcd@latest
 ```
 
 ```go
@@ -64,7 +64,7 @@ import "github.com/MimoJanra/confkit/etcd"
 ### AWS (SSM Parameter Store & Secrets Manager)
 
 ```bash
-go get github.com/MimoJanra/confkit/aws
+go get github.com/MimoJanra/confkit/aws@latest
 ```
 
 ```go

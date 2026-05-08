@@ -10,7 +10,7 @@ Load configuration from HashiCorp Consul KV store.
 ## Installation
 
 ```bash
-go get github.com/MimoJanra/confkit/consul
+go get github.com/MimoJanra/confkit/consul@latest
 ```
 
 ## Code

@@ -57,7 +57,7 @@ Invalid configuration:
 ## Install
 
 ```bash
-go get github.com/MimoJanra/confkit@v0.9.0
+go get github.com/MimoJanra/confkit@latest
 ```
 
 ## Resources
