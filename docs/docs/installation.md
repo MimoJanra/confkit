@@ -73,7 +73,7 @@ import "github.com/MimoJanra/confkit/aws"
 
 ## Minimum Go Version
 
-confkit requires **Go 1.21+** (for generics support).
+confkit requires **Go 1.22+** (for generics support).
 
 Check your Go version:
 

@@ -13,7 +13,7 @@ Install confkit and load your first configuration in 5 minutes.
 go get github.com/MimoJanra/confkit@latest
 ```
 
-**Requirements:** Go 1.24 or later
+**Requirements:** Go 1.22 or later
 
 ## Your First Config
 

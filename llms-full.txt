@@ -1,269 +1,994 @@
-# confkit — Complete Documentation for LLMs
+# confkit — Complete Reference Documentation
 
-This file contains the complete confkit documentation for language model indexing and reference.
+**Complete, detailed documentation for language model indexing and LLM-based development of confkit.**
 
-## Project Overview
+This document contains the entire confkit API, design patterns, examples, and internals needed to understand and extend the library.
 
-confkit is a production-ready typed configuration toolkit for Go. Version 0.5.0 is stable and production-tested.
+---
 
-### Philosophy
+## 1. PROJECT OVERVIEW
 
-MINIMAL external dependencies. Use libraries only for essential tasks (YAML, TOML). Otherwise, pure Go stdlib. Keep core iron-solid. Configuration is the foundation—errors must be clear and safe.
+### 1.1 What is confkit?
 
-### Status
+confkit is a **production-ready typed configuration loader for Go services**. It combines:
 
-- **v0.1–v0.5:** Complete and production-ready
-- **v0.6+:** Planned (config composition, Prometheus metrics, advanced validation)
+- **Type-safe config structs** (like Pydantic in Python)
+- **Multi-source loading** (YAML, JSON, TOML, environment, Kubernetes, AWS, Vault, Consul, etcd)
+- **Validation as struct tags** (required, min, max, oneof, custom rules)
+- **Secret redaction** (automatic masking in errors and logs)
+- **Clear error messages** (field name, rule violated, actual value, source)
 
-## Core API
+### 1.2 Status & Versions
 
-### Load Functions
+- **v0.1–v0.5:** Feature-complete, stable, production-tested
+- **v0.6+:** Planned (config composition, advanced validation, Prometheus integration)
+- **Go version required:** 1.21+ (for generics)
+- **License:** MIT
+
+### 1.3 Philosophy
+
+**MINIMAL external dependencies.** Core uses only:
+- `gopkg.in/yaml.v3` — YAML parsing
+- `github.com/pelletier/go-toml/v2` — TOML parsing
+- Go standard library
+
+Cloud integrations (Vault, Consul, etcd, AWS) are optional modules with separate dependencies.
+
+**Configuration is the foundation.** Errors must be:
+- Clear (field name, rule, actual value)
+- Safe (secrets redacted)
+- Actionable (tell user how to fix)
+
+---
+
+## 2. BREAKING CHANGES (Current Development)
+
+### 2.1 Load[T] Returns Pointer ⚠️
+
+**BREAKING CHANGE in unreleased version.**
 
 ```go
-// Variadic sources — shorthand for common case
+// OLD (v0.5 and earlier)
 func Load[T any](sources ...Source) (T, error)
-
-// With fine-grained options (validators, middleware, interpolation)
 func LoadWithOptions[T any](options ...Option) (T, error)
+func LoadWithWatcher[T any](path string, sources ...Source) (T, *ConfigWatcher, error)
 
-// File watching with listeners
-func LoadWithWatcher[T any](filePath string, sources ...Source) (T, *ConfigWatcher, error)
+// NEW (current development)
+func Load[T any](sources ...Source) (*T, error)
+func LoadWithOptions[T any](options ...Option) (*T, error)
+func LoadWithWatcher[T any](path string, sources ...Source) (*T, *ConfigWatcher, error)
 ```
 
-### Error Handling
+**Why?** Pointers align with zero-value semantics and are more idiomatic for config objects that may be updated or shared.
+
+**Compat note:** Go automatically dereferences pointers for field access, so `cfg.Port` works whether `cfg` is `T` or `*T`.
+
+### 2.2 Automatic snake_case ↔ CamelCase Mapping
+
+**NEW in current development.**
+
+If a struct field has no explicit `yaml:`, `json:`, or `toml:` tag, confkit now tries the snake_case version automatically.
 
 ```go
-// Format any error into human-readable string
-// Safe to pass to log.Fatal without leaking secrets
-func Explain(err error) string
+type Config struct {
+    ShutdownSecs  int       // YAML: shutdown_secs
+    DatabaseHost  string    // YAML: database_host
+    APIKey        string `env:"API_KEY"`  // Still works with explicit tags
+}
+```
 
-// Type assertion for programmatic error inspection
+YAML/JSON/TOML files can now use idiomatic snake_case naming, and structs use idiomatic CamelCase. No manual tag management for common fields.
+
+### 2.3 FromYAMLOptional() — Optional File Loading
+
+**NEW in current development.**
+
+```go
+cfg, err := confkit.Load[Config](
+    confkit.FromYAMLOptional("config.yaml"),  // Doesn't fail if file missing
+    confkit.FromEnv(),
+)
+```
+
+Useful for optional config files with environment variable overrides.
+
+### 2.4 Error Source Tracking Improved
+
+**Enhanced in current development.**
+
+All FieldError now consistently track `Source` field:
+- "yaml" — from YAML file
+- "json" — from JSON file
+- "toml" — from TOML file
+- "env" — from environment variable
+- "validation" — validation rule violation
+- "default" — from default tag
+- "io" — file read error
+
+Error messages now clearly show where each value came from.
+
+---
+
+## 3. CORE API
+
+### 3.1 Load Functions
+
+#### 3.1.1 Basic Loading
+
+```go
+// Variadic sources — shorthand for most cases
+func Load[T any](sources ...Source) (*T, error)
+
+// Example
+type Config struct {
+    Port int    `env:"PORT" default:"8080" validate:"min=1,max=65535"`
+    DSN  string `env:"DATABASE_URL" validate:"required" secret:"true"`
+}
+
+cfg, err := confkit.Load[Config](
+    confkit.FromEnv(),
+    confkit.FromYAML("config.yaml"),
+)
+if err != nil {
+    log.Fatal(confkit.Explain(err))  // Safe to log — secrets redacted
+}
+
+// cfg is *Config, fully typed
+log.Printf("Port: %d", cfg.Port)
+```
+
+#### 3.1.2 Loading with Options
+
+```go
+func LoadWithOptions[T any](options ...Option) (*T, error)
+
+cfg, err := confkit.LoadWithOptions[Config](
+    confkit.WithSource(confkit.FromEnv()),
+    confkit.WithSource(confkit.FromYAML("config.yaml")),
+
+    // Custom validator
+    confkit.WithValidator("port-range", func(v reflect.Value) error {
+        p := v.Int()
+        if p < 1024 || p > 49151 {
+            return fmt.Errorf("must be registered port 1024–49151, got %d", p)
+        }
+        return nil
+    }),
+
+    // Middleware for value transformation
+    confkit.WithMiddleware(func(field confkit.FieldInfo, val string) (string, error) {
+        if field.Name == "DSN" {
+            // Transform before validation
+            return strings.TrimSpace(val), nil
+        }
+        return val, nil
+    }),
+
+    // Max interpolation depth
+    confkit.WithInterpolationMaxDepth(10),
+
+    // Audit logging
+    confkit.WithAuditLogger(func(entries []confkit.AuditEntry) {
+        for _, e := range entries {
+            log.Printf("Config %s = %s (from %s)", e.Field, e.Value, e.Source)
+        }
+    }),
+
+    // Hooks for observability
+    confkit.WithLoadHooks(func(success bool, duration time.Duration, errCount int) {
+        if success {
+            metrics.configLoadDuration.Observe(duration.Seconds())
+        }
+    }),
+)
+```
+
+#### 3.1.3 Loading with File Watcher
+
+```go
+func LoadWithWatcher[T any](filePath string, sources ...Source) (*T, *ConfigWatcher, error)
+
+cfg, watcher, err := confkit.LoadWithWatcher[Config]("config.yaml",
+    confkit.FromYAML("config.yaml"),
+    confkit.FromEnv(),
+)
+if err != nil {
+    log.Fatal(confkit.Explain(err))
+}
+
+watcher.AddListener(func(oldCfg, newCfg any, err error) {
+    if err != nil {
+        log.Printf("Config reload failed: %v", confkit.Explain(err))
+        return
+    }
+    newConfig := newCfg.(*Config)
+    log.Printf("Config reloaded: Port=%d", newConfig.Port)
+    // Update application state
+})
+
+watcher.SetPollInterval(1 * time.Second)
+watcher.Start()
+defer watcher.Stop()
+```
+
+### 3.2 Error Handling
+
+#### 3.2.1 ErrorReport Type
+
+```go
 type ErrorReport struct {
     Errors []FieldError
 }
 
-type FieldError struct {
-    Path    string    // "Database.Password"
-    Source  string    // "env", "yaml", "validation", "default"
-    Kind    ErrorKind // "parse", "validation", "missing", "io"
-    Rule    string    // "required", "min", "max", validation rule name
-    Message string    // Clear error message
-    Value   string    // Empty if Secret == true
-    Secret  bool      // True if field marked secret:"true"
-}
+// Implements error interface
+func (r *ErrorReport) Error() string        // Formatted error message
+func (r *ErrorReport) Unwrap() []error      // For errors.Is / errors.As
+
+// Safe formatting for logs
+func Explain(err error) string  // Redacts secrets, formats as human-readable string
 ```
 
-### Config Introspection
+#### 3.2.2 FieldError Details
 
 ```go
-// Scan struct and return field metadata
+type FieldError struct {
+    Path    string    // "Database.Password" or "Server.0.Host"
+    Source  string    // "env", "yaml", "json", "toml", "validation", "default", "io"
+    Kind    ErrorKind // "parse" | "validation" | "io"
+    Rule    string    // "required", "min", "max", validator name, or ""
+    Message string    // User-friendly error message
+    Value   string    // Actual value (empty if Secret==true)
+    Secret  bool      // True if field marked secret:"true"
+}
+
+type ErrorKind string
+const (
+    ErrorKindParse      ErrorKind = "parse"
+    ErrorKindValidation ErrorKind = "validation"
+    ErrorKindIO         ErrorKind = "io"
+)
+```
+
+#### 3.2.3 Error Message Examples
+
+```
+Invalid configuration:
+
+  Port
+    source: env (PORT)
+    error: must be at least 1, got 0
+
+  Database.Password
+    source: validation
+    error: field is required
+    got: <redacted>
+
+  Server.Timeout
+    source: yaml
+    error: invalid duration: "invalid"
+```
+
+### 3.3 Config Introspection
+
+```go
+// Scan struct and extract field metadata
 func ScanFields(v any) []FieldInfo
 
 type FieldInfo struct {
-    Name         string            // "Password"
-    Path         string            // "Database.Password"
-    Type         string            // "string", "int", etc.
-    Tags         map[string]string // All struct tags
-    IsSecret     bool              // From secret:"true"
-    HasDefault   bool              // From default tag
-    AncestorTags []map[string]string // Parent struct tags
+    Name         string                // "Password" (struct field name)
+    Type         reflect.Type          // Type information (int, string, etc.)
+    Value        reflect.Value         // Runtime value
+    Path         string                // "Database.Password" (dot-separated path)
+    Tags         map[string]string     // All struct tags (env, default, validate, etc.)
+    AncestorTags []map[string]string   // Tags from parent structs (for prefix handling)
+    IsSecret     bool                  // From secret:"true" tag
+    HasDefault   bool                  // From default tag
+    IsNested     bool                  // True if this field is a nested struct
 }
 
-// Dump config to JSON with secrets redacted
-func DumpConfig(cfg any, fields []FieldInfo) ([]byte, error)
-// Output: {"Password": "***REDACTED***", "Host": "localhost", ...}
+// Example: introspect config
+fields := confkit.ScanFields(&Config{})
+for _, f := range fields {
+    fmt.Printf("%s: %v (secret=%v)\n", f.Path, f.Type, f.IsSecret)
+}
+
+// Dump config with secrets redacted
+func DumpConfig(cfg any, fields []FieldInfo) (string, error)
+// Output: {"Port": 8080, "Password": "***REDACTED***", ...}
 ```
 
-## Struct Tags
+---
 
-### Configuration Tags
+## 4. STRUCT TAGS REFERENCE
 
-- `env:"VAR"` — Read from environment variable
-- `flag:"name"` — Read from CLI flag (--name)
-- `short:"x"` — Single-character flag (-x)
+### 4.1 Source Tags
 
-### Processing Tags
+Specify where to load each field:
 
-- `default:"value"` — Use if no source provides value
-- `validate:"rules"` — Validation rules (required, min, max, oneof, custom)
-- `secret:"true"` — Redact in errors, dumps, logs
+```go
+type Config struct {
+    // Environment variables
+    Port       int    `env:"PORT"`                    // Read from PORT env var
+    Host       string `env:"HOST" default:"localhost"` // With default
 
-### Documentation Tags
+    // YAML/JSON/TOML files
+    Debug      bool   `yaml:"debug" default:"false"`
+    Timeout    int    `json:"timeout"`
+    Retries    int    `toml:"retries"`
 
-- `prefix:"PRE_"` — Prepend prefix to env/flag names in nested struct
-- `help:"text"` — Description for schema and CLI help
-- `hidden:"true"` — Exclude from CLI help output
+    // Multiple tag types (tried in order: yaml, json, toml)
+    Region     string `yaml:"region" json:"region" default:"us-east-1"`
 
-## Validation Rules
+    // CLI flags
+    Input      string `flag:"input" short:"i"`       // --input or -i
+    Output     string `flag:"output" short:"o"`
+    Verbose    bool   `flag:"verbose"`               // Boolean flag
+}
+```
 
-### Built-in Rules
+### 4.2 Nested Struct Prefixes
 
-- `required` — Non-zero/non-empty value
-- `min=N` — For int/float: value >= N. For string: length >= N
-- `max=N` — For int/float: value <= N. For string: length <= N
-- `oneof=a b c` — String must equal one of the space-separated options
+```go
+type Config struct {
+    Server ServerConfig `prefix:"SERVER_"`
+    DB     DBConfig     `prefix:"DB_"`
+}
 
-### Custom Validators
+type ServerConfig struct {
+    Host string `env:"HOST"`    // Reads SERVER_HOST
+    Port int    `env:"PORT"`    // Reads SERVER_PORT
+}
 
-Register per load-call, no global state:
+type DBConfig struct {
+    Host     string `env:"HOST"`        // Reads DB_HOST
+    Port     int    `env:"PORT"`        // Reads DB_PORT
+    User     string `env:"USER"`        // Reads DB_USER
+    Password string `env:"PASSWORD"`    // Reads DB_PASSWORD
+}
+
+// Unlimited nesting — prefixes concatenate
+type Config struct {
+    Main struct {
+        Sub struct {
+            Value string `env:"VALUE"`  // Reads MAIN_SUB_VALUE
+        } `prefix:"SUB_"`
+    } `prefix:"MAIN_"`
+}
+```
+
+### 4.3 Validation Tags
+
+```go
+type Config struct {
+    // Built-in rules (comma-separated)
+    Port     int    `validate:"required,min=1,max=65535"`
+    Name     string `validate:"required,min=3,max=100"`
+    LogLevel string `validate:"oneof=debug info warn error"`
+    Email    string `validate:"required" secret:"true"`
+
+    // Custom validator (must be registered in LoadWithOptions)
+    Custom   string `validate:"my-validator"`
+}
+```
+
+### 4.4 Special Tags
+
+```go
+type Config struct {
+    // Defaults
+    Port     int    `default:"8080"`                          // String value, parsed
+    BaseURL  string `default:"http://${HOST}:${PORT}/api"`   // With interpolation
+    Debug    bool   `default:"false"`
+
+    // Secrets (redacted in errors, dumps, logs)
+    Token    string `secret:"true"`
+    Password string `secret:"true"`
+
+    // Help text (for schema generation and CLI help)
+    Region   string `help:"AWS region (us-east-1, us-west-2, etc.)"`
+    Timeout  int    `help:"Request timeout in seconds" validate:"min=1"`
+
+    // Hidden from CLI help
+    Internal string `hidden:"true"`
+
+    // JSON Schema documentation
+    Tags     []string `format:"csv" help:"Comma-separated tags"`
+}
+```
+
+---
+
+## 5. VALIDATION RULES
+
+### 5.1 Built-in Rules
+
+```go
+type Config struct {
+    // required — Non-zero/non-empty value
+    DatabaseURL string `validate:"required"`
+
+    // min=N — Minimum value (number or string length)
+    Port        int    `validate:"min=1"`              // int: >= 1
+    Name        string `validate:"min=3"`              // string: length >= 3
+
+    // max=N — Maximum value (number or string length)
+    Port        int    `validate:"max=65535"`          // int: <= 65535
+    Description string `validate:"max=500"`            // string: length <= 500
+
+    // oneof=opt1 opt2 opt3 — Must be one of listed values
+    Environment string `validate:"oneof=dev staging prod"`
+    LogLevel    string `validate:"oneof=debug info warn error"`
+
+    // Combined rules
+    Port int `validate:"required,min=1,max=65535"`
+    Name string `validate:"required,min=3,max=100"`
+}
+```
+
+### 5.2 Custom Validators
 
 ```go
 cfg, err := confkit.LoadWithOptions[Config](
     confkit.WithSource(confkit.FromEnv()),
+
+    // Register named validator
+    confkit.WithValidator("valid-email", func(v reflect.Value) error {
+        email := v.String()
+        if !strings.Contains(email, "@") {
+            return fmt.Errorf("invalid email format")
+        }
+        return nil
+    }),
+
     confkit.WithValidator("port-range", func(v reflect.Value) error {
-        if v.Int() < 1024 || v.Int() > 49151 {
-            return fmt.Errorf("must be registered port 1024–49151")
+        port := v.Int()
+        if port < 1024 || port > 49151 {
+            return fmt.Errorf("must be registered port (1024–49151), got %d", port)
         }
         return nil
     }),
 )
-// Use in tag: validate:"port-range"
-```
 
-## Configuration Sources
-
-### Built-in Sources
-
-```go
-confkit.FromYAML(path string) Source
-confkit.FromJSON(path string) Source
-confkit.FromTOML(path string) Source
-confkit.FromEnv() Source                     // All os.Getenv()
-confkit.FromFlags() Source                   // CLI flags
-```
-
-### Kubernetes Source
-
-```go
-// go get github.com/MimoJanra/confkit/k8s
-
-k8s.FromKubernetesConfigMap(namespace, name string) Source
-k8s.FromKubernetesConfigMapWithPath(namespace, name, mountPath string) Source
-```
-
-### Vault Source
-
-```go
-// go get github.com/MimoJanra/confkit/vault
-
-vault.FromVault(addr string, auth VaultAuth, pathPrefix string) Source
-vault.FromVaultWithKVVersion(addr string, auth VaultAuth, kvVersion int, pathPrefix string) Source
-
-// Auth methods
-vault.VaultTokenAuth(token string) VaultAuth
-vault.VaultAppRoleAuth(roleID, secretID string) VaultAuth
-vault.VaultKubernetesAuth(role, jwt string) VaultAuth
-```
-
-### Consul Source
-
-```go
-// go get github.com/MimoJanra/confkit/consul
-
-consul.FromConsul(addr string) Source
-consul.FromConsulWithToken(addr, token string) Source
-consul.FromConsulWithOptions(addr, token, datacenter string) Source
-```
-
-### etcd Source
-
-```go
-// go get github.com/MimoJanra/confkit/etcd
-
-etcd.FromEtcd(endpoints []string) Source
-etcd.FromEtcdWithPrefix(endpoints []string, prefix string) Source
-```
-
-### AWS Sources
-
-```go
-// go get github.com/MimoJanra/confkit/aws
-
-// SSM Parameter Store
-aws.FromAWSSSMParameterStore(pathPrefix string) Source
-aws.FromAWSSSMParameterStoreWithTTL(pathPrefix string, ttl time.Duration) Source
-aws.FromAWSSSMParameterStoreMultiRegion(pathPrefix string, regions []string) Source
-
-// Secrets Manager
-aws.FromAWSSecretsManager(secretName string) Source
-aws.FromAWSSecretsManagerWithRegion(secretName, region string) Source
-aws.FromAWSSecretsManagerWithOptions(secretName, region string, ttl time.Duration) Source
-aws.FromAWSSecretsManagerMultiRegion(secretName string, regions []string) Source
-```
-
-### Custom Source
-
-Implement the Source interface:
-
-```go
-type Source interface {
-    Name() string
-    Lookup(field *FieldInfo) (any, bool, error)
-    // Return ("", false, nil) if field not found
-    // Return (value, true, nil) if found
-    // Return ("", false, err) on error
+// Use in struct
+type Config struct {
+    Email string `validate:"valid-email"`
+    Port  int    `validate:"port-range"`
 }
 ```
 
-## Supported Types
+### 5.3 Validation Behavior
 
-- **Primitives** — string, int, int8-64, uint, uint8-64, float32, float64, bool
-- **Time** — time.Duration ("5s", "1m30s", "2h")
-- **Collections** — []string, []int (comma-separated)
-- **Nested Structs** — Unlimited nesting, prefixes concatenate
+1. **Order:** Parse → Validate → Apply defaults → Resolve interpolation
+2. **Fail fast:** First validation failure stops loading, returns error
+3. **Defaults not applied on error:** If validation fails, defaults are skipped
+4. **All fields validated:** Even if one fails, all errors are collected
 
-## Defaults
+---
 
-- Applied AFTER all sources loaded
-- Only if no source provided a value
-- Applied BEFORE validation
-- Can use string interpolation: `default:"http://${HOST}:${PORT}"`
+## 6. CONFIGURATION SOURCES
 
-## Validation Behavior
+### 6.1 Built-in Sources
 
-1. Parse string values to types
-2. Check validation rules
-3. Apply defaults (only if field empty)
-4. Resolve interpolations
+#### YAML
 
-If validation fails, defaults are NOT applied. Fail fast.
+```go
+// Required file
+confkit.FromYAML("config.yaml")        // Fails if file missing
 
-## String Interpolation
+// Optional file (doesn't fail if missing)
+confkit.FromYAMLOptional("config.yaml")
 
-Use `${VAR}` to reference:
-1. Other config fields (resolved first)
-2. OS environment variables (fallback)
+// Example YAML file
+```yaml
+server:
+  host: localhost
+  port: 8080
+  shutdown_timeout: 30
 
-Example:
+database:
+  host: db.example.com
+  port: 5432
+  pool_size: 20
+```
+
+```go
+type Config struct {
+    Server struct {
+        Host            string `yaml:"host"`
+        Port            int    `yaml:"port"`
+        ShutdownTimeout int    `yaml:"shutdown_timeout"`
+    } `yaml:"server"`
+
+    Database struct {
+        Host     string `yaml:"host"`
+        Port     int    `yaml:"port"`
+        PoolSize int    `yaml:"pool_size"`
+    } `yaml:"database"`
+}
+```
+
+#### JSON
+
+```go
+confkit.FromJSON("config.json")       // File must exist
+confkit.FromJSONOptional("config.json")  // (if supported)
+```
+
+#### TOML
+
+```go
+confkit.FromTOML("config.toml")       // File must exist
+```
+
+#### Environment Variables
+
+```go
+confkit.FromEnv()  // Read all os.Getenv() calls
+
+// Every field with env:"..." tag is loaded
+type Config struct {
+    Port     int    `env:"PORT" default:"8080"`
+    Host     string `env:"HOST" default:"localhost"`
+    Debug    bool   `env:"DEBUG" default:"false"`
+    LogLevel string `env:"LOG_LEVEL" default:"info"`
+}
+
+// Usage: PORT=3000 HOST=0.0.0.0 DEBUG=true ./app
+```
+
+#### CLI Flags
+
+```go
+confkit.FromFlags()  // Parse command-line flags
+
+type Config struct {
+    Input    string `flag:"input" short:"i"`      // --input FILE or -i FILE
+    Output   string `flag:"output" short:"o"`
+    Verbose  bool   `flag:"verbose"`              // --verbose (boolean)
+    Workers  int    `flag:"workers" short:"w"`    // --workers 4 or -w 4
+}
+
+// Usage: ./app --input in.txt --output out.txt --verbose -w 4
+//        ./app -i in.txt -o out.txt -v -w 4
+```
+
+### 6.2 Cloud Sources
+
+#### Kubernetes ConfigMap
+
+```go
+// go get github.com/MimoJanra/confkit/k8s@latest
+
+import "github.com/MimoJanra/confkit/k8s"
+
+cfg, err := confkit.Load[Config](
+    k8s.FromKubernetesConfigMap("default", "app-config"),
+    confkit.FromEnv(),  // Override from env
+)
+
+// ConfigMap in Kubernetes:
+// apiVersion: v1
+// kind: ConfigMap
+// metadata:
+//   name: app-config
+//   namespace: default
+// data:
+//   PORT: "8080"
+//   HOST: "0.0.0.0"
+//   DATABASE_URL: "postgres://..."
+```
+
+#### HashiCorp Vault
+
+```go
+// go get github.com/MimoJanra/confkit/vault@latest
+
+import "github.com/MimoJanra/confkit/vault"
+
+// Token auth
+auth := vault.VaultTokenAuth(os.Getenv("VAULT_TOKEN"))
+cfg, err := confkit.Load[Config](
+    vault.FromVault("https://vault.example.com", auth, "/secret/myapp"),
+    confkit.FromEnv(),
+)
+
+// AppRole auth
+auth := vault.VaultAppRoleAuth(roleID, secretID)
+
+// Kubernetes auth
+auth := vault.VaultKubernetesAuth(role, jwt)
+
+// Vault KV v2 (default is v1)
+vault.FromVaultWithKVVersion("https://vault.example.com", auth, 2, "/secret/data/myapp")
+```
+
+#### AWS Secrets Manager
+
+```go
+// go get github.com/MimoJanra/confkit/aws@latest
+
+import "github.com/MimoJanra/confkit/aws"
+
+cfg, err := confkit.Load[Config](
+    aws.FromAWSSecretsManager("prod/myapp"),
+    confkit.FromEnv(),
+)
+
+// With region
+aws.FromAWSSecretsManagerWithRegion("prod/myapp", "us-west-2")
+
+// With TTL caching
+aws.FromAWSSecretsManagerWithOptions("prod/myapp", "us-west-2", 5*time.Minute)
+
+// Multi-region failover
+aws.FromAWSSecretsManagerMultiRegion("prod/myapp", []string{"us-east-1", "us-west-2"})
+```
+
+#### AWS SSM Parameter Store
+
+```go
+cfg, err := confkit.Load[Config](
+    aws.FromAWSSSMParameterStore("/myapp/prod"),
+    confkit.FromEnv(),
+)
+
+// With TTL caching
+aws.FromAWSSSMParameterStoreWithTTL("/myapp/prod", 5*time.Minute)
+
+// Multi-region failover
+aws.FromAWSSSMParameterStoreMultiRegion("/myapp/prod", []string{"us-east-1", "us-west-2"})
+```
+
+#### Consul KV Store
+
+```go
+// go get github.com/MimoJanra/confkit/consul@latest
+
+import "github.com/MimoJanra/confkit/consul"
+
+cfg, err := confkit.Load[Config](
+    consul.FromConsul("localhost:8500"),
+    confkit.FromEnv(),
+)
+
+// With authentication
+consul.FromConsulWithToken("localhost:8500", "token-abc123")
+
+// With datacenter
+consul.FromConsulWithOptions("localhost:8500", "token-abc123", "us-east-1")
+```
+
+#### etcd
+
+```go
+// go get github.com/MimoJanra/confkit/etcd@latest
+
+import "github.com/MimoJanra/confkit/etcd"
+
+cfg, err := confkit.Load[Config](
+    etcd.FromEtcd([]string{"localhost:2379"}),
+    confkit.FromEnv(),
+)
+
+// With prefix
+etcd.FromEtcdWithPrefix([]string{"localhost:2379"}, "/myapp/prod")
+```
+
+### 6.3 Custom Sources
+
+```go
+// Implement Source interface
+type Source interface {
+    Name() string
+    Lookup(ctx context.Context, field *FieldInfo) (any, bool, error)
+}
+
+// Example: Load from database
+type DatabaseSource struct {
+    db *sql.DB
+}
+
+func (d *DatabaseSource) Name() string {
+    return "database"
+}
+
+func (d *DatabaseSource) Lookup(ctx context.Context, field *FieldInfo) (any, bool, error) {
+    // Look up field.Path in database
+    var value string
+    err := d.db.QueryRowContext(ctx, "SELECT value FROM config WHERE key=$1", field.Path).Scan(&value)
+    if err == sql.ErrNoRows {
+        return nil, false, nil  // Not found, try next source
+    }
+    if err != nil {
+        return nil, false, err  // Error
+    }
+    return value, true, nil     // Found
+}
+
+// Usage
+cfg, err := confkit.Load[Config](
+    confkit.FromYAML("defaults.yaml"),
+    &DatabaseSource{db: myDB},
+    confkit.FromEnv(),
+)
+```
+
+---
+
+## 7. TYPE SUPPORT
+
+### 7.1 Primitives
+
+```go
+type Config struct {
+    String string      // Parsed as-is
+    Int    int         // ParseInt, range-checked
+    Int8   int8
+    Int16  int16
+    Int32  int32
+    Int64  int64
+    Uint   uint
+    Uint8  uint8
+    Uint16 uint16
+    Uint32 uint32
+    Uint64 uint64
+    Float32 float32    // ParseFloat
+    Float64 float64
+    Bool   bool        // "true"|"1"|"yes"|"on" = true; "false"|"0"|"no"|"off" = false
+}
+
+// Environment variable parsing
+PORT=8080           // Becomes int(8080)
+DEBUG=true          // Becomes bool(true)
+TIMEOUT=30.5        // Becomes float64(30.5)
+```
+
+### 7.2 Time Types
+
+```go
+type Config struct {
+    Deadline time.Time     // RFC3339: "2026-05-08T14:30:00Z"
+    Interval time.Duration // Go duration format: "5s", "1m30s", "2h"
+}
+
+// Examples
+INTERVAL=5s         // 5 seconds
+INTERVAL=1m30s      // 1 minute 30 seconds
+INTERVAL=2h         // 2 hours
+DEADLINE=2026-05-08T14:30:00Z
+```
+
+### 7.3 Collections
+
+```go
+type Config struct {
+    Tags     []string // Comma-separated: "prod,cache,web"
+    Ports    []int    // Comma-separated: "8080,8081,8082"
+    Workers  []string // Comma-separated
+    Metadata map[string]string // key=val,key2=val2
+}
+
+// Environment variable parsing
+TAGS=prod,cache,web
+PORTS=8080,8081,8082
+METADATA=env=prod,app=myapp,region=us-east-1
+```
+
+### 7.4 Nested Structs
+
+```go
+type Config struct {
+    Server struct {
+        Host string `env:"HOST"`
+        Port int    `env:"PORT"`
+    } `prefix:"SERVER_"`
+
+    Database struct {
+        Host     string `env:"HOST"`
+        Port     int    `env:"PORT"`
+        Password string `env:"PASSWORD" secret:"true"`
+    } `prefix:"DB_"`
+}
+
+// Unlimited nesting
+type Config struct {
+    Main struct {
+        Sub struct {
+            Deep struct {
+                Value string `env:"VALUE"`
+            } `prefix:"DEEP_"`
+        } `prefix:"SUB_"`
+    } `prefix:"MAIN_"`
+}
+```
+
+---
+
+## 8. DEFAULTS & INTERPOLATION
+
+### 8.1 Default Values
+
+```go
+type Config struct {
+    // Simple defaults
+    Port     int    `default:"8080"`
+    Host     string `default:"localhost"`
+    LogLevel string `default:"info"`
+    Debug    bool   `default:"false"`
+
+    // Defaults with interpolation
+    BaseURL  string `default:"http://${Host}:${Port}/api"`
+
+    // Defaults from environment
+    Region   string `default:"${AWS_REGION}"`  // Falls back to env var
+}
+
+// Defaults are applied AFTER all sources loaded, BEFORE validation
+// Defaults are only applied if NO source provided the field
+
+// Example: env var overrides default
+PORT=3000 ./app
+// Port = 3000 (from env, not default)
+
+./app
+// Port = 8080 (from default)
+```
+
+### 8.2 String Interpolation
 
 ```go
 type Config struct {
     Host    string `env:"HOST" default:"localhost"`
     Port    int    `env:"PORT" default:"8080"`
-    BaseURL string `env:"BASE_URL" default:"http://${HOST}:${PORT}/api"`
+    BaseURL string `env:"BASE_URL" default:"http://${Host}:${Port}/api"`
 }
-// If no env vars: BaseURL → "http://localhost:8080/api"
+
+// Resolution order:
+// 1. Other config fields (if already set)
+// 2. OS environment variables (fallback)
+
+// If HOST=example.com, PORT=9000:
+// BaseURL = "http://example.com:9000/api"
+
+// Max interpolation depth (default 10) prevents cycles:
+// Default="http://${BaseURL}"  // Error: circular reference
+confkit.WithInterpolationMaxDepth(20)  // Increase if needed
 ```
 
-## Secret Redaction
+---
 
-Mark sensitive fields:
+## 9. SECRET REDACTION
+
+### 9.1 Marking Secrets
 
 ```go
 type Config struct {
-    APIKey   string `env:"API_KEY" secret:"true"`
-    Password string `env:"DB_PASSWORD" secret:"true"`
-    LogLevel string `env:"LOG_LEVEL"`  // Not secret
+    APIKey      string `env:"API_KEY" secret:"true"`
+    Password    string `env:"DB_PASSWORD" secret:"true"`
+    LogLevel    string `env:"LOG_LEVEL"`  // Not secret
 }
 ```
 
-Redaction happens automatically in:
-- Error messages via `Explain(err)`
-- Config dumps via `DumpConfig(cfg, fields)`
-- Programmatic error inspection (Value field is empty)
-- Help text and schemas (writeOnly: true)
+### 9.2 Automatic Redaction
 
-## Hot Reload
+Secrets are redacted in:
+- Error messages: `Port: 8080, Password: <redacted>`
+- Config dumps: `{"Password": "***REDACTED***", "LogLevel": "info"}`
+- Audit logs: `Config Password = <redacted> (from env)`
+- Help text: marked as `writeOnly: true` in JSON Schema
+
+### 9.3 Safe Logging
+
+```go
+cfg, err := confkit.Load[Config](...)
+if err != nil {
+    // Safe to log — secrets are redacted
+    log.Fatal(confkit.Explain(err))
+}
+
+// Safe to dump config
+fields := confkit.ScanFields(cfg)
+dump, _ := confkit.DumpConfig(cfg, fields)
+log.Printf("Config: %s", dump)  // Secrets masked
+```
+
+---
+
+## 10. VALIDATION FLOW
+
+### 10.1 Loading Sequence
+
+1. **Scan struct** — Extract field metadata (tags, types, defaults)
+2. **Load from sources** — Try each source left-to-right, first match wins
+3. **Apply defaults** — Only for fields not set by sources
+4. **Resolve interpolations** — Replace `${VAR}` with field or env values
+5. **Parse types** — Convert string values to target types
+6. **Validate fields** — Check validation rules (required, min, max, etc.)
+7. **Validate model** — Run custom model-level validators
+
+### 10.2 Error Collection
+
+All validation errors are collected in ErrorReport:
+
+```go
+cfg, err := confkit.Load[Config](sources...)
+if err != nil {
+    report := err.(*confkit.ErrorReport)
+    for _, fieldErr := range report.Errors {
+        fmt.Printf("%s: %s (from %s)", fieldErr.Path, fieldErr.Message, fieldErr.Source)
+    }
+}
+```
+
+---
+
+## 11. ADVANCED FEATURES
+
+### 11.1 Middleware
+
+Transform values during loading:
+
+```go
+cfg, err := confkit.LoadWithOptions[Config](
+    confkit.WithSource(confkit.FromEnv()),
+
+    // Trim whitespace from all string values
+    confkit.WithMiddleware(func(field confkit.FieldInfo, value string) (string, error) {
+        return strings.TrimSpace(value), nil
+    }),
+
+    // Validate phone numbers
+    confkit.WithMiddleware(func(field confkit.FieldInfo, value string) (string, error) {
+        if field.Name == "Phone" {
+            if !isValidPhone(value) {
+                return "", fmt.Errorf("invalid phone format")
+            }
+        }
+        return value, nil
+    }),
+)
+```
+
+### 11.2 Audit Logging
+
+Track all configuration values loaded:
+
+```go
+cfg, err := confkit.LoadWithOptions[Config](
+    confkit.WithSource(confkit.FromEnv()),
+
+    confkit.WithAuditLogger(func(entries []confkit.AuditEntry) {
+        for _, e := range entries {
+            // e.Field = "Port"
+            // e.Value = "8080" (redacted if secret)
+            // e.Source = "env"
+            log.Printf("Loaded %s=%s from %s", e.Field, e.Value, e.Source)
+        }
+    }),
+)
+```
+
+### 11.3 Load Hooks
+
+Observe loading performance:
+
+```go
+cfg, err := confkit.LoadWithOptions[Config](
+    confkit.WithSource(confkit.FromEnv()),
+
+    confkit.WithLoadHooks(func(success bool, duration time.Duration, errCount int) {
+        if success {
+            metrics.configLoadDuration.Observe(duration.Seconds())
+        } else {
+            metrics.configLoadErrors.Inc()
+        }
+    }),
+)
+```
+
+### 11.4 Hot Reload with Listeners
+
+Monitor for configuration changes:
 
 ```go
 cfg, watcher, err := confkit.LoadWithWatcher[Config]("config.yaml",
@@ -276,163 +1001,258 @@ if err != nil {
 
 watcher.AddListener(func(oldCfg, newCfg any, err error) {
     if err != nil {
-        log.Printf("Reload failed: %v", err)
+        log.Printf("Reload failed: %v", confkit.Explain(err))
         return
     }
-    cfg = newCfg.(Config)
+
+    newConfig := newCfg.(*Config)
+
+    // Update application state
+    app.SetPort(newConfig.Port)
+    app.SetLogLevel(newConfig.LogLevel)
+
+    log.Printf("Config reloaded: %+v", newConfig)
 })
 
-watcher.SetPollInterval(1 * time.Second)  // Check every second
+watcher.SetPollInterval(500 * time.Millisecond)
 watcher.Start()
 defer watcher.Stop()
 ```
 
-Polling uses mtime checks. All listeners called sequentially.
+---
 
-## Nested Structs & Prefixes
+## 12. SCHEMA GENERATION
 
-```go
-type Config struct {
-    App AppConfig
-
-    DB DBConfig `prefix:"DB_"`
-
-    Cache struct {
-        Host string `env:"HOST"`
-        TTL  int    `env:"TTL"`
-    } `prefix:"CACHE_"`
-}
-```
-
-Reads: `DB_HOST`, `DB_TTL`, `CACHE_HOST`, `CACHE_TTL` from environment.
-
-Nesting is unlimited; prefixes concatenate.
-
-## Schema Generation
+### 12.1 JSON Schema (Draft-07)
 
 ```go
 import "github.com/MimoJanra/confkit/schema"
 
-// JSON Schema draft-07 compatible
-s, _ := schema.GenerateSchema[Config]()
+s, err := schema.GenerateSchema[Config]()
 data, _ := json.MarshalIndent(s, "", "  ")
 
-// Markdown reference table
-md := schema.GenerateMarkdown[Config]()
-
-// CLI --help output
-help := schema.GenerateCLIHelp[Config]()
+// Generates JSON Schema with:
+// - Type information from struct fields
+// - Validation constraints (min, max, enum)
+// - Default values
+// - Field descriptions from help tag
+// - Secret fields marked writeOnly:true
+// - Required fields
 ```
 
-## Source Precedence
-
-Sources are applied left to right; later sources override earlier ones **per field**.
+### 12.2 Markdown Reference
 
 ```go
-cfg, _ := confkit.Load[Config](
+md := schema.GenerateMarkdown[Config]()
+fmt.Println(md)
+
+// Generates markdown table:
+// | Field | Type | Default | Description |
+// |-------|------|---------|-------------|
+// | Port | int | 8080 | Server port |
+// | Host | string | localhost | Server host |
+```
+
+### 12.3 CLI Help
+
+```go
+help := schema.GenerateCLIHelp[Config]()
+fmt.Println(help)
+
+// Generates --help style output:
+// Usage: myapp [OPTIONS]
+// Options:
+//   --port INT       Server port (default: 8080)
+//   --host STRING    Server host (default: localhost)
+//   --verbose        Enable verbose logging
+```
+
+---
+
+## 13. SOURCE PRECEDENCE & MERGING
+
+### 13.1 Load Order
+
+Sources are evaluated left-to-right. First source to provide a field value wins.
+
+```go
+cfg, err := confkit.Load[Config](
     confkit.FromYAML("defaults.yaml"),    // Lowest priority
     confkit.FromYAML("config.yaml"),      // Override defaults
-    confkit.FromEnv(),                    // Override both
+    confkit.FromEnv(),                    // Override file
     confkit.FromFlags(),                  // Highest priority
 )
+
+// For field Port:
+// 1. Check defaults.yaml → 8080
+// 2. Check config.yaml → override to 9000
+// 3. Check env vars → PORT=3000, use 3000
+// 4. Check flags → --port=4000, use 4000
+// Result: Port = 4000
 ```
 
-For each field, the value from the rightmost source providing it is used.
+### 13.2 Per-Field Override
 
-Defaults are applied LAST—only if no source provided the field.
-
-## Middleware
-
-Modify values during loading:
-
-```go
-cfg, err := confkit.LoadWithOptions[Config](
-    confkit.WithSource(confkit.FromEnv()),
-    confkit.WithMiddleware(func(path string, value any) (any, error) {
-        // Transform value before validation
-        return value, nil
-    }),
-)
-```
-
-## Error Messages
-
-When validation fails, Explain() produces:
-
-```
-Invalid configuration:
-
-  Port
-    error: must be between 1 and 65535, got 99999
-    source: env (PORT)
-
-  DatabaseURL
-    error: field is required
-    source: env (DATABASE_URL)
-    value: <redacted>  ← Only if secret:"true"
-```
-
-Includes: field name, rule, actual value (redacted if secret), source.
-
-## Real-World Examples
-
-### YAML + Environment Overrides
+Later sources can override earlier ones on a per-field basis:
 
 ```go
 cfg, err := confkit.Load[Config](
-    confkit.FromYAML("config.yaml"),
-    confkit.FromEnv(),
+    confkit.FromYAML("config.yaml"),  // Provides: Port, Host, Database
+    confkit.FromEnv(),                // Provides: Port, LogLevel
 )
+
+// Result:
+// Port = from env (overrides yaml)
+// Host = from yaml (env doesn't provide)
+// Database = from yaml (env doesn't provide)
+// LogLevel = from env (yaml doesn't provide)
 ```
 
-### Environment Only (12-Factor App)
+### 13.3 Defaults Last
+
+Default values are applied ONLY if no source provided the field:
 
 ```go
-cfg, err := confkit.Load[Config](
-    confkit.FromEnv(),
-)
+type Config struct {
+    Port int `default:"8080" env:"PORT"`
+}
+
+PORT=9000 ./app  // Port = 9000 (from env, not default)
+./app            // Port = 8080 (from default)
 ```
 
-### CLI Flags
+---
+
+## 14. INSTALLATION & DEPENDENCIES
+
+### 14.1 Core Installation
+
+```bash
+go get github.com/MimoJanra/confkit@latest
+```
+
+**Dependencies:**
+- `gopkg.in/yaml.v3` — YAML parsing
+- `github.com/pelletier/go-toml/v2` — TOML parsing
+- Go 1.21+ (for generics)
+
+Binary size impact: ~15KB core library
+
+### 14.2 Cloud Integrations (Optional)
+
+```bash
+# Install only what you need
+go get github.com/MimoJanra/confkit/k8s@latest
+go get github.com/MimoJanra/confkit/vault@latest
+go get github.com/MimoJanra/confkit/consul@latest
+go get github.com/MimoJanra/confkit/etcd@latest
+go get github.com/MimoJanra/confkit/aws@latest
+go get github.com/MimoJanra/confkit/schema@latest
+```
+
+Each cloud module has minimal impact — bring only the SDKs you use.
+
+---
+
+## 15. COMPLETE EXAMPLES
+
+### 15.1 Web Service Configuration
 
 ```go
-cfg, err := confkit.Load[Config](
-    confkit.FromFlags(),
+package main
+
+import (
+    "log"
+    "github.com/MimoJanra/confkit"
 )
-// Use: ./app --input file.txt --verbose -o output.json
+
+type Config struct {
+    Server struct {
+        Host        string `env:"HOST" default:"0.0.0.0"`
+        Port        int    `env:"PORT" default:"8080" validate:"min=1,max=65535"`
+        ReadTimeout int    `env:"READ_TIMEOUT" default:"30" validate:"min=1"`
+    } `prefix:"SERVER_"`
+
+    Database struct {
+        Host     string `env:"HOST" validate:"required"`
+        Port     int    `env:"PORT" default:"5432"`
+        User     string `env:"USER" validate:"required"`
+        Password string `env:"PASSWORD" secret:"true" validate:"required"`
+        Name     string `env:"NAME" validate:"required"`
+    } `prefix:"DB_"`
+
+    Cache struct {
+        Host     string `env:"HOST" default:"localhost"`
+        Port     int    `env:"PORT" default:"6379"`
+        TTL      int    `env:"TTL" default:"3600" validate:"min=60"`
+    } `prefix:"CACHE_"`
+
+    Logging struct {
+        Level string `env:"LEVEL" default:"info" validate:"oneof=debug info warn error"`
+        JSON  bool   `env:"JSON" default:"true"`
+    } `prefix:"LOG_"`
+}
+
+func main() {
+    cfg, err := confkit.Load[Config](
+        confkit.FromYAML("config.yaml"),
+        confkit.FromEnv(),
+    )
+    if err != nil {
+        log.Fatal(confkit.Explain(err))
+    }
+
+    // cfg is fully typed and validated
+    log.Printf("Starting server on %s:%d", cfg.Server.Host, cfg.Server.Port)
+    log.Printf("Connecting to database %s@%s:%d", cfg.Database.User, cfg.Database.Host, cfg.Database.Port)
+
+    // Application starts here
+}
 ```
 
-### Kubernetes ConfigMap + Secret
+### 15.2 Microservice with Vault
 
 ```go
-cfg, err := confkit.Load[Config](
-    k8s.FromKubernetesConfigMap("default", "app-config"),
-    confkit.FromEnv(),  // Override from env secrets
+package main
+
+import (
+    "log"
+    "os"
+    "github.com/MimoJanra/confkit"
+    "github.com/MimoJanra/confkit/vault"
 )
+
+type Config struct {
+    Service string `env:"SERVICE_NAME" validate:"required"`
+    Environment string `env:"ENVIRONMENT" validate:"oneof=dev staging prod"`
+
+    API struct {
+        Port int `env:"PORT" default:"8080"`
+        TLSCert string `env:"TLS_CERT" secret:"true"`
+        TLSKey  string `env:"TLS_KEY" secret:"true"`
+    } `prefix:"API_"`
+}
+
+func main() {
+    // Load from multiple sources with Vault
+    vaultAuth := vault.VaultTokenAuth(os.Getenv("VAULT_TOKEN"))
+
+    cfg, err := confkit.Load[Config](
+        confkit.FromYAML("config.yaml"),
+        vault.FromVault("https://vault.example.com", vaultAuth, "/secret/myapp"),
+        confkit.FromEnv(),
+    )
+    if err != nil {
+        log.Fatal(confkit.Explain(err))
+    }
+
+    log.Printf("Service: %s, Environment: %s", cfg.Service, cfg.Environment)
+}
 ```
 
-### Multi-Source with Vault
+---
 
-```go
-auth := vault.VaultTokenAuth(os.Getenv("VAULT_TOKEN"))
-cfg, err := confkit.Load[Config](
-    confkit.FromYAML("config.yaml"),
-    vault.FromVault("https://vault.example.com", auth, "/secret/myapp"),
-    confkit.FromEnv(),
-)
-```
-
-### AWS Secrets Manager
-
-```go
-cfg, err := confkit.Load[Config](
-    confkit.FromYAML("defaults.yaml"),
-    aws.FromAWSSecretsManager("prod/myapp"),
-    confkit.FromEnv(),
-)
-```
-
-## Comparison with Alternatives
+## 16. COMPARISON WITH ALTERNATIVES
 
 ### vs Viper
 
@@ -440,13 +1260,14 @@ cfg, err := confkit.Load[Config](
 |---------|:-------:|:-----:|
 | Typed Load[T] | ✅ | ❌ |
 | Defaults via tags | ✅ | ⚠️ |
-| Validation | ✅ | ❌ |
+| Validation built-in | ✅ | ❌ |
 | Secret redaction | ✅ | ❌ |
 | Cloud sources | optional | bundled |
 | Runtime reloading | ✅ | ✅ |
+| File watching | ✅ | ✅ |
 
-Use confkit for: typed config, built-in validation, secret redaction.
-Use Viper for: heavy runtime reloading, maximum flexibility.
+**Choose confkit for:** Typed configs, built-in validation, secrets, optional cloud modules.
+**Choose Viper for:** Extreme flexibility, heavy runtime reloading, many formats.
 
 ### vs envconfig
 
@@ -457,9 +1278,10 @@ Use Viper for: heavy runtime reloading, maximum flexibility.
 | Defaults | ✅ | ❌ |
 | Validation | ✅ | ❌ |
 | Secrets | ✅ | ❌ |
+| Env only | ✅ | ✅ |
 
-Use confkit for: comprehensive config management.
-Use envconfig for: simple env-var-only loading.
+**Choose confkit for:** Comprehensive config management, validation, multi-source.
+**Choose envconfig for:** Simple env-var-only loading.
 
 ### vs koanf
 
@@ -470,79 +1292,81 @@ Use envconfig for: simple env-var-only loading.
 | Validation | ✅ | ❌ |
 | Many formats | ⚠️ | ✅ |
 | Map-based | ❌ | ✅ |
+| Providers | optional | optional |
 
-Use confkit for: typed, validated config.
-Use koanf for: dynamic configs, many formats.
+**Choose confkit for:** Typed, validated configs with clear errors.
+**Choose koanf for:** Dynamic configs, many format support, map-based.
 
-## Installation
+---
 
-```bash
-# Core (YAML, JSON, TOML, env, flags)
-go get github.com/MimoJanra/confkit@v0.5.0
+## 17. DESIGN PRINCIPLES
 
-# Optional cloud modules (import only what you need)
-go get github.com/MimoJanra/confkit/k8s
-go get github.com/MimoJanra/confkit/vault
-go get github.com/MimoJanra/confkit/consul
-go get github.com/MimoJanra/confkit/etcd
-go get github.com/MimoJanra/confkit/aws
-go get github.com/MimoJanra/confkit/schema
-```
+1. **Core is iron** — Load, validation, errors must be rock solid. No compromises.
 
-### Dependencies
+2. **Not Viper** — Typed, explicit, validation-first. Not flexible-and-dynamic.
 
-**Core module:**
-- gopkg.in/yaml.v3 — YAML parsing
-- github.com/pelletier/go-toml/v2 — TOML parsing
-- Go 1.21+ (for generics)
+3. **Struct-first** — Config as struct definitions. Tags drive behavior.
 
-**Cloud modules:** Only what you import.
+4. **Fail fast with help** — Validate eagerly. Errors are clear, actionable, safe.
 
-## Documentation
+5. **Minimal core** — 3-4 core files. Cloud and extras at the edges.
 
-Complete documentation available in:
+6. **Secrets first-class** — Redaction is automatic, not an afterthought.
 
-- README.md — Overview and quick start
-- docs/installation.md — Setup and dependencies
-- docs/getting-started.md — 5-minute tutorial
-- docs/validation.md — Validation in detail
-- docs/defaults.md — How defaults work
-- docs/secret-redaction.md — Secret handling
-- docs/hot-reload.md — File watching
-- docs/schema-generation.md — JSON Schema, Markdown, help
-- docs/sources.md — All configuration sources
+---
 
-## Recipes (Real-World Examples)
+## 18. CHANGELOG & BREAKING CHANGES
 
-- docs/recipes/yaml-env-overrides.md — Most common pattern
-- docs/recipes/env-only.md — 12-factor app approach
-- docs/recipes/cli-flags.md — CLI tools
-- docs/recipes/kubernetes-configmap.md — K8s deployments
-- docs/recipes/vault.md — HashiCorp Vault
-- docs/recipes/aws-secrets-manager.md — AWS secret storage
-- docs/recipes/consul.md — Consul KV store
-- docs/recipes/etcd.md — etcd key-value store
+### Unreleased
 
-## Comparisons
+- **Load[T] returns pointer** (`*T, error`) instead of `(T, error)`
+- **Automatic snake_case mapping** for YAML/JSON/TOML (if no explicit tag)
+- **FromYAMLOptional()** for optional config files
+- **Enhanced error source tracking** (all errors show where value came from)
 
-- docs/comparison/viper.md — vs Viper
-- docs/comparison/envconfig.md — vs envconfig
-- docs/comparison/koanf.md — vs koanf
+### v0.5
 
-## Design Principles
+- Vault, Consul, etcd, AWS Secrets Manager
+- Secret rotation engine
+- Multi-region failover
 
-1. **Core is iron** — Load, defaults, validation, errors must be rock solid
-2. **Not Viper** — Typed, explicit, validation-first. Not flexible-and-dynamic
-3. **Struct-first** — Config as struct definitions. Everything flows from the struct
-4. **Fail fast with help** — Validation eager, errors clear and actionable
-5. **Minimal core, extensible edges** — 3-4 core files. Customization at the edges (v0.3+)
+### v0.4
 
-## License
+- Hot reload / file watching
+- Kubernetes ConfigMap source
+- AWS SSM Parameter Store
+- OpenTelemetry integration
 
-MIT — Free for commercial and personal use.
+### v0.3
 
-## Support
+- Functional options API
+- String interpolation
+- Custom source registry
+- Env prefixes for nested structs
 
-- GitHub: https://github.com/MimoJanra/confkit
-- Discussions: https://github.com/MimoJanra/confkit/discussions
-- Issues: https://github.com/MimoJanra/confkit/issues
+### v0.2
+
+- TOML support
+- JSON Schema generation
+- Markdown doc generation
+- Custom validators
+
+### v0.1
+
+- Core API (Load, validation, defaults)
+- YAML, JSON, env vars, flags
+- Error reporting
+- Secret redaction
+
+---
+
+## 19. SUPPORT & RESOURCES
+
+- **GitHub:** https://github.com/MimoJanra/confkit
+- **Issues:** https://github.com/MimoJanra/confkit/issues
+- **Discussions:** https://github.com/MimoJanra/confkit/discussions
+- **License:** MIT (free for commercial and personal use)
+
+---
+
+**This documentation is complete and current as of the latest development version.** For updates, refer to CHANGELOG.md and GitHub releases.

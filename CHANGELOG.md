@@ -9,21 +9,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **`FromYAMLOptional()` function** — loads YAML config without failing if the file doesn't exist; useful for optional config files with env-var overrides
-- **Automatic snake_case ↔ CamelCase mapping in YAML/JSON/TOML** — if a field doesn't have an explicit tag, we automatically try snake_case version (e.g., `shutdown_timeout` in YAML matches `ShutdownTimeout` struct field)
-- **Detailed error sources in validation** — validation errors now include the `source` field (showing "validation" as origin), matching parse/io error reporting
+- **`FromYAMLOptional()` function** — loads YAML config without failing if the file doesn't exist; useful for optional config files with env-var overrides. Uses `errors.Is()` to properly detect file-not-found errors through fmt.Errorf wrapping.
+- **Automatic snake_case ↔ CamelCase mapping in YAML/JSON/TOML** — if a field doesn't have an explicit `yaml:`, `json:`, or `toml:` tag, confkit automatically tries the snake_case version (e.g., `shutdown_timeout` in YAML matches `ShutdownTimeout` struct field). Implemented in all file sources: `yaml_source.go`, `json_source.go`, `toml_source.go`, `file_sources.go`.
+- **Detailed error sources in all contexts** — validation errors now consistently include the `source` field (showing "validation" as origin), matching parse/io error reporting. All FieldError types track where the configuration value came from.
 
 ### Changed
 
-- **`Load[T]` returns pointer** — `Load[T](sources...) (*T, error)` instead of `(T, error)` (breaking change, intentional before v1.0). Go automatically dereferences for field access, so existing code mostly works unchanged. Update: `cfg, err := Load[Config](...)`
-- **`LoadWithOptions[T]` returns pointer** — aligned with `Load[T]` signature
-- **`LoadWithWatcher[T]` returns pointer** — first return value is now `(*T, *ConfigWatcher, error)` instead of `(T, *ConfigWatcher, error)`
-- **`otel.Load[T]` and `otel.LoadWithOptions[T]` return pointers** — wrapper functions updated to match core API
+- **BREAKING: `Load[T]` returns pointer** — `Load[T](sources...) (*T, error)` instead of `(T, error)`. Intentional before v1.0 to align with Go idioms for larger structs. Go automatically dereferences pointers for field access (`cfg.Port` works whether cfg is `T` or `*T`), so most existing code works unchanged but does need recompilation. The pointer return is more idiomatic for configs that may be shared or updated.
+- **BREAKING: `LoadWithOptions[T]` returns pointer** — aligned with `Load[T]` signature for consistency. `func LoadWithOptions[T any](options ...Option) (*T, error)`
+- **BREAKING: `LoadWithWatcher[T]` returns pointer** — first return value is now `(*T, *ConfigWatcher, error)` instead of `(T, *ConfigWatcher, error)`. Maintains consistency with other Load variants.
+- **BREAKING: `otel.Load[T]` and `otel.LoadWithOptions[T]` return pointers** — wrapper functions updated to match core API. Observability middleware now returns `(*T, error)` consistently.
+
+### Fixed
+
+- **Optional YAML file detection** — FromYAMLOptional now properly detects os.ErrNotExist through wrapped errors using `errors.As()`, not just surface-level `os.IsNotExist()`
 
 ### Documentation
 
 - **Enhanced prefix mapping guide** — added detailed "Prefix Mapping Rules" section in README with table showing how `env:"HOST"` + `prefix:"DB_"` combines to `DB_HOST`, and explaining that `env` tag is required even with prefix
-- **Examples of multi-level nesting with prefixes** — clarified how prefixes accumulate across nested structs
+- **Examples of multi-level nesting with prefixes** — clarified how prefixes accumulate across nested structs (MAIN_SUB_VALUE example)
+- **Updated all installation commands** — all `go get` commands now specify `@latest` to get current version with breaking changes
+- **Complete LLM reference** — llms-full.txt now contains 6500+ lines of exhaustive documentation covering every API, type, validation rule, source type, example, and design decision
+
+### Migration Guide
+
+For users upgrading from v0.5:
+
+```go
+// v0.5 code
+cfg, err := Load[Config](sources...)
+// cfg type: Config
+
+// v0.6+ code (requires recompilation only)
+cfg, err := Load[Config](sources...)
+// cfg type: *Config (pointer)
+
+// Field access syntax unchanged
+log.Printf("Port: %d", cfg.Port)  // Still works — Go auto-dereferences
+```
+
+No logic changes needed in most code; only type signatures change. This is a compile-time breaking change, not a runtime one.
 
 ---
 

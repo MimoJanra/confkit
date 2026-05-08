@@ -50,7 +50,7 @@ cfg, err := confkit.Load[Config](confkit.FromEnv())
 
 ## YAML Files
 
-**Function:** `FromYAML(path string)`
+**Function:** `FromYAML(path string)` or `FromYAMLOptional(path string)`
 
 Load configuration from YAML files. Field names use snake_case by default.
 
@@ -60,13 +60,42 @@ type Config struct {
     Database string `yaml:"database"`
 }
 
+// File must exist
 cfg, err := confkit.Load[Config](confkit.FromYAML("config.yaml"))
+
+// File is optional (doesn't fail if missing)
+cfg, err := confkit.Load[Config](confkit.FromYAMLOptional("config.yaml"))
+```
+
+**Automatic snake_case matching:** If a field doesn't have an explicit `yaml:` tag, confkit automatically tries the snake_case version:
+
+```go
+type Config struct {
+    ServerAddr    string  // Auto-matches "server_addr" in YAML
+    ShutdownSecs  int     // Auto-matches "shutdown_secs" in YAML
+    DatabaseHost  string  // Auto-matches "database_host" in YAML
+    APIKey        string `yaml:"api_key"`  // Explicit tag still works
+}
 ```
 
 **config.yaml:**
 ```yaml
-port: 8080
-database: postgres://localhost/db
+server_addr: localhost:8080
+shutdown_secs: 30
+database_host: db.example.com
+api_key: secret123
+```
+
+### Optional vs Required Files
+
+- **`FromYAML()`** — File must exist. Returns error if missing.
+- **`FromYAMLOptional()`** — File is optional. Returns empty source if file missing. Useful for optional config files with environment variable overrides.
+
+```go
+cfg, err := confkit.Load[Config](
+    confkit.FromYAMLOptional("config.yaml"),  // Optional fallback
+    confkit.FromEnv(),                         // Env vars override
+)
 ```
 
 ---

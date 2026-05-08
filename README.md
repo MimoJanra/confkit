@@ -77,7 +77,7 @@ if err != nil {
 }
 ```
 
-**Go 1.24+ · zero mandatory dependencies beyond yaml.v3 and go-toml/v2 · MIT**
+**Go 1.22+ · zero mandatory dependencies beyond yaml.v3 and go-toml/v2 · MIT**
 
 ---
 
