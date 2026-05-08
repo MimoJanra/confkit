@@ -25,7 +25,21 @@ confkit is a **production-ready typed configuration loader for Go services**. It
 - **Go version required:** 1.21+ (for generics)
 - **License:** MIT
 
-### 1.3 Philosophy
+### 1.3 Getting Started with Examples
+
+The **[`examples/`](https://github.com/MimoJanra/confkit/tree/main/examples)** directory contains **production-ready examples** that demonstrate all major features:
+
+- Web Service with database and caching
+- Microservice with Postgres, Redis, RabbitMQ
+- CLI tool with flags and file processing
+- Cloud-native with Kubernetes, AWS, Vault
+- Complete schema generation example
+
+All examples are **fully tested** with comprehensive test suite in `examples_test.go`. Run with `go test ./examples -v`.
+
+See **Section 15** for detailed code walkthroughs and the actual example files for complete, runnable implementations.
+
+### 1.4 Philosophy
 
 **MINIMAL external dependencies.** Core uses only:
 - `gopkg.in/yaml.v3` — YAML parsing
@@ -136,6 +150,12 @@ if err != nil {
 // cfg is *Config, fully typed
 log.Printf("Port: %d", cfg.Port)
 ```
+
+**For complete, production-ready examples, see the [`examples/` directory](https://github.com/MimoJanra/confkit/tree/main/examples):**
+- Web service with database, cache, logging
+- Microservice with Postgres, Redis, RabbitMQ
+- CLI tool with comprehensive configuration
+- Cloud-native with Kubernetes, AWS, Vault
 
 #### 3.1.2 Loading with Options
 
@@ -1156,6 +1176,47 @@ Each cloud module has minimal impact — bring only the SDKs you use.
 
 ## 15. COMPLETE EXAMPLES
 
+### ⭐ IMPORTANT: Production Examples in Repository
+
+The **[`examples/`](https://github.com/MimoJanra/confkit/tree/main/examples)** directory in the repository contains **fully working, tested, production-ready examples** with:
+
+- **Web Service Example** (`web_service_example.go`) — Typical API with database, cache, logging
+  - Complete struct definition with 6 nested configuration areas
+  - Multiple sources (env + optional YAML)
+  - time.Duration fields, secret redaction, validation
+  - All tested and runnable
+
+- **Microservice Example** (`microservice_example.go`) — Enterprise setup
+  - PostgreSQL, Redis, RabbitMQ configuration
+  - JWT authentication, observability, rate limiting
+  - 200+ lines of fully-documented configuration
+  - Complete test coverage
+
+- **CLI Tool Example** (`cli_tool_example.go`) — Command-line tool configuration
+  - Flags and environment variable support
+  - Input/output, processing, validation, performance settings
+  - Multiple nested structs with prefixes
+
+- **Cloud-Native Example** (`cloud_native_example.go`) — Kubernetes + AWS + Vault
+  - ConfigMap, AWS Secrets Manager, Vault integration
+  - Health checks, mTLS, resource limits, HPA
+  - Complete Kubernetes deployment configuration
+
+- **Full Setup Example** (`full_setup_example.go`) — Schema generation demo
+  - JSON Schema, Markdown docs, CLI help generation
+  - Custom validators, comprehensive feature demonstration
+
+**To use the examples:**
+```bash
+cd examples
+go test -v                    # Run comprehensive test suite
+go run web_service_example.go # Run specific example
+```
+
+Each example includes example configuration files (YAML, TOML) and a README with setup instructions.
+
+---
+
 ### 15.1 Web Service Configuration
 
 ```go
@@ -1362,6 +1423,18 @@ func main() {
 
 ## 19. SUPPORT & RESOURCES
 
+### Examples & Code
+
+- **[Examples Directory](https://github.com/MimoJanra/confkit/tree/main/examples)** — Production-ready examples with tests
+  - Web Service configuration
+  - Microservice with multiple integrations
+  - CLI tool example
+  - Cloud-native (Kubernetes, AWS, Vault)
+  - Schema generation demo
+  - Comprehensive test suite (`examples_test.go`)
+
+### Community & Documentation
+
 - **GitHub:** https://github.com/MimoJanra/confkit
 - **Issues:** https://github.com/MimoJanra/confkit/issues
 - **Discussions:** https://github.com/MimoJanra/confkit/discussions
@@ -1370,3 +1443,5 @@ func main() {
 ---
 
 **This documentation is complete and current as of the latest development version.** For updates, refer to CHANGELOG.md and GitHub releases.
+
+**For production deployments, see the examples/ directory for tested configurations matching common use cases.**
