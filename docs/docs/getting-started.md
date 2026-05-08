@@ -115,6 +115,36 @@ Invalid configuration:
     source: yaml (config.yaml)
 ```
 
+## Supported Types
+
+confkit supports a wide range of types out of the box:
+
+```go
+type Config struct {
+    // Primitives
+    Port     int       `env:"PORT"`
+    Enabled  bool      `env:"ENABLED"`
+    Name     string    `env:"NAME"`
+    Factor   float64   `env:"FACTOR"`
+    
+    // Time durations (e.g., "5s", "10m", "1h30m")
+    Timeout  time.Duration `env:"TIMEOUT" default:"30s"`
+    
+    // Collections
+    AllowedHosts []string `env:"ALLOWED_HOSTS"` // comma-separated
+}
+```
+
+**Supported types:**
+- `string`, `int`, `int8`–`int64`, `uint`, `uint8`–`uint64`
+- `float32`, `float64`
+- `bool` (accepts: true/1/yes/on or false/0/no/off)
+- `time.Duration` (Go duration format: "5s", "10m", "1h30m")
+- `time.Time` (RFC3339 format: "2026-01-01T00:00:00Z")
+- `[]string`, `[]int` (from comma-separated values)
+- Nested structs with `prefix:` tags
+- Custom types with `custom:` validator
+
 ## Secrets & Security
 
 Mark sensitive fields with `secret:"true"` to redact them:
