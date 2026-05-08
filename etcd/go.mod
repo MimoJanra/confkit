@@ -1,8 +1,6 @@
 module github.com/MimoJanra/confkit/etcd
 
-go 1.24.0
-
-toolchain go1.24.2
+go 1.22.0
 
 require (
 	github.com/MimoJanra/confkit v0.8.3
