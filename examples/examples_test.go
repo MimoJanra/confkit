@@ -10,10 +10,10 @@ import (
 
 func TestWebServiceConfigValidDefaults(t *testing.T) {
 	os.Clearenv()
-	os.Setenv("DB_HOST", "localhost")
-	os.Setenv("DB_USER", "postgres")
-	os.Setenv("DB_PASSWORD", "secret")
-	os.Setenv("DB_NAME", "mydb")
+	_ = os.Setenv("DB_HOST", "localhost")
+	_ = os.Setenv("DB_USER", "postgres")
+	_ = os.Setenv("DB_PASSWORD", "secret")
+	_ = os.Setenv("DB_NAME", "mydb")
 
 	cfg, err := confkit.Load[WebServiceConfig](confkit.FromEnv())
 	if err != nil {
@@ -42,13 +42,13 @@ func TestWebServiceConfigEnvironmentOverride(t *testing.T) {
 	// Note: APP_NAME uses prefix "APP_", so the env var should be APP_NAME
 	// But the struct field is .App.Name, and app uses lowercase in prefix
 	// so the actual env var should match the prefix + field tag
-	os.Setenv("SERVER_PORT", "9000")
-	os.Setenv("SERVER_HOST", "127.0.0.1")
-	os.Setenv("DB_HOST", "db.example.com")
-	os.Setenv("DB_USER", "admin")
-	os.Setenv("DB_PASSWORD", "password123")
-	os.Setenv("DB_NAME", "production")
-	os.Setenv("LOG_LEVEL", "debug")
+	_ = os.Setenv("SERVER_PORT", "9000")
+	_ = os.Setenv("SERVER_HOST", "127.0.0.1")
+	_ = os.Setenv("DB_HOST", "db.example.com")
+	_ = os.Setenv("DB_USER", "admin")
+	_ = os.Setenv("DB_PASSWORD", "password123")
+	_ = os.Setenv("DB_NAME", "production")
+	_ = os.Setenv("LOG_LEVEL", "debug")
 
 	cfg, err := confkit.Load[WebServiceConfig](confkit.FromEnv())
 	if err != nil {
@@ -69,13 +69,13 @@ func TestWebServiceConfigEnvironmentOverride(t *testing.T) {
 
 func TestWebServiceConfigDurationParsing(t *testing.T) {
 	os.Clearenv()
-	os.Setenv("SERVER_READ_TIMEOUT", "30s")
-	os.Setenv("SERVER_WRITE_TIMEOUT", "1m")
-	os.Setenv("DB_HOST", "localhost")
-	os.Setenv("DB_USER", "user")
-	os.Setenv("DB_PASSWORD", "pass")
-	os.Setenv("DB_NAME", "db")
-	os.Setenv("CACHE_TTL", "2h")
+	_ = os.Setenv("SERVER_READ_TIMEOUT", "30s")
+	_ = os.Setenv("SERVER_WRITE_TIMEOUT", "1m")
+	_ = os.Setenv("DB_HOST", "localhost")
+	_ = os.Setenv("DB_USER", "user")
+	_ = os.Setenv("DB_PASSWORD", "pass")
+	_ = os.Setenv("DB_NAME", "db")
+	_ = os.Setenv("CACHE_TTL", "2h")
 
 	cfg, err := confkit.Load[WebServiceConfig](confkit.FromEnv())
 	if err != nil {
@@ -95,11 +95,11 @@ func TestWebServiceConfigDurationParsing(t *testing.T) {
 
 func TestWebServiceConfigValidation(t *testing.T) {
 	os.Clearenv()
-	os.Setenv("SERVER_PORT", "99999")
-	os.Setenv("DB_HOST", "localhost")
-	os.Setenv("DB_USER", "user")
-	os.Setenv("DB_PASSWORD", "pass")
-	os.Setenv("DB_NAME", "db")
+	_ = os.Setenv("SERVER_PORT", "99999")
+	_ = os.Setenv("DB_HOST", "localhost")
+	_ = os.Setenv("DB_USER", "user")
+	_ = os.Setenv("DB_PASSWORD", "pass")
+	_ = os.Setenv("DB_NAME", "db")
 
 	_, err := confkit.Load[WebServiceConfig](confkit.FromEnv())
 	if err == nil {
@@ -118,19 +118,19 @@ func TestWebServiceConfigValidation(t *testing.T) {
 
 func TestMicroserviceConfigCompleteSetup(t *testing.T) {
 	os.Clearenv()
-	os.Setenv("SERVICE_NAME", "order-service")
-	os.Setenv("SERVICE_PORT", "8000")
-	os.Setenv("AUTH_JWT_SECRET", "secret-key-here")
-	os.Setenv("POSTGRES_HOST", "postgres.svc")
-	os.Setenv("POSTGRES_PORT", "5432")
-	os.Setenv("POSTGRES_USER", "admin")
-	os.Setenv("POSTGRES_PASSWORD", "dbpass")
-	os.Setenv("POSTGRES_DATABASE", "orders")
-	os.Setenv("REDIS_HOST", "redis.svc")
-	os.Setenv("REDIS_PASSWORD", "redispass")
-	os.Setenv("MQ_HOST", "rabbitmq.svc")
-	os.Setenv("MQ_USER", "guest")
-	os.Setenv("MQ_PASSWORD", "guest")
+	_ = os.Setenv("SERVICE_NAME", "order-service")
+	_ = os.Setenv("SERVICE_PORT", "8000")
+	_ = os.Setenv("AUTH_JWT_SECRET", "secret-key-here")
+	_ = os.Setenv("POSTGRES_HOST", "postgres.svc")
+	_ = os.Setenv("POSTGRES_PORT", "5432")
+	_ = os.Setenv("POSTGRES_USER", "admin")
+	_ = os.Setenv("POSTGRES_PASSWORD", "dbpass")
+	_ = os.Setenv("POSTGRES_DATABASE", "orders")
+	_ = os.Setenv("REDIS_HOST", "redis.svc")
+	_ = os.Setenv("REDIS_PASSWORD", "redispass")
+	_ = os.Setenv("MQ_HOST", "rabbitmq.svc")
+	_ = os.Setenv("MQ_USER", "guest")
+	_ = os.Setenv("MQ_PASSWORD", "guest")
 
 	cfg, err := confkit.Load[MicroserviceConfig](confkit.FromEnv())
 	if err != nil {
@@ -153,18 +153,18 @@ func TestMicroserviceConfigCompleteSetup(t *testing.T) {
 
 func TestMicroserviceConfigRateLimiting(t *testing.T) {
 	os.Clearenv()
-	os.Setenv("SERVICE_NAME", "api-service")
-	os.Setenv("POSTGRES_HOST", "localhost")
-	os.Setenv("POSTGRES_USER", "user")
-	os.Setenv("POSTGRES_PASSWORD", "pass")
-	os.Setenv("POSTGRES_DATABASE", "db")
-	os.Setenv("REDIS_HOST", "localhost")
-	os.Setenv("MQ_HOST", "localhost")
-	os.Setenv("MQ_USER", "user")
-	os.Setenv("MQ_PASSWORD", "pass")
-	os.Setenv("AUTH_JWT_SECRET", "secret")
-	os.Setenv("RATELIMIT_RPS", "5000")
-	os.Setenv("RATELIMIT_BURST_SIZE", "50000")
+	_ = os.Setenv("SERVICE_NAME", "api-service")
+	_ = os.Setenv("POSTGRES_HOST", "localhost")
+	_ = os.Setenv("POSTGRES_USER", "user")
+	_ = os.Setenv("POSTGRES_PASSWORD", "pass")
+	_ = os.Setenv("POSTGRES_DATABASE", "db")
+	_ = os.Setenv("REDIS_HOST", "localhost")
+	_ = os.Setenv("MQ_HOST", "localhost")
+	_ = os.Setenv("MQ_USER", "user")
+	_ = os.Setenv("MQ_PASSWORD", "pass")
+	_ = os.Setenv("AUTH_JWT_SECRET", "secret")
+	_ = os.Setenv("RATELIMIT_RPS", "5000")
+	_ = os.Setenv("RATELIMIT_BURST_SIZE", "50000")
 
 	cfg, err := confkit.Load[MicroserviceConfig](confkit.FromEnv())
 	if err != nil {
@@ -181,8 +181,8 @@ func TestMicroserviceConfigRateLimiting(t *testing.T) {
 
 func TestCLIToolConfigDefaults(t *testing.T) {
 	os.Clearenv()
-	os.Setenv("INPUT_FILE", "input.json")
-	os.Setenv("OUTPUT_FILE", "output.json")
+	_ = os.Setenv("INPUT_FILE", "input.json")
+	_ = os.Setenv("OUTPUT_FILE", "output.json")
 
 	cfg, err := confkit.Load[CLIToolConfig](confkit.FromEnv())
 	if err != nil {
@@ -208,13 +208,13 @@ func TestCLIToolConfigDefaults(t *testing.T) {
 
 func TestCLIToolConfigCustomValues(t *testing.T) {
 	os.Clearenv()
-	os.Setenv("INPUT_FILE", "data.csv")
-	os.Setenv("INPUT_FORMAT", "csv")
-	os.Setenv("INPUT_ENCODING", "utf-8")
-	os.Setenv("OUTPUT_FILE", "result.xml")
-	os.Setenv("OUTPUT_FORMAT", "xml")
-	os.Setenv("PROCESSING_THREADS", "16")
-	os.Setenv("PROCESSING_SKIP_ERRORS", "true")
+	_ = os.Setenv("INPUT_FILE", "data.csv")
+	_ = os.Setenv("INPUT_FORMAT", "csv")
+	_ = os.Setenv("INPUT_ENCODING", "utf-8")
+	_ = os.Setenv("OUTPUT_FILE", "result.xml")
+	_ = os.Setenv("OUTPUT_FORMAT", "xml")
+	_ = os.Setenv("PROCESSING_THREADS", "16")
+	_ = os.Setenv("PROCESSING_SKIP_ERRORS", "true")
 
 	cfg, err := confkit.Load[CLIToolConfig](confkit.FromEnv())
 	if err != nil {
@@ -237,8 +237,8 @@ func TestCLIToolConfigCustomValues(t *testing.T) {
 
 func TestCLIToolConfigValidation(t *testing.T) {
 	os.Clearenv()
-	os.Setenv("INPUT_FILE", "input.json")
-	os.Setenv("OUTPUT_FILE", "output.json")
+	_ = os.Setenv("INPUT_FILE", "input.json")
+	_ = os.Setenv("OUTPUT_FILE", "output.json")
 	os.Setenv("PROCESSING_THREADS", "64")
 
 	_, err := confkit.Load[CLIToolConfig](confkit.FromEnv())
@@ -257,9 +257,9 @@ func TestFullSetupExampleConfig(t *testing.T) {
 		LogLevel string `env:"LOG_LEVEL" toml:"log_level" default:"info" validate:"oneof=debug,info,warn,error"`
 	}
 
-	os.Setenv("PORT", "9000")
-	os.Setenv("HOST", "0.0.0.0")
-	os.Setenv("LOG_LEVEL", "debug")
+	_ = os.Setenv("PORT", "9000")
+	_ = os.Setenv("HOST", "0.0.0.0")
+	_ = os.Setenv("LOG_LEVEL", "debug")
 
 	cfg, err := confkit.Load[AppConfig](confkit.FromEnv())
 	if err != nil {
@@ -281,13 +281,13 @@ func TestNestedStructPrefixMapping(t *testing.T) {
 	os.Clearenv()
 
 	// Test that prefix:suffix mapping works correctly
-	os.Setenv("DB_HOST", "db.local")
-	os.Setenv("DB_PORT", "5432")
-	os.Setenv("DB_USER", "postgres")
-	os.Setenv("DB_PASSWORD", "secret")
-	os.Setenv("DB_NAME", "mydb")
-	os.Setenv("CACHE_ENABLED", "true")
-	os.Setenv("CACHE_TTL", "30m")
+	_ = os.Setenv("DB_HOST", "db.local")
+	_ = os.Setenv("DB_PORT", "5432")
+	_ = os.Setenv("DB_USER", "postgres")
+	_ = os.Setenv("DB_PASSWORD", "secret")
+	_ = os.Setenv("DB_NAME", "mydb")
+	_ = os.Setenv("CACHE_ENABLED", "true")
+	_ = os.Setenv("CACHE_TTL", "30m")
 
 	cfg, err := confkit.Load[WebServiceConfig](confkit.FromEnv())
 	if err != nil {
@@ -307,10 +307,10 @@ func TestNestedStructPrefixMapping(t *testing.T) {
 
 func TestSecretFieldRedaction(t *testing.T) {
 	os.Clearenv()
-	os.Setenv("DB_HOST", "localhost")
-	os.Setenv("DB_USER", "user")
-	os.Setenv("DB_PASSWORD", "my-secret-password-123")
-	os.Setenv("DB_NAME", "db")
+	_ = os.Setenv("DB_HOST", "localhost")
+	_ = os.Setenv("DB_USER", "user")
+	_ = os.Setenv("DB_PASSWORD", "my-secret-password-123")
+	_ = os.Setenv("DB_NAME", "db")
 
 	cfg, err := confkit.Load[WebServiceConfig](confkit.FromEnv())
 	if err != nil {
