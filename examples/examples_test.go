@@ -239,7 +239,7 @@ func TestCLIToolConfigValidation(t *testing.T) {
 	os.Clearenv()
 	_ = os.Setenv("INPUT_FILE", "input.json")
 	_ = os.Setenv("OUTPUT_FILE", "output.json")
-	os.Setenv("PROCESSING_THREADS", "64")
+	_ = os.Setenv("PROCESSING_THREADS", "64")
 
 	_, err := confkit.Load[CLIToolConfig](confkit.FromEnv())
 	if err == nil {
