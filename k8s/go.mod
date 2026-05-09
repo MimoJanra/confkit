@@ -1,9 +1,12 @@
 module github.com/MimoJanra/confkit/k8s
 
-go 1.22.0
+go 1.24.0
+
+require github.com/MimoJanra/confkit v0.8.3
 
 require (
-	github.com/MimoJanra/confkit v0.8.3
+	github.com/pelletier/go-toml/v2 v2.3.1 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
 replace github.com/MimoJanra/confkit v0.8.3 => ../

@@ -11,23 +11,23 @@ import (
 // using flags, environment variables, and config files.
 type CLIToolConfig struct {
 	Input struct {
-		File      string   `flag:"input,i" env:"FILE" validate:"required" help:"Input file path"`
-		Format    string   `flag:"format,f" env:"FORMAT" default:"json" validate:"oneof=json,yaml,csv,xml" help:"Input file format"`
-		Encoding  string   `flag:"encoding,e" env:"ENCODING" default:"utf-8" help:"Input file encoding"`
+		File     string `flag:"input,i" env:"FILE" validate:"required" help:"Input file path"`
+		Format   string `flag:"format,f" env:"FORMAT" default:"json" validate:"oneof=json,yaml,csv,xml" help:"Input file format"`
+		Encoding string `flag:"encoding,e" env:"ENCODING" default:"utf-8" help:"Input file encoding"`
 	} `prefix:"INPUT_"`
 
 	Output struct {
-		File       string `flag:"output,o" env:"FILE" validate:"required" help:"Output file path"`
-		Format     string `flag:"format,f" env:"FORMAT" default:"json" validate:"oneof=json,yaml,csv,xml" help:"Output file format"`
-		Overwrite  bool   `flag:"overwrite,w" env:"OVERWRITE" default:"false" help:"Overwrite output file if exists"`
-		Prettify   bool   `flag:"prettify,p" env:"PRETTIFY" default:"true" help:"Prettify output"`
+		File      string `flag:"output,o" env:"FILE" validate:"required" help:"Output file path"`
+		Format    string `flag:"format,f" env:"FORMAT" default:"json" validate:"oneof=json,yaml,csv,xml" help:"Output file format"`
+		Overwrite bool   `flag:"overwrite,w" env:"OVERWRITE" default:"false" help:"Overwrite output file if exists"`
+		Prettify  bool   `flag:"prettify,p" env:"PRETTIFY" default:"true" help:"Prettify output"`
 	} `prefix:"OUTPUT_"`
 
 	Processing struct {
-		Threads       int    `flag:"threads,t" env:"THREADS" default:"4" validate:"min=1,max=32" help:"Number of processing threads"`
-		ChunkSize     int    `flag:"chunk-size,c" env:"CHUNK_SIZE" default:"1000" validate:"min=1,max=1000000" help:"Chunk size for batch processing"`
-		SkipErrors    bool   `flag:"skip-errors" env:"SKIP_ERRORS" default:"false" help:"Skip errors and continue processing"`
-		ErrorLogFile  string `flag:"error-log,el" env:"ERROR_LOG_FILE" help:"Log file for errors"`
+		Threads      int    `flag:"threads,t" env:"THREADS" default:"4" validate:"min=1,max=32" help:"Number of processing threads"`
+		ChunkSize    int    `flag:"chunk-size,c" env:"CHUNK_SIZE" default:"1000" validate:"min=1,max=1000000" help:"Chunk size for batch processing"`
+		SkipErrors   bool   `flag:"skip-errors" env:"SKIP_ERRORS" default:"false" help:"Skip errors and continue processing"`
+		ErrorLogFile string `flag:"error-log,el" env:"ERROR_LOG_FILE" help:"Log file for errors"`
 	} `prefix:"PROCESSING_"`
 
 	Validation struct {
@@ -38,17 +38,17 @@ type CLIToolConfig struct {
 	} `prefix:"VALIDATION_"`
 
 	Logging struct {
-		Verbose     bool   `flag:"verbose,v" env:"VERBOSE" default:"false" help:"Verbose output"`
-		LogFile     string `flag:"log,l" env:"FILE" help:"Log file path (empty = stdout)"`
-		LogLevel    string `flag:"log-level,ll" env:"LEVEL" default:"info" validate:"oneof=debug,info,warn,error" help:"Log level"`
-		DebugMode   bool   `flag:"debug" env:"DEBUG" default:"false" help:"Enable debug mode"`
+		Verbose   bool   `flag:"verbose,v" env:"VERBOSE" default:"false" help:"Verbose output"`
+		LogFile   string `flag:"log,l" env:"FILE" help:"Log file path (empty = stdout)"`
+		LogLevel  string `flag:"log-level,ll" env:"LEVEL" default:"info" validate:"oneof=debug,info,warn,error" help:"Log level"`
+		DebugMode bool   `flag:"debug" env:"DEBUG" default:"false" help:"Enable debug mode"`
 	} `prefix:"LOG_"`
 
 	Performance struct {
-		EnableCache  bool   `flag:"cache" env:"CACHE" default:"true" help:"Enable caching"`
-		CacheSize    int    `flag:"cache-size,cs" env:"CACHE_SIZE" default:"100" validate:"min=1,max=10000" help:"Cache size in MB"`
+		EnableCache       bool `flag:"cache" env:"CACHE" default:"true" help:"Enable caching"`
+		CacheSize         int  `flag:"cache-size,cs" env:"CACHE_SIZE" default:"100" validate:"min=1,max=10000" help:"Cache size in MB"`
 		EnableCompression bool `flag:"compress" env:"COMPRESSION" default:"false" help:"Enable compression"`
-		CompressionLevel int `flag:"compress-level,cl" env:"COMPRESSION_LEVEL" default:"6" validate:"min=1,max=9" help:"Compression level"`
+		CompressionLevel  int  `flag:"compress-level,cl" env:"COMPRESSION_LEVEL" default:"6" validate:"min=1,max=9" help:"Compression level"`
 	} `prefix:"PERFORMANCE_"`
 
 	Advanced struct {

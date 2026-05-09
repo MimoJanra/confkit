@@ -18,6 +18,10 @@ title: Documentation
 - **[Error Handling](./errors/)** — Human-readable error messages and debugging
 - **[Advanced Features](./advanced/)** — Interpolation, options, hot reload
 
+## Upgrading
+
+- **[Migration Guide: v0.10.0](./migration-v0.10.md)** — Breaking changes and how to migrate from v0.9
+
 ## Cloud & Enterprise
 
 - **[Kubernetes](./cloud/kubernetes/)** — ConfigMap and Secret sources

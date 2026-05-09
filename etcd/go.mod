@@ -1,10 +1,10 @@
 module github.com/MimoJanra/confkit/etcd
 
-go 1.22.0
+go 1.24.0
 
 require (
 	github.com/MimoJanra/confkit v0.8.3
-	go.etcd.io/etcd/client/v3 v3.5.15
+	go.etcd.io/etcd/client/v3 v3.5.13
 )
 
 require (

@@ -1,6 +1,6 @@
 module github.com/MimoJanra/confkit/otel
 
-go 1.22.0
+go 1.24.0
 
 require (
 	github.com/MimoJanra/confkit v0.8.3

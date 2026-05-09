@@ -81,7 +81,7 @@ Order doesn't matter — all rules are checked.
 
 ## Error Messages
 
-When validation fails, `confkit.Explain(err)` shows clear, actionable errors:
+When validation fails, `confkit.Explain(err)` shows clear, actionable errors (v0.10+):
 
 ```
 Invalid configuration:
@@ -93,7 +93,13 @@ Invalid configuration:
   Username
     error: must be between 3 and 64 characters, got 2
     source: yaml (config.yaml)
+
+  DatabaseURL
+    error: field is required
+    source: validation
 ```
+
+**Note (v0.10+):** All errors now consistently include the `source` field, whether they come from parsing, validation, or I/O operations.
 
 ## Validation Order
 

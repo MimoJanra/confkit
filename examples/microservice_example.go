@@ -25,14 +25,14 @@ type MicroserviceConfig struct {
 	} `prefix:"AUTH_"`
 
 	PostgreSQL struct {
-		Host        string        `env:"HOST" validate:"required"`
-		Port        int           `env:"PORT" default:"5432" validate:"min=1,max=65535"`
-		User        string        `env:"USER" validate:"required"`
-		Password    string        `env:"PASSWORD" validate:"required" secret:"true"`
-		Database    string        `env:"DATABASE" validate:"required"`
-		MaxOpenConn int           `env:"MAX_OPEN_CONN" default:"25" validate:"min=1,max=100"`
-		MaxIdleConn int           `env:"MAX_IDLE_CONN" default:"5" validate:"min=0,max=50"`
-		IdleTimeout time.Duration `env:"IDLE_TIMEOUT" default:"10m" validate:"min=1m,max=1h"`
+		Host         string        `env:"HOST" validate:"required"`
+		Port         int           `env:"PORT" default:"5432" validate:"min=1,max=65535"`
+		User         string        `env:"USER" validate:"required"`
+		Password     string        `env:"PASSWORD" validate:"required" secret:"true"`
+		Database     string        `env:"DATABASE" validate:"required"`
+		MaxOpenConn  int           `env:"MAX_OPEN_CONN" default:"25" validate:"min=1,max=100"`
+		MaxIdleConn  int           `env:"MAX_IDLE_CONN" default:"5" validate:"min=0,max=50"`
+		IdleTimeout  time.Duration `env:"IDLE_TIMEOUT" default:"10m" validate:"min=1m,max=1h"`
 		QueryTimeout time.Duration `env:"QUERY_TIMEOUT" default:"30s" validate:"min=1s,max=5m"`
 	} `prefix:"POSTGRES_"`
 
@@ -60,12 +60,12 @@ type MicroserviceConfig struct {
 	} `prefix:"MQ_"`
 
 	Observability struct {
-		LogLevel      string `env:"LOG_LEVEL" default:"info" validate:"oneof=debug,info,warn,error"`
-		LogFormat     string `env:"LOG_FORMAT" default:"json" validate:"oneof=json,text"`
-		MetricsPort   int    `env:"METRICS_PORT" default:"8001" validate:"min=1024,max=65535"`
-		MetricsPath   string `env:"METRICS_PATH" default:"/metrics"`
-		TracingEnabled bool  `env:"TRACING_ENABLED" default:"true"`
-		TracesSampled float64 `env:"TRACES_SAMPLED" default:"0.1" validate:"min=0,max=1"`
+		LogLevel       string  `env:"LOG_LEVEL" default:"info" validate:"oneof=debug,info,warn,error"`
+		LogFormat      string  `env:"LOG_FORMAT" default:"json" validate:"oneof=json,text"`
+		MetricsPort    int     `env:"METRICS_PORT" default:"8001" validate:"min=1024,max=65535"`
+		MetricsPath    string  `env:"METRICS_PATH" default:"/metrics"`
+		TracingEnabled bool    `env:"TRACING_ENABLED" default:"true"`
+		TracesSampled  float64 `env:"TRACES_SAMPLED" default:"0.1" validate:"min=0,max=1"`
 	} `prefix:"OBS_"`
 
 	FeatureFlags struct {
@@ -76,10 +76,10 @@ type MicroserviceConfig struct {
 	} `prefix:"FEATURE_"`
 
 	RateLimiting struct {
-		Enabled    bool          `env:"ENABLED" default:"true"`
-		RequestsPerSecond int   `env:"RPS" default:"1000" validate:"min=1,max=100000"`
-		BurstSize  int           `env:"BURST_SIZE" default:"10000" validate:"min=1,max=1000000"`
-		WindowSize time.Duration `env:"WINDOW_SIZE" default:"1s" validate:"min=100ms,max=1m"`
+		Enabled           bool          `env:"ENABLED" default:"true"`
+		RequestsPerSecond int           `env:"RPS" default:"1000" validate:"min=1,max=100000"`
+		BurstSize         int           `env:"BURST_SIZE" default:"10000" validate:"min=1,max=1000000"`
+		WindowSize        time.Duration `env:"WINDOW_SIZE" default:"1s" validate:"min=100ms,max=1m"`
 	} `prefix:"RATELIMIT_"`
 }
 

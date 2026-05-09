@@ -1,6 +1,6 @@
 # confkit
 
-[![Go Version](https://img.shields.io/badge/go-1.22%2B-blue)](https://golang.org/doc/devel/release)
+[![Go Version](https://img.shields.io/badge/go-1.24%2B-blue)](https://golang.org/doc/devel/release)
 [![Go Reference](https://pkg.go.dev/badge/github.com/MimoJanra/confkit.svg)](https://pkg.go.dev/github.com/MimoJanra/confkit)
 [![Tests](https://github.com/MimoJanra/confkit/actions/workflows/test.yml/badge.svg)](https://github.com/MimoJanra/confkit/actions/workflows/test.yml)
 [![codecov](https://codecov.io/gh/MimoJanra/confkit/branch/main/graph/badge.svg)](https://codecov.io/gh/MimoJanra/confkit)
@@ -77,7 +77,7 @@ if err != nil {
 }
 ```
 
-**Go 1.22+ · zero mandatory dependencies beyond yaml.v3 and go-toml/v2 · MIT**
+**Go 1.24.0+ · zero mandatory dependencies beyond yaml.v3 and go-toml/v2 · MIT**
 
 ---
 
@@ -141,6 +141,26 @@ go get github.com/MimoJanra/confkit/vault@latest
 go get github.com/MimoJanra/confkit/consul@latest
 go get github.com/MimoJanra/confkit/etcd@latest
 go get github.com/MimoJanra/confkit/aws@latest
+```
+
+---
+
+## Breaking Changes in v0.10.0
+
+**`Load[T]` now returns `(*T, error)` instead of `(T, error)` (pointer)**
+
+This aligns with Go idioms for larger configs. Go automatically dereferences pointers for field access, so most code works unchanged:
+
+```go
+// v0.10+ — works exactly the same
+cfg, err := confkit.Load[Config](confkit.FromEnv())
+log.Printf("Port: %d", cfg.Port)  // auto-dereference, works fine
+```
+
+If you explicitly need a value type:
+```go
+cfg, err := confkit.Load[Config](confkit.FromEnv())
+cfgValue := *cfg  // explicit dereference if needed
 ```
 
 ---

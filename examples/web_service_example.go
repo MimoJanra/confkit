@@ -18,8 +18,8 @@ type WebServiceConfig struct {
 	} `prefix:"APP_"`
 
 	Server struct {
-		Host     string        `env:"HOST" default:"0.0.0.0" validate:"required"`
-		Port     int           `env:"PORT" default:"8080" validate:"min=1,max=65535"`
+		Host         string        `env:"HOST" default:"0.0.0.0" validate:"required"`
+		Port         int           `env:"PORT" default:"8080" validate:"min=1,max=65535"`
 		ReadTimeout  time.Duration `env:"READ_TIMEOUT" default:"15s" validate:"min=1s,max=5m"`
 		WriteTimeout time.Duration `env:"WRITE_TIMEOUT" default:"15s" validate:"min=1s,max=5m"`
 	} `prefix:"SERVER_"`

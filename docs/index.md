@@ -48,11 +48,12 @@ Invalid configuration:
 
 ## Features by Version
 
-- **v0.1** ✅ Core loading, defaults, validation, error handling
-- **v0.2** ✅ TOML, schema generation, custom validators
-- **v0.3** ✅ Env prefix, string interpolation, functional options, custom sources
-- **v0.4** ✅ Hot reload, Kubernetes, AWS SSM, observability
-- **v0.5** ✅ Vault, Consul, etcd, AWS Secrets Manager, secret rotation
+- **v0.1-v0.5** ✅ Core features: loading, validation, defaults, cloud sources
+- **v0.6-v0.8** ✅ Multi-file sources, 18+ built-in validators, observability (Prometheus, OpenTelemetry)
+- **v0.9** ✅ Bug fixes, enhanced documentation
+- **v0.10** ✅ Pointer returns (Load[T] → *T), optional YAML, snake_case mapping, production examples
+
+**Latest: v0.10.0** — Stable, production-ready with comprehensive examples and documentation
 
 ## Install
 

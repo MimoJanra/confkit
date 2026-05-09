@@ -50,9 +50,11 @@ cfg, err := confkit.Load[Config](confkit.FromEnv())
 
 ## YAML Files
 
-**Function:** `FromYAML(path string)` or `FromYAMLOptional(path string)`
+**Functions:** 
+- `FromYAML(path string)` — File must exist, returns error if missing
+- `FromYAMLOptional(path string)` — File is optional, returns empty source if missing
 
-Load configuration from YAML files. Field names use snake_case by default.
+Load configuration from YAML files. Field names use snake_case by default, with **automatic snake_case ↔ CamelCase mapping**.
 
 ```go
 type Config struct {
@@ -67,7 +69,7 @@ cfg, err := confkit.Load[Config](confkit.FromYAML("config.yaml"))
 cfg, err := confkit.Load[Config](confkit.FromYAMLOptional("config.yaml"))
 ```
 
-**Automatic snake_case matching:** If a field doesn't have an explicit `yaml:` tag, confkit automatically tries the snake_case version:
+**Automatic snake_case mapping (v0.10+):** If a field doesn't have an explicit `yaml:` tag, confkit automatically tries the snake_case version:
 
 ```go
 type Config struct {
@@ -77,6 +79,11 @@ type Config struct {
     APIKey        string `yaml:"api_key"`  // Explicit tag still works
 }
 ```
+
+**How it works:**
+1. First checks for explicit tag (e.g., `yaml:"api_key"`)
+2. If no tag, tries snake_case version (e.g., `ServerAddr` → `server_addr`)
+3. If field not found, skips and applies defaults
 
 **config.yaml:**
 ```yaml
@@ -89,14 +96,18 @@ api_key: secret123
 ### Optional vs Required Files
 
 - **`FromYAML()`** — File must exist. Returns error if missing.
-- **`FromYAMLOptional()`** — File is optional. Returns empty source if file missing. Useful for optional config files with environment variable overrides.
+- **`FromYAMLOptional()`** — File is optional (v0.10+). Returns empty source if file missing. Useful for optional config files with environment variable overrides.
 
+**Example: Development vs Production setup**
 ```go
 cfg, err := confkit.Load[Config](
-    confkit.FromYAMLOptional("config.yaml"),  // Optional fallback
-    confkit.FromEnv(),                         // Env vars override
+    confkit.FromEnv(),                                    // Highest priority - runtime overrides
+    confkit.FromYAMLOptional("config.local.yaml"),       // Optional local overrides (git-ignored)
+    confkit.FromYAML("config.yaml"),                     // Required base config
 )
 ```
+
+If `config.local.yaml` doesn't exist, loading continues without error.
 
 ---
 
@@ -104,7 +115,7 @@ cfg, err := confkit.Load[Config](
 
 **Function:** `FromJSON(path string)`
 
-Load configuration from JSON files.
+Load configuration from JSON files. **Supports automatic snake_case mapping (v0.10+)**.
 
 ```go
 cfg, err := confkit.Load[Config](confkit.FromJSON("config.json"))
@@ -114,9 +125,12 @@ cfg, err := confkit.Load[Config](confkit.FromJSON("config.json"))
 ```json
 {
   "port": 8080,
-  "database": "postgres://localhost/db"
+  "database_url": "postgres://localhost/db",
+  "log_level": "info"
 }
 ```
+
+Go struct with `DatabaseURL` field automatically matches `database_url` in JSON.
 
 ---
 
@@ -124,7 +138,7 @@ cfg, err := confkit.Load[Config](confkit.FromJSON("config.json"))
 
 **Function:** `FromTOML(path string)`
 
-Load configuration from TOML files.
+Load configuration from TOML files. **Supports automatic snake_case mapping (v0.10+)**.
 
 ```go
 cfg, err := confkit.Load[Config](confkit.FromTOML("config.toml"))
@@ -133,8 +147,11 @@ cfg, err := confkit.Load[Config](confkit.FromTOML("config.toml"))
 **config.toml:**
 ```toml
 port = 8080
-database = "postgres://localhost/db"
+database_url = "postgres://localhost/db"
+log_level = "info"
 ```
+
+Go struct with `DatabaseURL` field automatically matches `database_url` in TOML.
 
 ---
 

@@ -73,12 +73,24 @@ import "github.com/MimoJanra/confkit/aws"
 
 ## Minimum Go Version
 
-confkit requires **Go 1.22+** (for generics support).
+confkit requires **Go 1.24.0 or later**.
+
+**Why Go 1.24.0?**
+- Generics for type-safe `Load[T]` API
+- Improved `range` statement (iterate over integers and slices with range-only syntax)
+- Enhanced iteration semantics
 
 Check your Go version:
 
 ```bash
 go version
+```
+
+If you have an older version, update it:
+
+```bash
+go install golang.org/dl/go1.24@latest
+go1.24 download
 ```
 
 ## Dependencies
@@ -126,7 +138,7 @@ func main() {
     if err != nil {
         log.Fatal(err)
     }
-    log.Printf("Port: %d", cfg.Port)
+    log.Printf("Port: %d", cfg.Port)  // cfg is *Config pointer (v0.10+)
 }
 ```
 
@@ -136,6 +148,17 @@ Run it:
 go run main.go
 # Output: Port: 8080
 ```
+
+## Version Notes
+
+**v0.10.0 (current stable):**
+- `Load[T]` returns `(*T, error)` instead of `(T, error)` — pointer return (breaking change from v0.9)
+- Most code works unchanged due to Go auto-dereference behavior
+- See [Migration Guide](./migration-v0.10.md) for details
+
+**v0.9:**
+- `Load[T]` returned `(T, error)` — value return
+- If upgrading from v0.9, see the migration guide
 
 ## Updating confkit
 

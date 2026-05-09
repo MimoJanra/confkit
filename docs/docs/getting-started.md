@@ -13,7 +13,7 @@ Install confkit and load your first configuration in 5 minutes.
 go get github.com/MimoJanra/confkit@latest
 ```
 
-**Requirements:** Go 1.22 or later
+**Requirements:** Go 1.24.0 or later
 
 ## Your First Config
 
@@ -142,8 +142,26 @@ type Config struct {
 - `time.Duration` (Go duration format: "5s", "10m", "1h30m")
 - `time.Time` (RFC3339 format: "2026-01-01T00:00:00Z")
 - `[]string`, `[]int` (from comma-separated values)
+- `map[string]string`, `map[string]int`, etc. (KEY=val,KEY2=val2 format)
 - Nested structs with `prefix:` tags
-- Custom types with `custom:` validator
+- Custom types with custom validators
+
+### Time Duration Examples
+
+```go
+type Config struct {
+    // All of these work:
+    ShortTimeout  time.Duration `env:"SHORT_TIMEOUT" default:"5s"`
+    MediumTimeout time.Duration `env:"MEDIUM_TIMEOUT" default:"30s"`
+    LongTimeout   time.Duration `env:"LONG_TIMEOUT" default:"5m"`
+    VeryLong      time.Duration `env:"VERY_LONG" default:"1h30m"`
+}
+
+// Load from env or defaults:
+// SHORT_TIMEOUT="10s" → 10 seconds
+// MEDIUM_TIMEOUT not set → 30 seconds (default)
+// LONG_TIMEOUT="2m30s" → 2 minutes 30 seconds
+```
 
 ## Secrets & Security
 
