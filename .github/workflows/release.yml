@@ -21,9 +21,33 @@ jobs:
         uses: actions/setup-go@v4
         with:
           go-version: "1.24"
+          cache: true
 
       - name: Run tests before release
-        run: go test -v ./...
+        run: go test -v -coverprofile=coverage.txt ./...
+
+      - name: Check test coverage
+        run: |
+          coverage=$(go tool cover -func=coverage.txt | grep total | awk '{print $3}' | sed 's/%//')
+          echo "Coverage: ${coverage}%"
+          if (( $(echo "$coverage < 75" | bc -l) )); then
+            echo "ERROR: Coverage is below 75%"
+            exit 1
+          fi
+
+      - name: Run security checks
+        run: |
+          go install github.com/securego/gosec/v2/cmd/gosec@latest
+          go install github.com/golang/vuln/cmd/govulncheck@latest
+
+          echo "=== Running gosec ===" >> security-evidence.txt
+          gosec -fmt json -out gosec-results.json ./... || true
+
+          echo "=== Running govulncheck ===" >> security-evidence.txt
+          govulncheck ./... >> security-evidence.txt 2>&1 || true
+
+          echo "=== Test coverage ===" >> security-evidence.txt
+          go tool cover -func=coverage.txt >> security-evidence.txt
 
       - name: Create Release Notes
         id: release_notes
@@ -38,6 +62,7 @@ jobs:
           echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Create GitHub Release
+        id: create_release
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -47,3 +72,33 @@ jobs:
           body: ${{ steps.release_notes.outputs.changelog }}
           draft: false
           prerelease: ${{ contains(steps.release_notes.outputs.version, 'alpha') || contains(steps.release_notes.outputs.version, 'beta') }}
+
+      - name: Upload security evidence
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./security-evidence.txt
+          asset_name: security-evidence.txt
+          asset_content_type: text/plain
+
+      - name: Upload coverage report
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./coverage.txt
+          asset_name: coverage.txt
+          asset_content_type: text/plain
+
+      - name: Upload gosec results
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./gosec-results.json
+          asset_name: gosec-results.json
+          asset_content_type: application/json

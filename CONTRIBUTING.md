@@ -53,20 +53,35 @@ confkit/
    cd confkit
    ```
 
-2. **Create a feature branch**:
+2. **Set up development environment**:
+   ```bash
+   # Install required Go version (1.24+)
+   go version
+
+   # Install security tools (optional but recommended)
+   make security-install
+   ```
+
+3. **Create a feature branch**:
    ```bash
    git checkout -b feature/your-feature
    ```
 
-3. **Make changes** following the code style below.
+4. **Make changes** following the code style below.
 
-4. **Run tests**:
+5. **Run tests and security checks**:
    ```bash
+   # Run all tests
    go test ./...
+
+   # Check coverage (must be >= 75%)
    go test -cover ./...
+
+   # Run security checks
+   make security
    ```
 
-5. **Commit with a clear message** (see Commit Conventions below).
+6. **Commit with a clear message** (see Commit Conventions below).
 
 ## Commit Conventions
 
@@ -233,18 +248,23 @@ Run this checklist before submitting a PR:
 # Run all tests
 go test ./...
 
-# Check coverage
+# Check coverage (must be >= 75%)
 go test -cover ./...
-
-# Verify examples
-go run examples/*.go
-
-# Lint (if available)
-golangci-lint run ./...
 
 # Format code
 go fmt ./...
+
+# Run linting
+make lint
+
+# Run security checks
+make security
+
+# Verify examples
+go run examples/*.go
 ```
+
+All checks must pass before submitting. See `make help` for available targets.
 
 ## Pull Request Process
 
