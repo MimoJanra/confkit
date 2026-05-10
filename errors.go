@@ -18,6 +18,7 @@ type FieldError struct {
 	Message string
 	Value   string
 	Secret  bool
+	Err     error // underlying error, enables errors.Is checks on ErrorReport
 }
 
 type ErrorReport struct {
@@ -42,6 +43,10 @@ type singleFieldError struct {
 
 func (e *singleFieldError) Error() string {
 	return e.Message
+}
+
+func (e *singleFieldError) Unwrap() error {
+	return e.Err
 }
 
 func (er *ErrorReport) Format() string {
@@ -97,4 +102,11 @@ func (er *ErrorReport) AddError(fe FieldError) {
 
 func (er *ErrorReport) IsEmpty() bool {
 	return len(er.Errors) == 0
+}
+
+func (er *ErrorReport) FirstError() *FieldError {
+	if len(er.Errors) == 0 {
+		return nil
+	}
+	return &er.Errors[0]
 }

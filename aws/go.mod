@@ -3,7 +3,7 @@ module github.com/MimoJanra/confkit/aws
 go 1.24.0
 
 require (
-	github.com/MimoJanra/confkit v0.8.3
+	github.com/MimoJanra/confkit v1.0.0
 	github.com/aws/aws-sdk-go-v2 v1.30.0
 	github.com/aws/aws-sdk-go-v2/config v1.27.0
 	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.30.0
@@ -27,4 +27,4 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace github.com/MimoJanra/confkit v0.8.3 => ../
+replace github.com/MimoJanra/confkit v1.0.0 => ../

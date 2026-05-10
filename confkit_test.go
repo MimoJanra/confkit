@@ -22,7 +22,6 @@ func TestScanFields(t *testing.T) {
 		t.Fatalf("expected 2 fields, got %d", len(fields))
 	}
 
-	// Check Port field
 	portField := fields[0]
 	if portField.Name != "Port" {
 		t.Errorf("expected field name Port, got %s", portField.Name)
@@ -34,7 +33,6 @@ func TestScanFields(t *testing.T) {
 		t.Errorf("expected default tag 8080, got %s", portField.Tags["default"])
 	}
 
-	// Check Mode field
 	modeField := fields[1]
 	if modeField.Name != "Mode" {
 		t.Errorf("expected field name Mode, got %s", modeField.Name)
@@ -55,7 +53,6 @@ func TestParseString(t *testing.T) {
 func TestParseEmpty(t *testing.T) {
 	p := NewParser()
 
-	// Empty string should return zero value for each type
 	types := []reflect.Type{
 		reflect.TypeOf(""),
 		reflect.TypeOf(0),
@@ -75,7 +72,7 @@ func TestParseEmpty(t *testing.T) {
 
 func TestParseUnsupportedType(t *testing.T) {
 	p := NewParser()
-	// map is not supported
+
 	_, err := p.Parse("test", reflect.TypeOf(map[string]string{}))
 	if err == nil {
 		t.Error("expected error for unsupported type, got nil")
@@ -121,13 +118,13 @@ func TestParseInt(t *testing.T) {
 	}{
 		{"42", reflect.TypeOf(int(0)), int(42), false},
 		{"255", reflect.TypeOf(uint8(0)), uint8(255), false},
-		{"256", reflect.TypeOf(uint8(0)), nil, true}, // overflow
+		{"256", reflect.TypeOf(uint8(0)), nil, true},
 		{"-128", reflect.TypeOf(int8(0)), int8(-128), false},
 		{"100", reflect.TypeOf(int32(0)), int32(100), false},
 		{"200", reflect.TypeOf(int16(0)), int16(200), false},
 		{"400", reflect.TypeOf(int64(0)), int64(400), false},
 		{"invalid", reflect.TypeOf(int(0)), nil, true},
-		{"32768", reflect.TypeOf(int16(0)), nil, true}, // overflow int16
+		{"32768", reflect.TypeOf(int16(0)), nil, true},
 	}
 
 	for _, tc := range tests {
@@ -184,7 +181,6 @@ func TestParseTime(t *testing.T) {
 func TestParseSlice(t *testing.T) {
 	p := NewParser()
 
-	// []string
 	result, err := p.Parse("a,b,c", reflect.TypeOf([]string{}))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -194,7 +190,6 @@ func TestParseSlice(t *testing.T) {
 		t.Errorf("expected [a b c], got %v", slice)
 	}
 
-	// []int
 	result, err = p.Parse("1,2,3", reflect.TypeOf([]int{}))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -210,8 +205,6 @@ func TestLoadWithDefaults(t *testing.T) {
 		Port int    `env:"DEFAULT_PORT" default:"8080"`
 		Mode string `env:"DEFAULT_MODE" default:"dev"`
 	}
-
-	// Don't set env vars, so defaults apply
 
 	cfg, err := Load[Config](FromEnv())
 	if err != nil {
@@ -287,7 +280,7 @@ func TestExplainError(t *testing.T) {
 
 	_, err := Load[Config](FromEnv())
 	if err == nil {
-		// Manually create an error to test
+
 		report := &ErrorReport{}
 		report.AddError(FieldError{
 			Path:    "API",
@@ -397,7 +390,6 @@ func TestLoadMultipleSources(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	// env (first/highest priority) provides mode=test; yaml provides port and host
 	if cfg.Port != 3000 {
 		t.Errorf("expected Port 3000 from YAML, got %d", cfg.Port)
 	}
@@ -414,7 +406,6 @@ func TestValidationRequired(t *testing.T) {
 		Host string `env:"TEST_REQUIRED_HOST" validate:"required"`
 	}
 
-	// Don't set the env var, so it will be empty
 	_, err := Load[Config](FromEnv())
 	if err == nil {
 		t.Fatal("expected validation error for required field, got nil")
@@ -653,7 +644,7 @@ func TestNestedStructsValidation(t *testing.T) {
 }
 
 func TestValidationWithSecretRedaction(t *testing.T) {
-	// Manually create a validation error to test redaction
+
 	report := &ErrorReport{}
 	report.AddError(FieldError{
 		Path:    "APIKey",
@@ -758,7 +749,6 @@ func TestValidationOneOfWithRequired(t *testing.T) {
 		Level string `env:"TEST_LEVEL_REQUIRED" validate:"required,oneof=debug,info"`
 	}
 
-	// Don't set env var — required should fail
 	_, err := Load[Config](FromEnv())
 	if err == nil {
 		t.Fatal("expected validation error, got nil")
@@ -869,14 +859,13 @@ func TestErrorReportImplementsError(t *testing.T) {
 }
 
 func TestExplainVariousErrors(t *testing.T) {
-	// Test Explain with a regular error
+
 	err := fmt.Errorf("plain error")
 	result := Explain(err)
 	if !strings.Contains(result, "plain error") {
 		t.Errorf("expected 'plain error' in explained result, got: %s", result)
 	}
 
-	// Test Explain with an ErrorReport
 	report := &ErrorReport{}
 	report.AddError(FieldError{
 		Path:    "Host",
@@ -895,9 +884,9 @@ func TestValidationPtrField(t *testing.T) {
 	type Config struct {
 		Count *int `env:"TEST_PTR_COUNT" validate:"required"`
 	}
-	// nil pointer should satisfy required check differently
+
 	_, err := Load[Config](FromEnv())
-	// Just check it doesn't panic
+
 	_ = err
 }
 
@@ -1309,7 +1298,7 @@ func TestFromYAMLFilesMultiple(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
-	// file2 should override file1
+
 	if cfg.Port != 9000 {
 		t.Errorf("Expected Port 9000 (from file2), got %d", cfg.Port)
 	}
@@ -1347,7 +1336,7 @@ func TestFromYAMLFilesNestedMerge(t *testing.T) {
 	if cfg.Database.Host != "db2.local" {
 		t.Errorf("Expected Database.Host 'db2.local', got %q", cfg.Database.Host)
 	}
-	// Port from file1 should persist since file2 doesn't override it
+
 	if cfg.Database.Port != 5432 {
 		t.Errorf("Expected Database.Port 5432, got %d", cfg.Database.Port)
 	}
@@ -1561,7 +1550,7 @@ func TestMultipleYAMLFilesPrecedence(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
-	// Each field should be from the last file that defines it
+
 	if cfg.A != "from-file1" {
 		t.Errorf("Expected A from-file1, got %q", cfg.A)
 	}

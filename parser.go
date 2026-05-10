@@ -182,7 +182,7 @@ func (p *Parser) parseMap(value string, targetType reflect.Type) (any, error) {
 		return result.Interface(), nil
 	}
 
-	for _, pair := range strings.Split(value, ",") {
+	for _, pair := range splitMapPairs(value) {
 		pair = strings.TrimSpace(pair)
 		if pair == "" {
 			continue
@@ -194,6 +194,10 @@ func (p *Parser) parseMap(value string, targetType reflect.Type) (any, error) {
 		k := pair[:eq]
 		v := pair[eq+1:]
 
+		if len(v) >= 2 && v[0] == '"' && v[len(v)-1] == '"' {
+			v = v[1 : len(v)-1]
+		}
+
 		parsedVal, err := p.Parse(v, targetType.Elem())
 		if err != nil {
 			return nil, fmt.Errorf("map value parse error for key %q: %w", k, err)
@@ -203,6 +207,31 @@ func (p *Parser) parseMap(value string, targetType reflect.Type) (any, error) {
 	}
 
 	return result.Interface(), nil
+}
+
+// splitMapPairs splits a comma-separated key=value string respecting double-quoted values.
+// e.g. KEY1="a,b",KEY2=c → [KEY1="a,b", KEY2=c]
+func splitMapPairs(s string) []string {
+	var pairs []string
+	var buf strings.Builder
+	inQuotes := false
+	for i := 0; i < len(s); i++ {
+		ch := s[i]
+		switch {
+		case ch == '"':
+			inQuotes = !inQuotes
+			buf.WriteByte(ch)
+		case ch == ',' && !inQuotes:
+			pairs = append(pairs, buf.String())
+			buf.Reset()
+		default:
+			buf.WriteByte(ch)
+		}
+	}
+	if buf.Len() > 0 {
+		pairs = append(pairs, buf.String())
+	}
+	return pairs
 }
 
 func (p *Parser) zeroValue(typ reflect.Type) any {

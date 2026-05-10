@@ -39,9 +39,7 @@ func TestWebServiceConfigValidDefaults(t *testing.T) {
 
 func TestWebServiceConfigEnvironmentOverride(t *testing.T) {
 	os.Clearenv()
-	// Note: APP_NAME uses prefix "APP_", so the env var should be APP_NAME
-	// But the struct field is .App.Name, and app uses lowercase in prefix
-	// so the actual env var should match the prefix + field tag
+
 	_ = os.Setenv("SERVER_PORT", "9000")
 	_ = os.Setenv("SERVER_HOST", "127.0.0.1")
 	_ = os.Setenv("DB_HOST", "db.example.com")
@@ -55,7 +53,6 @@ func TestWebServiceConfigEnvironmentOverride(t *testing.T) {
 		t.Fatalf("failed to load config: %v", err)
 	}
 
-	// Server and Database use explicit prefixes, so they override correctly
 	if cfg.Server.Port != 9000 {
 		t.Errorf("expected Server.Port=9000, got %d", cfg.Server.Port)
 	}
@@ -248,7 +245,7 @@ func TestCLIToolConfigValidation(t *testing.T) {
 }
 
 func TestFullSetupExampleConfig(t *testing.T) {
-	// This example uses TOML config file, so we'll test with environment variables
+
 	os.Clearenv()
 
 	type AppConfig struct {
@@ -280,7 +277,6 @@ func TestFullSetupExampleConfig(t *testing.T) {
 func TestNestedStructPrefixMapping(t *testing.T) {
 	os.Clearenv()
 
-	// Test that prefix:suffix mapping works correctly
 	_ = os.Setenv("DB_HOST", "db.local")
 	_ = os.Setenv("DB_PORT", "5432")
 	_ = os.Setenv("DB_USER", "postgres")
@@ -317,11 +313,8 @@ func TestSecretFieldRedaction(t *testing.T) {
 		t.Fatalf("failed to load config: %v", err)
 	}
 
-	// Verify password was loaded correctly
 	if cfg.Database.Password != "my-secret-password-123" {
 		t.Errorf("expected password to be loaded correctly")
 	}
 
-	// Secret fields should be marked correctly in the config
-	// (actual redaction happens in error messages, not in the value itself)
 }

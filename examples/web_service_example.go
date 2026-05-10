@@ -54,7 +54,7 @@ type WebServiceConfig struct {
 
 // ExampleWebService shows how to load and use web service configuration.
 func ExampleWebService() error {
-	// Load config from environment variables and config file
+
 	cfg, err := confkit.Load[WebServiceConfig](
 		confkit.FromEnv(),
 		confkit.FromYAMLOptional("config.yaml"),
@@ -63,7 +63,6 @@ func ExampleWebService() error {
 		return fmt.Errorf("failed to load config: %w", err)
 	}
 
-	// Use the configuration
 	log.Printf("Starting %s v%s in %s mode\n", cfg.App.Name, cfg.App.Version, cfg.App.Env)
 	log.Printf("Server: %s:%d\n", cfg.Server.Host, cfg.Server.Port)
 	log.Printf("Database: %s@%s:%d/%s\n", cfg.Database.User, cfg.Database.Host, cfg.Database.Port, cfg.Database.Name)

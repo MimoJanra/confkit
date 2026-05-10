@@ -163,7 +163,7 @@ func strCheck(fieldVal reflect.Value, field FieldInfo, rule string, check func(s
 	}
 	s := fieldVal.String()
 	if s == "" {
-		return FieldError{} // "required" handles empty values
+		return FieldError{}
 	}
 	ok, msg := check(s)
 	if !ok {

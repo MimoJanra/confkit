@@ -5,6 +5,41 @@ All notable changes to confkit are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0] - 2026-05-10
+
+### Added
+
+- **`LoadContext[T]`** — propagates caller context into every `Source.Lookup` call; enables deadline/cancellation for cloud sources (Vault, etcd, AWS).
+- **`LoadWithOptionsContext[T]`** — context-aware variant of `LoadWithOptions[T]`.
+- **`WithContext(ctx)`** — option to inject a context into `LoadWithOptions[T]` call chains.
+- **`ValidateOnly[T]`** — dry-run load: runs full source + validation pipeline without calling `LoadHookFunc`, `AuditLogger`, or rotation triggers. Designed for CI config validation.
+- **`Dump[T]`** — typed config dump to nested JSON (default) or YAML. Secrets (`secret:"true"`) are redacted by default.
+- **`DumpString[T]`** — convenience wrapper returning a string, suitable for `slog` and `log.Printf`.
+- **`DumpYAML[T]`** — convenience wrapper for YAML output.
+- **`WithDumpFormat(f DumpFormat)`** — selects `FormatJSON` or `FormatYAML`.
+- **`WithDumpRedactSecrets(redact bool)`** — controls secret redaction in dumps.
+- **`MustLoad[T]`** — panics with `*ErrorReport` on error; for `init()` and tests.
+- **`MustLoadContext[T]`** — context-aware variant of `MustLoad[T]`.
+- **`(*ErrorReport).FirstError()`** — returns the first `*FieldError` or nil on an empty report.
+- **`FindFile(name, dirs...)`** — finds the first existing config file in the given directories; tries `.yaml`, `.json`, `.toml` extensions when name has none.
+- **`FindSource(name, dirs...)`** — wraps `FindFile` and returns a ready-to-use `Source`; returns an error source wrapping `ErrNotFound` when not found.
+- **`DefaultSearchDirs(appName)`** — returns standard search order: `./`, `./config/`, `/etc/<appName>/`, `~/.<appName>/`.
+- **`ErrNotFound`** — sentinel error returned by `FindSource` when the file is not found.
+- **`FromOverlay(base, env)`** — Spring Boot-style overlay: loads `base`, then merges `config.<env>.<ext>` on top. If the overlay file is absent, `base` is returned unchanged without error.
+- **`OverlayPath(basePath, env)`** — computes the overlay file path (`config.yaml` + `prod` → `config.prod.yaml`).
+- **`ConfigDelta`** — reports which config fields were Added, Removed, or Changed on hot reload.
+- **`ConfigChangeListenerWithDelta`** — listener type for delta-aware hot-reload callbacks.
+- **`(*ConfigWatcher).AddDeltaListener`** — registers a delta listener that receives `ConfigDelta` and old/new flat snapshots on every file change.
+- **`parseMap` quoted values** — map parser now supports `KEY1="val,with,commas",KEY2=plain` syntax.
+- **`STABLE.md`** — full API stability contract for v1.0+.
+
+### Stability
+
+API is now frozen per `STABLE.md`. All symbols listed there follow semantic versioning:
+`1.0.x` = bug fixes only · `1.x.0` = additive only · `2.0.0` = any breaking change.
+
+---
+
 ## [0.10.0] - 2026-05-08
 
 ### Added

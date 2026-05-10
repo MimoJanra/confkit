@@ -9,11 +9,52 @@ import (
 )
 
 func Load[T any](sources ...Source) (*T, error) {
-	options := make([]Option, 0, len(sources))
+	return LoadContext[T](context.Background(), sources...)
+}
+
+func LoadContext[T any](ctx context.Context, sources ...Source) (*T, error) {
+	opts := make([]Option, 0, len(sources)+1)
+	opts = append(opts, WithContext(ctx))
 	for _, src := range sources {
-		options = append(options, WithSource(src))
+		opts = append(opts, WithSource(src))
 	}
-	return LoadWithOptions[T](options...)
+	return loadCore[T](opts...)
+}
+
+func LoadWithOptions[T any](options ...Option) (*T, error) {
+	return LoadWithOptionsContext[T](context.Background(), options...)
+}
+
+func LoadWithOptionsContext[T any](ctx context.Context, options ...Option) (*T, error) {
+	opts := make([]Option, 0, len(options)+1)
+	opts = append(opts, WithContext(ctx))
+	opts = append(opts, options...)
+	return loadCore[T](opts...)
+}
+
+// ValidateOnly runs the full load pipeline (sources + validation) but skips LoadHookFunc and AuditLogger.
+// Use in CI to validate config without triggering side effects.
+func ValidateOnly[T any](ctx context.Context, options ...Option) (*T, error) {
+	opts := make([]Option, 0, len(options)+2)
+	opts = append(opts, WithContext(ctx), withValidateOnlyMode())
+	opts = append(opts, options...)
+	return loadCore[T](opts...)
+}
+
+func MustLoad[T any](sources ...Source) *T {
+	cfg, err := Load[T](sources...)
+	if err != nil {
+		panic(err)
+	}
+	return cfg
+}
+
+func MustLoadContext[T any](ctx context.Context, sources ...Source) *T {
+	cfg, err := LoadContext[T](ctx, sources...)
+	if err != nil {
+		panic(err)
+	}
+	return cfg
 }
 
 func LoadWithWatcher[T any](filePath string, sources ...Source) (*T, *ConfigWatcher, error) {
@@ -30,14 +71,9 @@ func LoadWithWatcher[T any](filePath string, sources ...Source) (*T, *ConfigWatc
 	return cfg, watcher, nil
 }
 
-func LoadWithOptions[T any](options ...Option) (*T, error) {
+func loadCore[T any](options ...Option) (*T, error) {
 	start := time.Now()
 	cfg := new(T)
-	ctx := context.Background()
-
-	fields := ScanFields(cfg)
-	report := &ErrorReport{}
-	parser := NewParser()
 
 	config := &loadConfig{
 		Sources:          make([]Source, 0),
@@ -50,6 +86,15 @@ func LoadWithOptions[T any](options ...Option) (*T, error) {
 	for _, opt := range options {
 		opt.apply(config)
 	}
+
+	ctx := config.Ctx
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	fields := ScanFields(cfg)
+	report := &ErrorReport{}
+	parser := NewParser()
 
 	validator := NewValidator()
 	for name, fn := range config.Validators {
@@ -101,6 +146,7 @@ func LoadWithOptions[T any](options ...Option) (*T, error) {
 				Path:    field.Path,
 				Kind:    ErrorKindIO,
 				Message: sourceErr.Error(),
+				Err:     sourceErr,
 			})
 		}
 	}
@@ -114,8 +160,10 @@ func LoadWithOptions[T any](options ...Option) (*T, error) {
 
 	interpolationOK := performInterpolation(fieldValues, resolver, report)
 	if !interpolationOK {
-		callAuditLogger(config, fieldValues, fieldSources, fields)
-		fireHooks(config, false, start, len(report.Errors))
+		if !config.validateOnlyMode {
+			callAuditLogger(config, fieldValues, fieldSources, fields)
+			fireHooks(config, false, start, len(report.Errors))
+		}
 		return cfg, report
 	}
 
@@ -124,8 +172,10 @@ func LoadWithOptions[T any](options ...Option) (*T, error) {
 	setStructFields(val, fields, fieldValues, fieldSources, parser, report)
 
 	if !report.IsEmpty() {
-		callAuditLogger(config, fieldValues, fieldSources, fields)
-		fireHooks(config, false, start, len(report.Errors))
+		if !config.validateOnlyMode {
+			callAuditLogger(config, fieldValues, fieldSources, fields)
+			fireHooks(config, false, start, len(report.Errors))
+		}
 		return cfg, report
 	}
 
@@ -147,13 +197,17 @@ func LoadWithOptions[T any](options ...Option) (*T, error) {
 	}
 
 	if !report.IsEmpty() {
-		callAuditLogger(config, fieldValues, fieldSources, fields)
-		fireHooks(config, false, start, len(report.Errors))
+		if !config.validateOnlyMode {
+			callAuditLogger(config, fieldValues, fieldSources, fields)
+			fireHooks(config, false, start, len(report.Errors))
+		}
 		return cfg, report
 	}
 
-	callAuditLogger(config, fieldValues, fieldSources, fields)
-	fireHooks(config, true, start, 0)
+	if !config.validateOnlyMode {
+		callAuditLogger(config, fieldValues, fieldSources, fields)
+		fireHooks(config, true, start, 0)
+	}
 	return cfg, nil
 }
 

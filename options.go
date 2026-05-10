@@ -1,6 +1,7 @@
 package confkit
 
 import (
+	"context"
 	"reflect"
 	"time"
 )
@@ -27,6 +28,8 @@ type loadConfig struct {
 	InterpolationMax int
 	AuditLogger      AuditLogger
 	LoadHooks        []LoadHookFunc
+	Ctx              context.Context
+	validateOnlyMode bool
 }
 
 type MiddlewareFunc func(field FieldInfo, value string) (string, error)
@@ -83,5 +86,17 @@ func WithAuditLogger(fn AuditLogger) Option {
 func WithLoadHook(fn LoadHookFunc) Option {
 	return optionFunc(func(cfg *loadConfig) {
 		cfg.LoadHooks = append(cfg.LoadHooks, fn)
+	})
+}
+
+func WithContext(ctx context.Context) Option {
+	return optionFunc(func(cfg *loadConfig) {
+		cfg.Ctx = ctx
+	})
+}
+
+func withValidateOnlyMode() Option {
+	return optionFunc(func(cfg *loadConfig) {
+		cfg.validateOnlyMode = true
 	})
 }

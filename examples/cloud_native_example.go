@@ -101,26 +101,21 @@ type CloudNativeConfig struct {
 // for Kubernetes and other cloud-native deployments.
 func ExampleCloudNative() error {
 	cfg, err := confkit.Load[CloudNativeConfig](
-		// Environment variables (highest priority - overrides everything)
+
 		confkit.FromEnv(),
 
-		// Kubernetes ConfigMap (if running in K8s)
 		k8s.FromKubernetesConfigMap("default", "app-config"),
 
-		// AWS Secrets Manager (for sensitive data)
 		aws.FromAWSSecretsManager("prod/app-secrets"),
 
-		// HashiCorp Vault (for advanced secret management)
 		vault.FromVault(
 			"https://vault.example.com",
 			vault.VaultTokenAuth("hvs.CAESIMgR..."),
 			"/secret/myapp",
 		),
 
-		// Local config file as fallback
 		confkit.FromYAMLOptional("config.yaml"),
 
-		// Base defaults
 		confkit.FromYAMLOptional("defaults.yaml"),
 	)
 	if err != nil {

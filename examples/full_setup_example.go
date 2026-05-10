@@ -47,7 +47,6 @@ func main() {
 	fmt.Println("✅ Configuration loaded successfully!")
 	fmt.Printf("Config: %+v\n\n", cfg)
 
-	// Generate JSON Schema
 	s, err := schema.GenerateSchema[AppConfig]()
 	if err != nil {
 		log.Fatalf("Failed to generate schema: %v", err)
@@ -62,7 +61,6 @@ func main() {
 	fmt.Println(string(schemaJSON))
 	fmt.Println()
 
-	// Generate Markdown documentation
 	docs, err := schema.GenerateMarkdown[AppConfig]()
 	if err != nil {
 		log.Fatalf("Failed to generate docs: %v", err)
@@ -72,7 +70,6 @@ func main() {
 	fmt.Println(docs)
 	fmt.Println()
 
-	// Generate CLI help text
 	help, err := schema.GenerateCLIHelp[AppConfig]()
 	if err != nil {
 		log.Fatalf("Failed to generate help: %v", err)
@@ -83,7 +80,7 @@ func main() {
 }
 
 func isValidDBURL(url string) bool {
-	// Simple validation: check for common database URL prefixes
+
 	if len(url) < 5 {
 		return false
 	}

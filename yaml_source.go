@@ -52,9 +52,8 @@ func newYAMLSource(path string) (*yamlSource, error) {
 	return s, nil
 }
 
-func (y *yamlSource) Name() string {
-	return "yaml"
-}
+func (y *yamlSource) Name() string       { return "yaml" }
+func (y *yamlSource) sourcePath() string { return y.path }
 
 func (y *yamlSource) Lookup(_ context.Context, field *FieldInfo) (any, bool, error) {
 	tagName := field.Tags["yaml"]

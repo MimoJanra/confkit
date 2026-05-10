@@ -3,7 +3,7 @@ module github.com/MimoJanra/confkit/vault
 go 1.24.0
 
 require (
-	github.com/MimoJanra/confkit v0.8.3
+	github.com/MimoJanra/confkit v1.0.0
 	github.com/hashicorp/vault/api v1.23.0
 )
 
@@ -29,4 +29,4 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace github.com/MimoJanra/confkit v0.8.3 => ../
+replace github.com/MimoJanra/confkit v1.0.0 => ../

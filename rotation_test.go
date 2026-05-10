@@ -170,7 +170,6 @@ func TestRotationEngineStop_DoubleStop(t *testing.T) {
 	engine.Stop()
 	time.Sleep(10 * time.Millisecond)
 
-	// Second stop should not panic
 	defer func() {
 		if r := recover(); r != nil {
 			t.Errorf("Second Stop should not panic: %v", r)
@@ -205,7 +204,7 @@ func TestRotationEngineCallback_InvokedOnRotation(t *testing.T) {
 	engine.Start(context.Background(), 30*time.Millisecond)
 	time.Sleep(150 * time.Millisecond)
 	engine.Stop()
-	time.Sleep(50 * time.Millisecond) // Wait for callback goroutine
+	time.Sleep(50 * time.Millisecond)
 
 	if !callbackCalled.Load() {
 		t.Error("Expected callback to be invoked")
@@ -229,7 +228,7 @@ func TestRotationEngineCallback_ReceivesError(t *testing.T) {
 	engine.Start(context.Background(), 30*time.Millisecond)
 	time.Sleep(100 * time.Millisecond)
 	engine.Stop()
-	time.Sleep(50 * time.Millisecond) // Wait for callback goroutine
+	time.Sleep(50 * time.Millisecond)
 
 	if !errorReceived.Load() {
 		t.Error("Expected callback to receive error")
@@ -243,7 +242,6 @@ func TestRotationEngine_ConcurrentCallbacks(t *testing.T) {
 
 	engine := NewRotationEngine(RotateOnInterval(50 * time.Millisecond))
 
-	// Add multiple callbacks
 	for i := 0; i < 5; i++ {
 		engine.AddCallback(func(oldCfg, newCfg any, err error) {
 			count.Add(1)
@@ -257,9 +255,8 @@ func TestRotationEngine_ConcurrentCallbacks(t *testing.T) {
 	time.Sleep(150 * time.Millisecond)
 	engine.Stop()
 
-	time.Sleep(50 * time.Millisecond) // Wait for goroutines
+	time.Sleep(50 * time.Millisecond)
 
-	// Should have called multiple times with multiple callbacks each time
 	if count.Load() < 5 {
 		t.Errorf("Expected at least 5 total callback invocations, got %d", count.Load())
 	}
@@ -272,7 +269,7 @@ func TestRotationEngine_LastRotationUpdated(t *testing.T) {
 	engine.Start(context.Background(), 30*time.Millisecond)
 	time.Sleep(150 * time.Millisecond)
 	engine.Stop()
-	time.Sleep(50 * time.Millisecond) // Wait for rotation goroutine
+	time.Sleep(50 * time.Millisecond)
 
 	finalTime := engine.LastRotation()
 	if finalTime.Equal(initialTime) {

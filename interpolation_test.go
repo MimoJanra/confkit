@@ -103,7 +103,7 @@ func TestInterpolationEscaped(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Resolve failed: %v", err)
 	}
-	// $$ escapes to $; so $${VAR} becomes ${VAR} (literal, not interpolated)
+
 	if result != "${ESCAPED}" {
 		t.Errorf("Expected '${ESCAPED}', got '%s'", result)
 	}

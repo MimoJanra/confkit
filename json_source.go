@@ -37,9 +37,8 @@ func newJSONSource(path string) (*jsonSource, error) {
 	return s, nil
 }
 
-func (j *jsonSource) Name() string {
-	return "json"
-}
+func (j *jsonSource) Name() string       { return "json" }
+func (j *jsonSource) sourcePath() string { return j.path }
 
 func (j *jsonSource) Lookup(_ context.Context, field *FieldInfo) (any, bool, error) {
 	tagName := field.Tags["json"]

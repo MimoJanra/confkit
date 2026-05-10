@@ -34,9 +34,8 @@ func newTOMLSource(path string) (*tomlSource, error) {
 	return s, nil
 }
 
-func (t *tomlSource) Name() string {
-	return "toml"
-}
+func (t *tomlSource) Name() string       { return "toml" }
+func (t *tomlSource) sourcePath() string { return t.path }
 
 func (t *tomlSource) Lookup(_ context.Context, field *FieldInfo) (any, bool, error) {
 	tagName := field.Tags["toml"]
