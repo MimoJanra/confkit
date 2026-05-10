@@ -40,6 +40,7 @@ type ConfigWatcher struct {
 	pollInterval       atomic.Value
 	mu                 sync.RWMutex
 	ticker             *time.Ticker
+	startOnce          sync.Once
 	once               sync.Once
 }
 
@@ -80,7 +81,9 @@ func (cw *ConfigWatcher) AddDeltaListener(listener ConfigChangeListenerWithDelta
 }
 
 func (cw *ConfigWatcher) Start() {
-	go cw.watch()
+	cw.startOnce.Do(func() {
+		go cw.watch()
+	})
 }
 
 func (cw *ConfigWatcher) Stop() {

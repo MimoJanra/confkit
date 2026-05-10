@@ -119,3 +119,28 @@ func TestConfigWatcherStopsCleaning(t *testing.T) {
 		t.Fatal("Watcher did not stop cleanly")
 	}
 }
+
+func TestConfigWatcherStartIdempotent(t *testing.T) {
+	tmpFile := writeTempYAML(t, "Port: 8080")
+	defer func() { _ = os.Remove(tmpFile) }()
+
+	watcher, err := NewConfigWatcher(tmpFile)
+	if err != nil {
+		t.Fatalf("NewConfigWatcher failed: %v", err)
+	}
+
+	watcher.SetPollInterval(100 * time.Millisecond)
+	watcher.Start()
+	watcher.Start()
+	watcher.Start()
+
+	time.Sleep(150 * time.Millisecond)
+
+	watcher.Stop()
+
+	select {
+	case <-watcher.done:
+	case <-time.After(1 * time.Second):
+		t.Fatal("Watcher did not stop cleanly after multiple Start() calls")
+	}
+}
