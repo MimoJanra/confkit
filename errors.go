@@ -75,7 +75,7 @@ func (er *ErrorReport) Format() string {
 		if err.Value != "" {
 			sb.WriteString("    got: ")
 			if err.Secret {
-				sb.WriteString("<redacted>")
+				sb.WriteString("***REDACTED***")
 			} else {
 				sb.WriteString(err.Value)
 			}

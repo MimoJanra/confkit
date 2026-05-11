@@ -55,7 +55,7 @@ No custom error handling. No secret leaks in logs. Types are checked at compile 
 ✅ **Secret redaction** — mark sensitive fields with `secret:"true"`, they're automatically hidden  
 ✅ **Multiple sources** — load from YAML, env, JSON, TOML, Kubernetes, AWS, Vault with explicit precedence  
 ✅ **Lightweight** — only 2 core dependencies, cloud integrations are optional modules  
-✅ **Production-ready** — v0.9.0 with full test coverage, used in real services
+✅ **Production-ready** — v1.0.0 with full test coverage and API stability guarantee
 
 ```go
 type Config struct {
@@ -145,14 +145,14 @@ go get github.com/MimoJanra/confkit/aws@latest
 
 ---
 
-## Breaking Changes in v0.10.0
+## Breaking Changes in v1.0.0
 
 **`Load[T]` now returns `(*T, error)` instead of `(T, error)` (pointer)**
 
 This aligns with Go idioms for larger configs. Go automatically dereferences pointers for field access, so most code works unchanged:
 
 ```go
-// v0.10+ — works exactly the same
+// v1.0+ — works exactly the same
 cfg, err := confkit.Load[Config](confkit.FromEnv())
 log.Printf("Port: %d", cfg.Port)  // auto-dereference, works fine
 ```
@@ -319,10 +319,16 @@ Built-in sources — pass any combination, first one to provide a value wins per
 
 ```go
 confkit.FromYAML(path string) Source
+confkit.FromYAMLOptional(path string) Source
+confkit.FromYAMLFiles(paths ...string) Source
 confkit.FromJSON(path string) Source
+confkit.FromJSONFiles(paths ...string) Source
 confkit.FromTOML(path string) Source
+confkit.FromTOMLFiles(paths ...string) Source
 confkit.FromEnv() Source
 confkit.FromFlags() Source
+confkit.FromFlagsWithArgs(args []string) Source
+
 ```
 
 Optional sources (separate `go get` per module):
@@ -347,10 +353,10 @@ etcd.FromEtcdWithPrefix(endpoints []string, prefix string) confkit.Source
 
 // go get confkit/aws
 aws.FromAWSSSMParameterStore(pathPrefix string) confkit.Source
-aws.FromAWSSSMParameterStoreWithTTL(pathPrefix string, ttl time.Duration) confkit.Source
+aws.FromAWSSSMParameterStoreWithTTL(pathPrefix string, cacheTTL time.Duration) confkit.Source
 aws.FromAWSSecretsManager(secretName string) confkit.Source
 aws.FromAWSSecretsManagerWithRegion(secretName, region string) confkit.Source
-aws.FromAWSSecretsManagerWithOptions(secretName, region string, ttl time.Duration) confkit.Source
+aws.FromAWSSecretsManagerWithOptions(secretName, region string, cacheTTL time.Duration) confkit.Source
 aws.FromAWSSecretsManagerMultiRegion(secretName string, regions []string) confkit.Source
 aws.FromAWSSSMParameterStoreMultiRegion(pathPrefix string, regions []string) confkit.Source
 ```
@@ -408,15 +414,25 @@ func Load[T any](sources ...Source) (*T, error)
 
 // Load with fine-grained options (validators, middleware, interpolation depth)
 func LoadWithOptions[T any](options ...Option) (*T, error)
+func LoadContext[T any](ctx context.Context, sources ...Source) (*T, error)
+func LoadWithOptionsContext[T any](ctx context.Context, options ...Option) (*T, error)
+func ValidateOnly[T any](ctx context.Context, options ...Option) (*T, error)
+func MustLoad[T any](sources ...Source) *T
+func MustLoadContext[T any](ctx context.Context, sources ...Source) *T
 
 // Load and set up a file watcher in one call
 func LoadWithWatcher[T any](filePath string, sources ...Source) (*T, *ConfigWatcher, error)
 
 // Option constructors
 func WithSource(source Source) Option
-func WithValidator(name string, fn func(reflect.Value) error) Option
+func WithValidator(name string, fn func (reflect.Value) error) Option
+func WithModelValidator[T any](fn func (*T) error) Option
 func WithMiddleware(fn MiddlewareFunc) Option
+func WithAuditLogger(fn AuditLogger) Option
+func WithLoadHook(fn LoadHookFunc) Option
+func WithContext(ctx context.Context) Option
 func WithInterpolationMaxDepth(depth int) Option
+
 ```
 
 ---
@@ -459,7 +475,8 @@ type Config struct {
 }
 ```
 
-- Error messages show `<redacted>` instead of the value
+- Error messages show `<redacted>` for secret fields
+- Validation values are redacted as `***REDACTED***`
 - `DumpConfig` substitutes `"***REDACTED***"`
 - Safe to log the output of `Explain(err)` and `DumpConfig` without leaking credentials
 
@@ -587,9 +604,12 @@ type Source interface {
 // FieldInfo fields available to your Lookup implementation:
 // .Name         string            — "Password"
 // .Path         string            — "Database.Password"
+// .Type         reflect.Type
+// .Value        reflect.Value
 // .Tags         map[string]string — all struct tags
 // .IsSecret     bool
 // .HasDefault   bool
+// .IsNested     bool
 // .AncestorTags []map[string]string — tags of parent structs
 
 // Helper for returning a permanently-errored source (e.g. from a constructor):
@@ -614,6 +634,15 @@ md := schema.GenerateMarkdown[Config]()
 help := schema.GenerateCLIHelp[Config]()
 ```
 
+
+## Safe Dump API
+
+```go
+func Dump[T any](cfg T, opts ...DumpOption) ([]byte, error)
+func DumpString[T any](cfg T, opts ...DumpOption) string
+func DumpYAML[T any](cfg T, opts ...DumpOption) ([]byte, error)
+```
+
 ---
 
 ## Supported Types
@@ -626,6 +655,7 @@ help := schema.GenerateCLIHelp[Config]()
 | `float32` / `float64`                             | decimal                           |
 | `bool`                                            | `true` `false` `1` `0` `yes` `no` |
 | `time.Duration`                                   | `"5s"` `"1m30s"` `"2h"`           |
+| `time.Time`                                       | RFC3339 `"2006-01-02T15:04:05Z07:00"` |
 | `[]string`                                        | comma-separated `"a,b,c"`         |
 | `[]int`                                           | comma-separated `"1,2,3"`         |
 | `map[string]string` / `map[string]int` etc.       | `KEY=val,KEY2=val2` format        |

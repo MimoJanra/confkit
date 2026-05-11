@@ -12,7 +12,7 @@ Complete reference for confkit's public API.
 ### Load
 
 ```go
-func Load[T any](sources ...Source) (T, error)
+func Load[T any](sources ...Source) (*T, error)
 ```
 
 Loads configuration from the provided sources and returns a fully typed, validated config or an error.
@@ -43,7 +43,7 @@ if err != nil {
 ### LoadWithOptions
 
 ```go
-func LoadWithOptions[T any](options ...Option) (T, error)
+func LoadWithOptions[T any](options ...Option) (*T, error)
 ```
 
 Advanced loading with functional options for custom validators, middleware, and interpolation configuration.
@@ -90,7 +90,7 @@ cfg, err := confkit.LoadWithOptions[Config](
 ### LoadWithWatcher
 
 ```go
-func LoadWithWatcher[T any](filePath string, sources ...Source) (T, *ConfigWatcher, error)
+func LoadWithWatcher[T any](filePath string, sources ...Source) (*T, *ConfigWatcher, error)
 ```
 
 Loads configuration and returns a watcher for hot-reloading when files change.

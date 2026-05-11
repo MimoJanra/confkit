@@ -1,11 +1,11 @@
 ---
 layout: default
-title: Migration Guide - v0.10.0
+title: Migration Guide - v1.0.0
 ---
 
-# Migration Guide: v0.9 → v0.10
+# Migration Guide: v0.9 → v1.0
 
-v0.10.0 introduces breaking changes. This guide explains what changed and how to migrate.
+v1.0.0 introduces breaking changes. This guide explains what changed and how to migrate.
 
 ## Breaking Changes
 
@@ -17,7 +17,7 @@ cfg, err := confkit.Load[Config](confkit.FromEnv())
 // cfg type: Config
 ```
 
-**After (v0.10):**
+**After (v1.0):**
 ```go
 cfg, err := confkit.Load[Config](confkit.FromEnv())
 // cfg type: *Config (pointer)
@@ -42,7 +42,7 @@ log.Printf("Port: %d", (*cfg).Port) // ✅ Explicit dereference (unnecessary)
 func Handler(cfg Config) {}
 handler(cfg)  // ERROR: type mismatch
 
-// Fixed (v0.10+)
+// Fixed (v1.0+)
 func Handler(cfg *Config) {}
 handler(cfg)  // ✅ Works
 
@@ -98,7 +98,7 @@ cfg, err := otel.Load[Config](tracer, sources...)
 // cfg type: *Config (pointer)
 ```
 
-## New Features in v0.10
+## New Features in v1.0
 
 ### FromYAMLOptional()
 
@@ -183,7 +183,7 @@ func main() {
     server := &Server{Config: cfg}  // Store in struct
 }
 
-// v0.10 — same code, no changes needed!
+// v1.0 — same code, no changes needed!
 func main() {
     cfg, err := confkit.Load[Config](confkit.FromEnv())
     if err != nil {
@@ -211,4 +211,4 @@ A: No, but migration is simple. Most code works unchanged due to Go's auto-deref
 
 - See **[FromYAMLOptional()](./sources.md#yaml-files)** for optional file loading
 - See **[Automatic snake_case mapping](./sources.md#automatic-snake_case-mapping-v010)** for field mapping
-- See **[Examples](https://github.com/MimoJanra/confkit/tree/main/examples)** for production-ready code with v0.10
+- See **[Examples](https://github.com/MimoJanra/confkit/tree/main/examples)** for production-ready code with v1.0

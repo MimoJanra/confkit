@@ -49,11 +49,10 @@ Invalid configuration:
 ## Features by Version
 
 - **v0.1-v0.5** ✅ Core features: loading, validation, defaults, cloud sources
-- **v0.6-v0.8** ✅ Multi-file sources, 18+ built-in validators, observability (Prometheus, OpenTelemetry)
-- **v0.9** ✅ Bug fixes, enhanced documentation
-- **v0.10** ✅ Pointer returns (Load[T] → *T), optional YAML, snake_case mapping, production examples
+- **v0.6-v0.9** ✅ Multi-file sources, 18+ built-in validators, observability (Prometheus, OpenTelemetry)
+- **v1.0** ✅ API freeze, DevOps toolkit (Dump, ValidateOnly, LoadContext), production-ready
 
-**Latest: v0.10.0** — Stable, production-ready with comprehensive examples and documentation
+**Latest: v1.0.0** — Stable, production-ready with comprehensive examples, documentation, and API stability guarantee
 
 ## Install
 

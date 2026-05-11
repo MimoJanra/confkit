@@ -294,7 +294,7 @@ func TestExplainError(t *testing.T) {
 	}
 
 	explained := Explain(err)
-	if !strings.Contains(explained, "<redacted>") {
+	if !strings.Contains(explained, "***REDACTED***") {
 		t.Errorf("expected secret to be redacted, got: %s", explained)
 	}
 }
@@ -655,7 +655,7 @@ func TestValidationWithSecretRedaction(t *testing.T) {
 	})
 
 	formatted := report.Format()
-	if !strings.Contains(formatted, "<redacted>") {
+	if !strings.Contains(formatted, "***REDACTED***") {
 		t.Errorf("expected secret to be redacted in error, got: %s", formatted)
 	}
 	if strings.Contains(formatted, "super-secret-12345") {

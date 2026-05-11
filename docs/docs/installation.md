@@ -138,7 +138,7 @@ func main() {
     if err != nil {
         log.Fatal(err)
     }
-    log.Printf("Port: %d", cfg.Port)  // cfg is *Config pointer (v0.10+)
+    log.Printf("Port: %d", cfg.Port)  // cfg is *Config pointer (v1.0+)
 }
 ```
 
@@ -151,10 +151,10 @@ go run main.go
 
 ## Version Notes
 
-**v0.10.0 (current stable):**
+**v1.0.0 (current stable):**
 - `Load[T]` returns `(*T, error)` instead of `(T, error)` — pointer return (breaking change from v0.9)
 - Most code works unchanged due to Go auto-dereference behavior
-- See [Migration Guide](./migration-v0.10.md) for details
+- See [Migration Guide](./migration-v1.0.md) for details
 
 **v0.9:**
 - `Load[T]` returned `(T, error)` — value return
@@ -210,7 +210,7 @@ If you see version conflicts with other dependencies (especially AWS SDK):
 
 ```bash
 go mod tidy
-go get github.com/MimoJanra/confkit@v0.9.0  # pin explicit version
+go get github.com/MimoJanra/confkit@v1.0.0  # pin explicit version
 ```
 
 ## Next Steps
