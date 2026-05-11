@@ -314,4 +314,4 @@ value := k.Get("some.dynamic.key")
 ## Maturity
 
 - **koanf:** Stable, widely used for flexible configurations
-- **confkit:** Production-ready v0.9.0, focused on typed, validated, struct-first config
+- **confkit:** Production-ready v1.0.0, focused on typed, validated, struct-first config

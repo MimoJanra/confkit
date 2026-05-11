@@ -7,36 +7,34 @@ title: Documentation
 
 ## Getting Started
 
-- **[Installation & Quick Start](./getting-started/)** — Set up confkit in 5 minutes
-- **[Core Concepts](./concepts/)** — Understanding sources, validation, and error handling
+- **[Installation & Quick Start](./getting-started.md)** — Set up confkit in 5 minutes
+- **[Configuration Sources](./sources.md)** — Environment variables, files, cloud services
 - **[Examples](https://github.com/MimoJanra/confkit/tree/main/examples)** — Production-ready code samples
 
 ## Usage Guides
 
-- **[Configuration Sources](./sources/)** — Environment variables, files, cloud services
-- **[Validation](./validation/)** — Built-in rules and custom validators
-- **[Error Handling](./errors/)** — Human-readable error messages and debugging
-- **[Advanced Features](./advanced/)** — Interpolation, options, hot reload
+- **[Validation](./validation.md)** — Built-in rules and custom validators
+- **[Defaults & Fallbacks](./defaults.md)** — Setting default values and merging sources
+- **[Schema Generation](./schema-generation.md)** — Generate JSON Schema and CLI help
+- **[Secret Redaction](./secret-redaction.md)** — Secure handling of sensitive fields
+- **[Hot Reload](./hot-reload.md)** — File watching and configuration updates
 
 ## Upgrading
 
-- **[Migration Guide: v0.10.0](./migration-v0.10.md)** — Breaking changes and how to migrate from v0.9
+- **[Migration Guide: v1.0.0](./migration-v0.10.md)** — Breaking changes and how to migrate from v0.9
 
 ## Cloud & Enterprise
 
-- **[Kubernetes](./cloud/kubernetes/)** — ConfigMap and Secret sources
-- **[AWS](./cloud/aws/)** — SSM Parameter Store and Secrets Manager
-- **[HashiCorp](./cloud/hashicorp/)** — Vault, Consul, and etcd
-- **[Secret Rotation](./enterprise/rotation/)** — Automatic credential refresh
+- **[Kubernetes Integration](./recipes/kubernetes-configmap.md)** — ConfigMap and Secret sources
+- **[AWS Integration](./recipes/aws-secrets-manager.md)** — SSM Parameter Store and Secrets Manager
+- **[HashiCorp Integration](./recipes/vault.md)** — Vault, Consul, and etcd
+- **[Environment-Only Config](./recipes/env-only.md)** — Simple env var loading
+- **[CLI Flags](./recipes/cli-flags.md)** — Command-line argument parsing
 
-## Versions
+## Latest Version
 
-- **[v0.5](./v0.5/)** — Latest stable (full feature set)
-- **[v0.4](./v0.4/)** — Production with cloud sources
-- **[v0.3](./v0.3/)** — Enhanced DX with interpolation
-- **[v0.2](./v0.2/)** — Schema generation and TOML
-- **[v0.1](./v0.1/)** — Core MVP
+**v1.0.0** — Full API stability, production-ready release with comprehensive documentation
 
 ## Philosophy
 
-[Design principles and philosophy behind confkit](./philosophy/)
+- **[Design Principles](../philosophy.md)** — Design decisions and architecture behind confkit

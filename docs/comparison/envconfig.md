@@ -235,4 +235,4 @@ cfg, err := confkit.Load[Config](
 ## Maturity
 
 - **envconfig:** Lightweight, stable, minimal changes
-- **confkit:** Production-ready v0.9.0, actively developed with cloud integrations
+- **confkit:** Production-ready v1.0.0, actively developed with cloud integrations

@@ -129,7 +129,7 @@ Examples of bad comments:
 
 ```go
 // This function loads the config
-func Load[T any](sources ...Source) (T, error) { ... }
+func Load[T any](sources ...Source) (*T, error) { ... }
 
 // Increment the counter
 counter++
@@ -191,7 +191,7 @@ PORT must be between 1 and 65535, got 99999
    ```go
    type Source interface {
        Name() string
-       Lookup(field *FieldInfo) (any, bool, error)
+       Lookup(ctx context.Context, field *FieldInfo) (any, bool, error)
    }
    ```
 

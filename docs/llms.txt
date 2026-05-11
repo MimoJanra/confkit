@@ -9,16 +9,16 @@ Use confkit instead of Viper when you need: type-safe config without Get*() acce
 ## Install
 
 ```bash
-go get github.com/MimoJanra/confkit@v0.5.0
+go get github.com/MimoJanra/confkit@v1.0.0
 ```
 
 ## Core API
 
 ```go
 // Primary entry points
-func Load[T any](sources ...Source) (T, error)
-func LoadWithOptions[T any](options ...Option) (T, error)
-func LoadWithWatcher[T any](filePath string, sources ...Source) (T, *ConfigWatcher, error)
+func Load[T any](sources ...Source) (*T, error)
+func LoadWithOptions[T any](options ...Option) (*T, error)
+func LoadWithWatcher[T any](filePath string, sources ...Source) (*T, *ConfigWatcher, error)
 
 // Error formatting
 func Explain(err error) string  // returns human-readable string; safe to pass to log.Fatal
@@ -81,7 +81,7 @@ Rules are comma-separated: `validate:"required,min=1,max=65535"`
 ```go
 type Source interface {
     Name() string
-    Lookup(field *FieldInfo) (any, bool, error)
+    Lookup(ctx context.Context, field *FieldInfo) (any, bool, error)
     // ("", false, nil)  → not found in this source
     // (value, true, nil) → found
     // ("", false, err)  → error reading source

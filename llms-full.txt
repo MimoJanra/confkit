@@ -63,8 +63,8 @@ Cloud integrations (Vault, Consul, etcd, AWS) are optional modules with separate
 
 ```go
 // OLD (v0.5 and earlier)
-func Load[T any](sources ...Source) (T, error)
-func LoadWithOptions[T any](options ...Option) (T, error)
+func Load[T any](sources ...Source) (*T, error)
+func LoadWithOptions[T any](options ...Option) (*T, error)
 func LoadWithWatcher[T any](path string, sources ...Source) (T, *ConfigWatcher, error)
 
 // NEW (current development)

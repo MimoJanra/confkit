@@ -162,4 +162,4 @@ If you're moving from Viper to confkit:
 ## Maturity
 
 - **Viper:** Mature, widely used, large community
-- **confkit:** Production-ready v0.9.0, focused on a specific use case (type-safe, validated, struct-first)
+- **confkit:** Production-ready v1.0.0, focused on a specific use case (type-safe, validated, struct-first)

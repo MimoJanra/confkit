@@ -308,7 +308,7 @@ func getFieldByPath(val reflect.Value, path string) reflect.Value {
 
 func fieldValueToString(val reflect.Value, isSecret bool) string {
 	if isSecret {
-		return "[REDACTED]"
+		return "***REDACTED***"
 	}
 	switch val.Kind() {
 	case reflect.String:
