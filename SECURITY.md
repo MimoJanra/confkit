@@ -226,14 +226,15 @@ These are only required if you use the corresponding source.
 
 We use:
 
-- **Go's built-in vulnerability scanner:** `go list -json -m all | nancy sleuth`
+- **govulncheck:** `govulncheck ./...` — checks only reachable call paths, not just module imports
 - **GitHub Dependabot:** Automated PR for dependency updates
 - **Manual audits** before releases
 
 Run locally:
 
 ```bash
-go list -json -m all | nancy sleuth
+go install golang.org/x/vuln/cmd/govulncheck@latest
+govulncheck ./...
 ```
 
 ---
@@ -260,10 +261,10 @@ Security fixes are released for:
 
 | Version | Status | Support                |
 |---------|--------|------------------------|
-| v0.5.x  | Active | Current + bug fixes    |
-| v0.4.x  | Stable | Security fixes only    |
-| v0.3.x  | Legacy | Critical security only |
-| < v0.3  | EOL    | No support             |
+| v1.0.x  | Active | Current + bug fixes    |
+| v0.10.x | Stable | Security fixes only    |
+| v0.5.x  | Legacy | Critical security only |
+| < v0.5  | EOL    | No support             |
 
 **Recommendation:** Upgrade to latest stable version regularly.
 

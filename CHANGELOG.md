@@ -5,6 +5,15 @@ All notable changes to confkit are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1] - 2026-05-12
+
+### Fixed
+
+- **email validator**: replaced `net/mail.ParseAddress` with a simple regex to eliminate GO-2026-4977 and GO-2026-4986 (quadratic string concatenation in `net/mail`). Behaviour is unchanged for well-formed addresses.
+- **code formatting**: applied `gofmt` to `validation.go` and `schema/schema.go`.
+
+---
+
 ## [1.0.0] - 2026-05-10
 
 ### Added

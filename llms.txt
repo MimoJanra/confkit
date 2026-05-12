@@ -11,33 +11,49 @@ confkit loads configuration from multiple sources (YAML, JSON, TOML, env, flags,
 ## Key Differentiators
 
 - ✅ **Typed Load[T]** — Returns your struct, fully type-checked at compile time (not map[string]interface{})
-- ✅ **Built-in validation** — `min`, `max`, `required`, `oneof` rules in struct tags, custom validators
+- ✅ **Built-in validation** — 20+ rules in struct tags (`min`, `max`, `required`, `oneof`, `email`, `uuid`, ...), custom validators
 - ✅ **Secret redaction** — Mark fields `secret:"true"`, automatically redacted in errors and logs
 - ✅ **Human-readable errors** — Clear messages showing field, source, rule, and value (redacted for secrets)
 - ✅ **Multiple sources** — Explicit precedence for YAML, JSON, TOML, env, flags, K8s, Vault, AWS, Consul, etcd
 - ✅ **Optional cloud integrations** — Cloud sources are separate modules, not bundled (keeps core light)
-- ✅ **Production-ready** — v1.0.0, 80%+ test coverage, used in real services
+- ✅ **Production-ready** — v1.0.0, 80%+ test coverage, API stability guarantee
 
 ## Install
 
 ```bash
-go get github.com/MimoJanra/confkit@v1.0.0
+go get github.com/MimoJanra/confkit@latest
 ```
 
 ## Core API
 
 ```go
 // Primary entry points
-func Load[T any](sources ...Source) (*
+func Load[T any](sources ...Source) (*T, error)
 func LoadWithOptions[T any](options ...Option) (*T, error)
+func LoadContext[T any](ctx context.Context, sources ...Source) (*T, error)
+func LoadWithOptionsContext[T any](ctx context.Context, options ...Option) (*T, error)
 func LoadWithWatcher[T any](filePath string, sources ...Source) (*T, *ConfigWatcher, error)
+func ValidateOnly[T any](ctx context.Context, options ...Option) (*T, error)
+func MustLoad[T any](sources ...Source) *T                               // panics with *ErrorReport
+func MustLoadContext[T any](ctx context.Context, sources ...Source) *T
 
 // Error formatting
-func Explain(err error) string  // returns human-readable string; safe to pass to log.Fatal
+func Explain(err error) string  // human-readable; safe to pass to log.Fatal
 
-// Config introspection
-func ScanFields(v any) []FieldInfo
-func DumpConfig(cfg any, fields []FieldInfo) ([]byte, error)  // JSON; secrets → "***REDACTED***"
+// Config dump (secrets redacted by default)
+func Dump[T any](cfg T, opts ...DumpOption) ([]byte, error)    // JSON
+func DumpString[T any](cfg T, opts ...DumpOption) string        // JSON string
+func DumpYAML[T any](cfg T, opts ...DumpOption) ([]byte, error)
+
+// Config file discovery
+func FindFile(name string, dirs ...string) (string, error)
+func FindSource(name string, dirs ...string) Source  // returns error source wrapping ErrNotFound if absent
+func DefaultSearchDirs(appName string) []string      // ./ ./config/ /etc/<app>/ ~/.<app>/
+var ErrNotFound error
+
+// Overlay loading (Spring Boot-style)
+func FromOverlay(base, env string) Source   // loads base, merges config.<env>.yaml on top if present
+func OverlayPath(basePath, env string) string
 ```
 
 ## Option constructors (used with LoadWithOptions)
@@ -45,20 +61,34 @@ func DumpConfig(cfg any, fields []FieldInfo) ([]byte, error)  // JSON; secrets �
 ```go
 func WithSource(source Source) Option
 func WithValidator(name string, fn func(reflect.Value) error) Option
+func WithModelValidator[T any](fn func(*T) error) Option
 func WithMiddleware(fn MiddlewareFunc) Option
+func WithAuditLogger(fn AuditLogger) Option
+func WithLoadHook(fn LoadHookFunc) Option
+func WithContext(ctx context.Context) Option
 func WithInterpolationMaxDepth(depth int) Option
+```
+
+## Dump options
+
+```go
+func WithDumpFormat(f DumpFormat) DumpOption        // FormatJSON (default) or FormatYAML
+func WithDumpRedactSecrets(redact bool) DumpOption  // default: true
 ```
 
 ## Built-in source constructors
 
 ```go
 confkit.FromYAML(path string) Source
+confkit.FromYAMLOptional(path string) Source
+confkit.FromYAMLFiles(paths ...string) Source
 confkit.FromJSON(path string) Source
+confkit.FromJSONFiles(paths ...string) Source
 confkit.FromTOML(path string) Source
+confkit.FromTOMLFiles(paths ...string) Source
 confkit.FromEnv() Source
 confkit.FromFlags() Source
-confkit.FromKubernetesConfigMap(namespace, name string) Source
-confkit.FromKubernetesConfigMapWithPath(namespace, name, mountPath string) Source
+confkit.FromFlagsWithArgs(args []string) Source
 confkit.NewErrorSource(err error) Source  // permanently-errored source; use in custom source constructors
 ```
 
@@ -78,15 +108,35 @@ hidden:"true"     exclude from CLI help
 
 ## Validation rules (validate tag)
 
+Rules are comma-separated: `validate:"required,min=1,max=65535"`
+
 ```
 required          value must not be zero/empty
-min=N             int/float: value >= N; string: len >= N
-max=N             int/float: value <= N; string: len <= N
+min=N             int/float: value >= N; string: len >= N chars
+max=N             int/float: value <= N; string: len <= N chars
 oneof=a b c       string must equal one of the space-separated options
+email             valid email address (regex-based)
+url               valid URL (any scheme, must have host)
+http_url          valid HTTP or HTTPS URL
+ip                valid IP address (v4 or v6)
+ipv4              valid IPv4 address
+ipv6              valid IPv6 address
+uuid              valid UUID (versions 1–5)
+hostname          valid hostname (RFC 1123, max 253 chars)
+port              valid port number (1–65535); works on int and string fields
+regex=PATTERN     string matches the given regular expression
+len=N             string: exactly N characters
+contains=S        string contains substring S
+startswith=S      string starts with prefix S
+endswith=S        string ends with suffix S
+alpha             string contains only Unicode letters
+alphanum          string contains only Unicode letters and digits
+numeric           string contains only Unicode digits
+lowercase         string is all lowercase
+uppercase         string is all uppercase
+notempty          string is not blank (after TrimSpace)
 <custom>          name of a validator registered with WithValidator
 ```
-
-Rules are comma-separated: `validate:"required,min=1,max=65535"`
 
 ## Source interface (implement to add custom backends)
 
@@ -94,9 +144,9 @@ Rules are comma-separated: `validate:"required,min=1,max=65535"`
 type Source interface {
     Name() string
     Lookup(ctx context.Context, field *FieldInfo) (any, bool, error)
-    // ("", false, nil)  → not found in this source
-    // (value, true, nil) → found
-    // ("", false, err)  → error reading source
+    // (nil, false, nil)   → not found in this source
+    // (value, true, nil)  → found
+    // (nil, false, err)   → error reading source
 }
 ```
 
@@ -115,9 +165,19 @@ type FieldInfo struct {
 
 ## Supported field types
 
-string, int/int8/int16/int32/int64, uint/uint8/uint16/uint32/uint64,
-float32/float64, bool (true/false/1/0/yes/no), time.Duration ("5s","1m30s"),
-[]string (comma-separated), []int (comma-separated)
+```
+string
+int / int8 / int16 / int32 / int64
+uint / uint8 / uint16 / uint32 / uint64
+float32 / float64
+bool                   — true / false / 1 / 0 / yes / no
+time.Duration          — "5s", "1m30s", "2h"
+time.Time              — RFC3339: "2006-01-02T15:04:05Z07:00"
+[]string               — comma-separated: "a,b,c"
+[]int                  — comma-separated: "1,2,3"
+map[string]string      — KEY=val,KEY2=val2  (quoted: KEY="val,with,commas")
+map[string]int         — KEY=1,KEY2=2
+```
 
 ## Minimal working example
 
@@ -181,7 +241,17 @@ cfg, err := confkit.LoadWithOptions[Config](
 ```go
 cfg, watcher, err := confkit.LoadWithWatcher[Config]("config.yaml",
     confkit.FromYAML("config.yaml"), confkit.FromEnv())
+
+// Basic listener
 watcher.AddListener(func(old, new any, err error) { /* react to change */ })
+
+// Delta listener — see exactly which fields changed
+watcher.AddDeltaListener(func(delta confkit.ConfigDelta, old, new map[string]any, err error) {
+    for _, k := range delta.Changed { log.Printf("changed: %s", k) }
+    for _, k := range delta.Added   { log.Printf("added: %s", k) }
+    for _, k := range delta.Removed { log.Printf("removed: %s", k) }
+})
+
 watcher.SetPollInterval(5 * time.Second)
 watcher.Start()
 defer watcher.Stop()
@@ -190,23 +260,27 @@ defer watcher.Stop()
 ## Enterprise sources (separate modules, import only what you need)
 
 ```go
-// go get confkit/vault
+// go get github.com/MimoJanra/confkit/k8s
+k8s.FromKubernetesConfigMap(namespace, name string) confkit.Source
+k8s.FromKubernetesConfigMapWithPath(namespace, name, mountPath string) confkit.Source
+
+// go get github.com/MimoJanra/confkit/vault
 vault.FromVault(addr string, auth vault.VaultAuth, pathPrefix string) confkit.Source
 vault.FromVaultWithKVVersion(addr string, auth vault.VaultAuth, kvVersion int, pathPrefix string) confkit.Source
 vault.VaultTokenAuth(token string) vault.VaultAuth
 vault.VaultAppRoleAuth(roleID, secretID string) vault.VaultAuth
 vault.VaultKubernetesAuth(role, jwt string) vault.VaultAuth
 
-// go get confkit/consul
+// go get github.com/MimoJanra/confkit/consul
 consul.FromConsul(addr string) confkit.Source
 consul.FromConsulWithToken(addr, token string) confkit.Source
 consul.FromConsulWithOptions(addr, token, datacenter string) confkit.Source
 
-// go get confkit/etcd
+// go get github.com/MimoJanra/confkit/etcd
 etcd.FromEtcd(endpoints []string) confkit.Source
 etcd.FromEtcdWithPrefix(endpoints []string, prefix string) confkit.Source
 
-// go get confkit/aws
+// go get github.com/MimoJanra/confkit/aws
 aws.FromAWSSSMParameterStore(pathPrefix string) confkit.Source
 aws.FromAWSSSMParameterStoreWithTTL(pathPrefix string, ttl time.Duration) confkit.Source
 aws.FromAWSSecretsManager(secretName string) confkit.Source
@@ -219,7 +293,7 @@ aws.FromAWSSSMParameterStoreMultiRegion(pathPrefix string, regions []string) con
 ## Schema generation
 
 ```go
-import "confkit/schema"
+import "github.com/MimoJanra/confkit/schema"
 s, _ := schema.GenerateSchema[Config]()   // *schema.Schema (JSON Schema draft-07)
 schema.GenerateMarkdown[Config]()          // Markdown reference table
 schema.GenerateCLIHelp[Config]()           // --help style text
@@ -233,6 +307,9 @@ Sources passed to Load are applied left to right; later sources override earlier
 
 ```go
 type ErrorReport struct{ Errors []FieldError }  // implements error
+func (r *ErrorReport) FirstError() *FieldError  // nil if no errors
+func (r *ErrorReport) Unwrap() []error
+
 type FieldError struct {
     Path    string    // dot-path: "Database.Password"
     Source  string    // "env" | "yaml" | "validation" | "default"
@@ -248,6 +325,7 @@ type FieldError struct {
 
 ```
 confkit          — core (yaml.v3 + go-toml/v2 only)
+confkit/k8s      — Kubernetes ConfigMap/Secret source
 confkit/vault    — HashiCorp Vault KV source
 confkit/consul   — HashiCorp Consul KV source
 confkit/etcd     — etcd v3 source

@@ -71,6 +71,13 @@ go test ./...
 golangci-lint run
 ```
 
+**Check for vulnerabilities:**
+
+```bash
+go install golang.org/x/vuln/cmd/govulncheck@latest
+govulncheck ./...
+```
+
 ## Code Style & Principles
 
 - **Core is iron:** The five core pieces (loading, defaulting, validation, errors, types) must be rock solid. Don't add
@@ -89,9 +96,9 @@ golangci-lint run
 
 Be very careful when modifying these (breaking changes require major version bump):
 
-- `Load[T](...Source) (T, error)`
-- `LoadWithOptions[T](...Option) (T, error)`
-- `LoadWithWatcher[T](filePath string, ...Source) (T, *ConfigWatcher, error)`
+- `Load[T](...Source) (*T, error)`
+- `LoadWithOptions[T](...Option) (*T, error)`
+- `LoadWithWatcher[T](filePath string, ...Source) (*T, *ConfigWatcher, error)`
 - `Explain(err error) string`
 - `Source` interface (`Name()`, `Lookup(*FieldInfo)`)
 - `FieldInfo` type
@@ -137,7 +144,7 @@ confkit is well-suited for Go services that use LLMs:
 type LLMConfig struct {
     Provider   string  `env:"LLM_PROVIDER" validate:"oneof=claude,openai,anthropic"`
     APIKey     string  `env:"LLM_API_KEY" secret:"true" validate:"required"`
-    Model      string  `env:"LLM_MODEL" default:"claude-3-5-sonnet"`
+    Model      string  `env:"LLM_MODEL" default:"claude-sonnet-4-6"`
     Temperature float64 `env:"LLM_TEMPERATURE" default:"0.7" validate:"min=0,max=1"`
     MaxTokens  int     `env:"LLM_MAX_TOKENS" default:"4096"`
 }
