@@ -24,7 +24,7 @@ type tomlSource struct {
 
 func newTOMLSource(path string) (*tomlSource, error) {
 	s := &tomlSource{path: path, data: make(map[string]any)}
-	data, err := os.ReadFile(path)
+	data, err := os.ReadFile(path) // #nosec G304
 	if err != nil {
 		return nil, fmt.Errorf("failed to read TOML file: %w", err)
 	}

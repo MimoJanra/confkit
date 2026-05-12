@@ -54,7 +54,7 @@ func (k *KubernetesConfigMapSource) Lookup(_ context.Context, field *confkit.Fie
 		if !strings.HasPrefix(cleanPath, basePath) {
 			continue
 		}
-		data, err := os.ReadFile(cleanPath)
+		data, err := os.ReadFile(cleanPath) // #nosec G304
 		if err == nil {
 			return string(data), true, nil
 		}

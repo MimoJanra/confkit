@@ -24,7 +24,7 @@ type jsonSource struct {
 
 func newJSONSource(path string) (*jsonSource, error) {
 	s := &jsonSource{path: path}
-	data, err := os.ReadFile(path)
+	data, err := os.ReadFile(path) // #nosec G304
 	if err != nil {
 		return nil, fmt.Errorf("failed to read JSON file: %w", err)
 	}

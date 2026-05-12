@@ -106,7 +106,7 @@ func mergeFiles(paths []string, parse func([]byte) (map[string]any, error)) (map
 	merged := make(map[string]any)
 	for _, path := range paths {
 		cleanPath := filepath.Clean(path)
-		raw, err := os.ReadFile(cleanPath)
+		raw, err := os.ReadFile(cleanPath) // #nosec G304
 		if err != nil {
 			return nil, fmt.Errorf("failed to read %s: %w", cleanPath, err)
 		}

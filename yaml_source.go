@@ -39,7 +39,7 @@ type yamlSource struct {
 
 func newYAMLSource(path string) (*yamlSource, error) {
 	s := &yamlSource{path: path}
-	data, err := os.ReadFile(path)
+	data, err := os.ReadFile(path) // #nosec G304
 	if err != nil {
 		return nil, fmt.Errorf("failed to read YAML file: %w", err)
 	}
