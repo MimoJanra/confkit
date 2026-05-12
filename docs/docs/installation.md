@@ -73,9 +73,9 @@ import "github.com/MimoJanra/confkit/aws"
 
 ## Minimum Go Version
 
-confkit requires **Go 1.24.0 or later**.
+confkit requires **Go 1.25.0 or later**.
 
-**Why Go 1.24.0?**
+**Why Go 1.25.0?**
 - Generics for type-safe `Load[T]` API
 - Improved `range` statement (iterate over integers and slices with range-only syntax)
 - Enhanced iteration semantics
@@ -89,8 +89,8 @@ go version
 If you have an older version, update it:
 
 ```bash
-go install golang.org/dl/go1.24@latest
-go1.24 download
+go install golang.org/dl/go1.25@latest
+go1.25 download
 ```
 
 ## Dependencies

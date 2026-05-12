@@ -105,7 +105,7 @@ go run main.go
 ### Dockerfile
 
 ```dockerfile
-FROM golang:1.24 AS builder
+FROM golang:1.25 AS builder
 WORKDIR /app
 COPY . .
 RUN go build -o app main.go

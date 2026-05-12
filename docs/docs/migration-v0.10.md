@@ -166,7 +166,7 @@ Invalid configuration:
 
 ## Compatibility Notes
 
-- **Go version:** Requires Go 1.24.0+
+- **Go version:** Requires Go 1.25.0+
 - **Dependencies:** No new dependencies
 - **Submodules:** All submodules (Vault, Consul, AWS, etc.) updated to match
 - **Core API:** Only the return type changed; all methods remain the same
