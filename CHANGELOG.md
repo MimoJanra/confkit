@@ -7,10 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.0.1] - 2026-05-12
 
+### Security
+
+- **email validator**: replaced `net/mail.ParseAddress` with a simple regex to eliminate GO-2026-4977 and GO-2026-4986 (quadratic string concatenation in `net/mail`). Behaviour is unchanged for well-formed addresses. The `net/mail` import is removed from core.
+
 ### Fixed
 
-- **email validator**: replaced `net/mail.ParseAddress` with a simple regex to eliminate GO-2026-4977 and GO-2026-4986 (quadratic string concatenation in `net/mail`). Behaviour is unchanged for well-formed addresses.
+- **`reflect.Ptr` → `reflect.Pointer`**: replaced the deprecated `reflect.Ptr` constant with `reflect.Pointer` throughout `validation.go`. `reflect.Ptr` was kept as an alias in older Go versions but the canonical name has been `reflect.Pointer` since Go 1.18.
+- **gosec G304 false positives**: suppressed `G304` (file inclusion via variable) on intentional config-file reads where the path comes from application configuration, not user input.
 - **code formatting**: applied `gofmt` to `validation.go` and `schema/schema.go`.
+
+### Changed
+
+- **Minimum Go version raised to 1.25**: `go.mod` and CI now require Go 1.25+. Go 1.25 improves range-over-func, iterator performance, and brings stdlib security fixes.
+
+### Dependencies
+
+- **etcd client v3**: bumped `go.etcd.io/etcd/client/v3` from 3.5.13 to 3.6.11 in the `etcd` submodule. 3.6.x is the current stable series; 3.5.x is in maintenance.
+- **OpenTelemetry**: bumped `go.opentelemetry.io/otel` from 1.39.0 to 1.41.0 in the `otel` submodule.
+- **otel/go.mod cleanup**: removed unused indirect test dependencies (`go-spew`, `go-difflib`) from `otel/go.mod`.
+
+### CI
+
+- Bumped `actions/deploy-pages` from 4 to 5.
+- Bumped `actions/upload-pages-artifact` from 3 to 5.
 
 ---
 
