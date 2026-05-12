@@ -34,7 +34,7 @@ func GenerateSchema[T any]() (*Schema, error) {
 	var cfg T
 	cfgType := reflect.TypeOf(cfg)
 
-	if cfgType.Kind() == reflect.Pointer{
+	if cfgType.Kind() == reflect.Pointer {
 		cfgType = cfgType.Elem()
 	}
 	if cfgType.Kind() != reflect.Struct {
@@ -81,7 +81,7 @@ func walkStruct(typ reflect.Type, parent *Schema) error {
 
 		fieldSchema := &Schema{}
 		fieldType := field.Type
-		if fieldType.Kind() == reflect.Pointer{
+		if fieldType.Kind() == reflect.Pointer {
 			fieldType = fieldType.Elem()
 		}
 
@@ -96,7 +96,7 @@ func walkStruct(typ reflect.Type, parent *Schema) error {
 		} else if fieldType.Kind() == reflect.Slice {
 			fieldSchema.Type = "array"
 			elemType := fieldType.Elem()
-			if elemType.Kind() == reflect.Pointer{
+			if elemType.Kind() == reflect.Pointer {
 				elemType = elemType.Elem()
 			}
 			fieldSchema.Items = &Schema{Type: getTypeString(elemType)}

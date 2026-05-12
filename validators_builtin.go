@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"math"
 	"net"
-	"net/mail"
 	"net/url"
 	"reflect"
 	"regexp"
@@ -16,14 +15,14 @@ import (
 var (
 	uuidRegex     = regexp.MustCompile(`(?i)^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$`)
 	hostnameRegex = regexp.MustCompile(`^[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*$`)
+	emailRegex    = regexp.MustCompile(`^[^@\s]+@[^@\s]+\.[^@\s]+$`)
 )
 
 func (v *Validator) validateBuiltin(fieldVal reflect.Value, field FieldInfo, rule ValidationRule) (FieldError, bool) {
 	switch rule.Name {
 	case "email":
 		return strCheck(fieldVal, field, rule.Name, func(s string) (bool, string) {
-			_, err := mail.ParseAddress(s)
-			return err == nil, "must be a valid email address"
+			return emailRegex.MatchString(s), "must be a valid email address"
 		}), true
 
 	case "url":

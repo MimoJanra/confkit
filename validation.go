@@ -23,7 +23,7 @@ func (v *Validator) ValidateConfig(cfg any, fields []FieldInfo) *ErrorReport {
 	report := &ErrorReport{}
 
 	val := reflect.ValueOf(cfg)
-	if val.Kind() == reflect.Pointer{
+	if val.Kind() == reflect.Pointer {
 		val = val.Elem()
 	}
 
@@ -289,7 +289,7 @@ func isZeroValue(val reflect.Value) bool {
 func getFieldByPath(val reflect.Value, path string) reflect.Value {
 	current := val
 	for _, part := range splitPath(path) {
-		if current.Kind() == reflect.Pointer{
+		if current.Kind() == reflect.Pointer {
 			if current.IsNil() {
 				return reflect.Value{}
 			}
