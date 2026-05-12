@@ -279,7 +279,7 @@ func isZeroValue(val reflect.Value) bool {
 		return !val.Bool()
 	case reflect.Slice, reflect.Array:
 		return val.Len() == 0
-	case reflect.Pointer
+	case reflect.Pointer:
 		return val.IsNil()
 	default:
 		return val.IsZero()
