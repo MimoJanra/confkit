@@ -19,7 +19,7 @@ func DumpConfig(cfg any, fields []FieldInfo) ([]byte, error) {
 	dump := make(map[string]any)
 	val := reflect.ValueOf(cfg)
 
-	if val.Kind() == reflect.Pointer{
+	if val.Kind() == reflect.Pointer {
 		val = val.Elem()
 	}
 
@@ -45,7 +45,7 @@ func getFieldValue(val reflect.Value, path string) any {
 			return nil
 		}
 
-		if field.Kind() == reflect.Pointer{
+		if field.Kind() == reflect.Pointer {
 			if field.IsNil() {
 				return nil
 			}
