@@ -192,6 +192,7 @@ func (cw *ConfigWatcher) notifyDeltaListeners(delta ConfigDelta, oldSnap, newSna
 }
 
 func parseFileToFlatMap(path string) (map[string]any, error) {
+	path = filepath.Clean(path)
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
