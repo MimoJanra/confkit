@@ -20,7 +20,7 @@ type FieldInfo struct {
 
 func ScanFields(v any) []FieldInfo {
 	val := reflect.ValueOf(v)
-	if val.Kind() == reflect.Ptr {
+	if val.Kind() == reflect.Pointer {
 		val = val.Elem()
 	}
 	return scanFieldsRecursive(val, val.Type(), "", nil)
@@ -33,7 +33,7 @@ func initEmbeddedPointers(val reflect.Value, typ reflect.Type) {
 		if !field.IsExported() {
 			continue
 		}
-		if field.Anonymous && field.Type.Kind() == reflect.Ptr {
+		if field.Anonymous && field.Type.Kind() == reflect.Pointer {
 			elemType := field.Type.Elem()
 			if elemType.Kind() == reflect.Struct && !structtags.IsSpecialType(elemType) {
 				if fieldVal.IsNil() {
@@ -59,12 +59,12 @@ func scanFieldsRecursive(val reflect.Value, typ reflect.Type, pathPrefix string,
 		}
 
 		fieldType := field.Type
-		if fieldType.Kind() == reflect.Ptr {
+		if fieldType.Kind() == reflect.Pointer {
 			fieldType = fieldType.Elem()
 		}
 
 		if field.Anonymous && fieldType.Kind() == reflect.Struct && !structtags.IsSpecialType(fieldType) {
-			if fieldVal.Kind() == reflect.Ptr {
+			if fieldVal.Kind() == reflect.Pointer {
 				if fieldVal.IsNil() {
 					fieldVal = reflect.New(fieldType)
 				}
@@ -95,10 +95,10 @@ func scanFieldsRecursive(val reflect.Value, typ reflect.Type, pathPrefix string,
 
 		if fieldType.Kind() == reflect.Struct && !structtags.IsSpecialType(fieldType) {
 			info.IsNested = true
-			if fieldVal.Kind() == reflect.Ptr && fieldVal.IsNil() {
+			if fieldVal.Kind() == reflect.Pointer && fieldVal.IsNil() {
 				fieldVal = reflect.New(fieldType)
 			}
-			if fieldVal.Kind() == reflect.Ptr {
+			if fieldVal.Kind() == reflect.Pointer {
 				fieldVal = fieldVal.Elem()
 			}
 			newAncestors := make([]map[string]string, len(ancestorTags)+1)

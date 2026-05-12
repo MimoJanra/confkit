@@ -60,7 +60,7 @@ func DumpYAML[T any](cfg T, opts ...DumpOption) ([]byte, error) {
 }
 
 func buildDumpMap(v reflect.Value, redact bool, format DumpFormat) map[string]any {
-	for v.Kind() == reflect.Ptr {
+	for v.Kind() == reflect.Pointer {
 		if v.IsNil() {
 			return nil
 		}
@@ -89,7 +89,7 @@ func buildDumpMap(v reflect.Value, redact bool, format DumpFormat) map[string]an
 }
 
 func dumpFieldValue(fv reflect.Value, isSecret, redact bool, format DumpFormat) any {
-	for fv.Kind() == reflect.Ptr {
+	for fv.Kind() == reflect.Pointer {
 		if fv.IsNil() {
 			return nil
 		}

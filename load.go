@@ -320,7 +320,7 @@ func setFieldValue(val reflect.Value, fieldPath string, value any) {
 		if !field.IsValid() {
 			return
 		}
-		if field.Kind() == reflect.Ptr {
+		if field.Kind() == reflect.Pointer{
 			if field.IsNil() {
 				field.Set(reflect.New(field.Type().Elem()))
 			}
