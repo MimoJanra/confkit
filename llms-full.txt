@@ -20,9 +20,11 @@ confkit is a **production-ready typed configuration loader for Go services**. It
 
 ### 1.2 Status & Versions
 
-- **v0.1–v0.5:** Feature-complete, stable, production-tested
-- **v0.6+:** Planned (config composition, advanced validation, Prometheus integration)
-- **Go version required:** 1.25.0+ (for generics)
+- **v1.0.1** — current stable release (2026-05-12)
+- **v1.0.0** — API freeze, DevOps toolkit, production release (2026-05-10)
+- **v0.1–v0.10:** All complete, production-tested
+- **v1.1+:** Planned — config composition, advanced validation, additional cloud integrations
+- **Go version required:** 1.25.0+
 - **License:** MIT
 
 ### 1.3 Getting Started with Examples
@@ -55,71 +57,25 @@ Cloud integrations (Vault, Consul, etcd, AWS) are optional modules with separate
 
 ---
 
-## 2. BREAKING CHANGES (Current Development)
+## 2. MIGRATION NOTES
 
-### 2.1 Load[T] Returns Pointer ⚠️
+### 2.1 Load[T] Returns Pointer (since v0.10.0)
 
-**BREAKING CHANGE in unreleased version.**
-
-```go
-// OLD (v0.5 and earlier)
-func Load[T any](sources ...Source) (*T, error)
-func LoadWithOptions[T any](options ...Option) (*T, error)
-func LoadWithWatcher[T any](path string, sources ...Source) (T, *ConfigWatcher, error)
-
-// NEW (current development)
-func Load[T any](sources ...Source) (*T, error)
-func LoadWithOptions[T any](options ...Option) (*T, error)
-func LoadWithWatcher[T any](path string, sources ...Source) (*T, *ConfigWatcher, error)
-```
-
-**Why?** Pointers align with zero-value semantics and are more idiomatic for config objects that may be updated or shared.
-
-**Compat note:** Go automatically dereferences pointers for field access, so `cfg.Port` works whether `cfg` is `T` or `*T`.
-
-### 2.2 Automatic snake_case ↔ CamelCase Mapping
-
-**NEW in current development.**
-
-If a struct field has no explicit `yaml:`, `json:`, or `toml:` tag, confkit now tries the snake_case version automatically.
+All load functions return `*T`, not `T`. Go auto-dereferences for field access so `cfg.Port` works unchanged.
 
 ```go
-type Config struct {
-    ShutdownSecs  int       // YAML: shutdown_secs
-    DatabaseHost  string    // YAML: database_host
-    APIKey        string `env:"API_KEY"`  // Still works with explicit tags
-}
+cfg, err := confkit.Load[Config](confkit.FromEnv())
+log.Printf("port: %d", cfg.Port)  // auto-dereference, no change needed
+cfgVal := *cfg                    // explicit dereference if value type needed
 ```
 
-YAML/JSON/TOML files can now use idiomatic snake_case naming, and structs use idiomatic CamelCase. No manual tag management for common fields.
+### 2.2 Automatic snake_case ↔ CamelCase Mapping (since v0.10.0)
 
-### 2.3 FromYAMLOptional() — Optional File Loading
+If a struct field has no explicit `yaml:`, `json:`, or `toml:` tag, confkit automatically tries the snake_case version. `ShutdownTimeout` matches `shutdown_timeout` in YAML/JSON/TOML.
 
-**NEW in current development.**
+### 2.3 reflect.Pointer (since v1.0.1)
 
-```go
-cfg, err := confkit.Load[Config](
-    confkit.FromYAMLOptional("config.yaml"),  // Doesn't fail if file missing
-    confkit.FromEnv(),
-)
-```
-
-Useful for optional config files with environment variable overrides.
-
-### 2.4 Error Source Tracking Improved
-
-**Enhanced in current development.**
-
-All FieldError now consistently track `Source` field:
-- "yaml" — from YAML file
-- "json" — from JSON file
-- "toml" — from TOML file
-- "env" — from environment variable
-- "validation" — validation rule violation
-- "default" — from default tag
-- "io" — file read error
-
-Error messages now clearly show where each value came from.
+The deprecated `reflect.Ptr` constant was replaced with `reflect.Pointer` throughout the codebase. No user-visible change.
 
 ---
 
@@ -157,7 +113,58 @@ log.Printf("Port: %d", cfg.Port)
 - CLI tool with comprehensive configuration
 - Cloud-native with Kubernetes, AWS, Vault
 
-#### 3.1.2 Loading with Options
+#### 3.1.2 Context-Aware Loading (v1.0)
+
+```go
+// Propagates context into every Source.Lookup — enables deadline/cancellation for cloud sources
+func LoadContext[T any](ctx context.Context, sources ...Source) (*T, error)
+func LoadWithOptionsContext[T any](ctx context.Context, options ...Option) (*T, error)
+
+// Dry-run: full source + validation pipeline, no hooks/audit/rotation side-effects
+// Designed for CI config validation
+func ValidateOnly[T any](ctx context.Context, options ...Option) (*T, error)
+
+// Panic variants for init() and tests
+func MustLoad[T any](sources ...Source) *T
+func MustLoadContext[T any](ctx context.Context, sources ...Source) *T
+```
+
+#### 3.1.3 Config File Discovery (v1.0)
+
+```go
+// Find first existing file across directories; tries .yaml/.json/.toml if no extension given
+func FindFile(name string, dirs ...string) (string, error)
+
+// Wraps FindFile and returns a ready-to-use Source
+func FindSource(name string, dirs ...string) Source  // error source wrapping ErrNotFound if absent
+
+// Standard search order: ./ → ./config/ → /etc/<app>/ → ~/.<app>/
+func DefaultSearchDirs(appName string) []string
+
+var ErrNotFound error  // sentinel returned by FindSource
+
+// Usage
+cfg, err := confkit.Load[Config](
+    confkit.FindSource("config", confkit.DefaultSearchDirs("myapp")...),
+    confkit.FromEnv(),
+)
+```
+
+#### 3.1.4 Overlay Loading (v1.0)
+
+```go
+// Spring Boot-style: loads base, then merges config.<env>.<ext> on top if present
+func FromOverlay(base, env string) Source
+func OverlayPath(basePath, env string) string  // "config.yaml" + "prod" → "config.prod.yaml"
+
+// Usage
+cfg, err := confkit.Load[Config](
+    confkit.FromOverlay("config.yaml", os.Getenv("APP_ENV")),
+    confkit.FromEnv(),
+)
+```
+
+#### 3.1.5 Loading with Options
 
 ```go
 func LoadWithOptions[T any](options ...Option) (*T, error)
@@ -165,8 +172,9 @@ func LoadWithOptions[T any](options ...Option) (*T, error)
 cfg, err := confkit.LoadWithOptions[Config](
     confkit.WithSource(confkit.FromEnv()),
     confkit.WithSource(confkit.FromYAML("config.yaml")),
+    confkit.WithContext(ctx),
 
-    // Custom validator
+    // Custom per-field validator
     confkit.WithValidator("port-range", func(v reflect.Value) error {
         p := v.Int()
         if p < 1024 || p > 49151 {
@@ -175,30 +183,28 @@ cfg, err := confkit.LoadWithOptions[Config](
         return nil
     }),
 
-    // Middleware for value transformation
-    confkit.WithMiddleware(func(field confkit.FieldInfo, val string) (string, error) {
-        if field.Name == "DSN" {
-            // Transform before validation
-            return strings.TrimSpace(val), nil
+    // Cross-field model validator
+    confkit.WithModelValidator(func(cfg *Config) error {
+        if cfg.TLS && cfg.CertFile == "" {
+            return fmt.Errorf("TLS enabled but CertFile is empty")
         }
-        return val, nil
+        return nil
     }),
 
-    // Max interpolation depth
+    confkit.WithMiddleware(func(field confkit.FieldInfo, val string) (string, error) {
+        return strings.TrimSpace(val), nil
+    }),
+
     confkit.WithInterpolationMaxDepth(10),
 
-    // Audit logging
     confkit.WithAuditLogger(func(entries []confkit.AuditEntry) {
         for _, e := range entries {
             log.Printf("Config %s = %s (from %s)", e.Field, e.Value, e.Source)
         }
     }),
 
-    // Hooks for observability
-    confkit.WithLoadHooks(func(success bool, duration time.Duration, errCount int) {
-        if success {
-            metrics.configLoadDuration.Observe(duration.Seconds())
-        }
+    confkit.WithLoadHook(func(success bool, duration time.Duration, errCount int) {
+        metrics.configLoadDuration.Observe(duration.Seconds())
     }),
 )
 ```
@@ -241,8 +247,9 @@ type ErrorReport struct {
 }
 
 // Implements error interface
-func (r *ErrorReport) Error() string        // Formatted error message
-func (r *ErrorReport) Unwrap() []error      // For errors.Is / errors.As
+func (r *ErrorReport) Error() string           // Formatted error message
+func (r *ErrorReport) Unwrap() []error         // For errors.Is / errors.As
+func (r *ErrorReport) FirstError() *FieldError // Returns first FieldError or nil
 
 // Safe formatting for logs
 func Explain(err error) string  // Redacts secrets, formats as human-readable string
@@ -288,7 +295,25 @@ Invalid configuration:
     error: invalid duration: "invalid"
 ```
 
-### 3.3 Config Introspection
+### 3.3 Config Dump (v1.0)
+
+```go
+// Typed dump — secrets redacted by default
+func Dump[T any](cfg T, opts ...DumpOption) ([]byte, error)    // JSON
+func DumpString[T any](cfg T, opts ...DumpOption) string        // JSON string, suitable for slog/log.Printf
+func DumpYAML[T any](cfg T, opts ...DumpOption) ([]byte, error) // YAML
+
+// Dump options
+func WithDumpFormat(f DumpFormat) DumpOption        // FormatJSON (default) or FormatYAML
+func WithDumpRedactSecrets(redact bool) DumpOption  // default: true
+
+// Usage
+data, _ := confkit.Dump(cfg)
+log.Printf("Config: %s", confkit.DumpString(cfg))
+// Output: {"Port": 8080, "Database": {"Password": "***REDACTED***"}}
+```
+
+### 3.4 Config Introspection
 
 ```go
 // Scan struct and extract field metadata
@@ -311,10 +336,6 @@ fields := confkit.ScanFields(&Config{})
 for _, f := range fields {
     fmt.Printf("%s: %v (secret=%v)\n", f.Path, f.Type, f.IsSecret)
 }
-
-// Dump config with secrets redacted
-func DumpConfig(cfg any, fields []FieldInfo) (string, error)
-// Output: {"Port": 8080, "Password": "***REDACTED***", ...}
 ```
 
 ---
@@ -422,26 +443,56 @@ type Config struct {
 
 ### 5.1 Built-in Rules
 
+Rules are comma-separated: `validate:"required,min=1,max=65535"`
+
+```
+required          value must not be zero/empty
+
+min=N             int/float: value >= N
+                  string: len(runes) >= N
+
+max=N             int/float: value <= N
+                  string: len(runes) <= N
+
+oneof=a b c       string must equal one of the space-separated options
+
+email             valid email address (regex-based, no net/mail dependency)
+url               valid URL (any scheme, must have host)
+http_url          valid HTTP or HTTPS URL
+ip                valid IP address (v4 or v6)
+ipv4              valid IPv4 address
+ipv6              valid IPv6 address
+uuid              valid UUID (versions 1–5, case-insensitive)
+hostname          valid hostname (RFC 1123, max 253 chars)
+port              valid port number (1–65535); applies to int and string fields
+
+regex=PATTERN     string matches the given regular expression
+len=N             string: exactly N rune characters
+contains=S        string contains substring S
+startswith=S      string has prefix S
+endswith=S        string has suffix S
+
+alpha             string contains only Unicode letters
+alphanum          string contains only Unicode letters and digits
+numeric           string contains only Unicode digits (no sign, no decimal)
+lowercase         string == strings.ToLower(string)
+uppercase         string == strings.ToUpper(string)
+notempty          strings.TrimSpace(string) != ""
+```
+
+Example:
+
 ```go
 type Config struct {
-    // required — Non-zero/non-empty value
-    DatabaseURL string `validate:"required"`
-
-    // min=N — Minimum value (number or string length)
-    Port        int    `validate:"min=1"`              // int: >= 1
-    Name        string `validate:"min=3"`              // string: length >= 3
-
-    // max=N — Maximum value (number or string length)
-    Port        int    `validate:"max=65535"`          // int: <= 65535
-    Description string `validate:"max=500"`            // string: length <= 500
-
-    // oneof=opt1 opt2 opt3 — Must be one of listed values
+    Port        int    `validate:"required,min=1,max=65535"`
+    Email       string `validate:"required,email"`
+    LogLevel    string `validate:"required,oneof=debug info warn error"`
     Environment string `validate:"oneof=dev staging prod"`
-    LogLevel    string `validate:"oneof=debug info warn error"`
-
-    // Combined rules
-    Port int `validate:"required,min=1,max=65535"`
-    Name string `validate:"required,min=3,max=100"`
+    Name        string `validate:"required,min=3,max=100,alphanum"`
+    APIURL      string `validate:"required,http_url"`
+    ServerIP    string `validate:"ipv4"`
+    TraceID     string `validate:"uuid"`
+    AppLabel    string `validate:"regex=^[a-z][a-z0-9-]{2,}$"`
 }
 ```
 
@@ -452,14 +503,6 @@ cfg, err := confkit.LoadWithOptions[Config](
     confkit.WithSource(confkit.FromEnv()),
 
     // Register named validator
-    confkit.WithValidator("valid-email", func(v reflect.Value) error {
-        email := v.String()
-        if !strings.Contains(email, "@") {
-            return fmt.Errorf("invalid email format")
-        }
-        return nil
-    }),
-
     confkit.WithValidator("port-range", func(v reflect.Value) error {
         port := v.Int()
         if port < 1024 || port > 49151 {
@@ -471,8 +514,8 @@ cfg, err := confkit.LoadWithOptions[Config](
 
 // Use in struct
 type Config struct {
-    Email string `validate:"valid-email"`
-    Port  int    `validate:"port-range"`
+    Email string `validate:"required,email"` // built-in — no custom validator needed
+    Port  int    `validate:"port-range"`      // custom
 }
 ```
 
@@ -1019,19 +1062,23 @@ if err != nil {
     log.Fatal(confkit.Explain(err))
 }
 
+// Basic listener — receives old and new config as any
 watcher.AddListener(func(oldCfg, newCfg any, err error) {
     if err != nil {
         log.Printf("Reload failed: %v", confkit.Explain(err))
         return
     }
-
     newConfig := newCfg.(*Config)
-
-    // Update application state
     app.SetPort(newConfig.Port)
-    app.SetLogLevel(newConfig.LogLevel)
+    log.Printf("Config reloaded: port=%d", newConfig.Port)
+})
 
-    log.Printf("Config reloaded: %+v", newConfig)
+// Delta listener (v1.0) — see exactly which fields changed
+watcher.AddDeltaListener(func(delta confkit.ConfigDelta, old, new map[string]any, err error) {
+    if err != nil { return }
+    for _, k := range delta.Changed { log.Printf("changed: %s  %v → %v", k, old[k], new[k]) }
+    for _, k := range delta.Added   { log.Printf("added: %s = %v", k, new[k]) }
+    for _, k := range delta.Removed { log.Printf("removed: %s", k) }
 })
 
 watcher.SetPollInterval(500 * time.Millisecond)
@@ -1376,14 +1423,41 @@ func main() {
 
 ---
 
-## 18. CHANGELOG & BREAKING CHANGES
+## 18. CHANGELOG
 
-### Unreleased
+### v1.0.1 (2026-05-12)
 
-- **Load[T] returns pointer** (`*T, error`) instead of `(T, error)`
-- **Automatic snake_case mapping** for YAML/JSON/TOML (if no explicit tag)
-- **FromYAMLOptional()** for optional config files
-- **Enhanced error source tracking** (all errors show where value came from)
+- **Security:** replaced `net/mail.ParseAddress` with regex in email validator (fixes GO-2026-4977, GO-2026-4986)
+- **Fixed:** `reflect.Ptr` → `reflect.Pointer` (deprecated constant replaced)
+- **Fixed:** `gofmt` applied to `load.go`, `observability.go`, `validation.go`, `schema/schema.go`
+- **Go 1.25:** minimum Go version raised from 1.24 to 1.25
+- **Deps:** etcd client v3 3.5.13 → 3.6.11; OTel 1.39.0 → 1.41.0
+
+### v1.0.0 (2026-05-10)
+
+- API freeze per STABLE.md
+- `LoadContext[T]`, `LoadWithOptionsContext[T]`, `ValidateOnly[T]`
+- `MustLoad[T]`, `MustLoadContext[T]`
+- `Dump[T]`, `DumpString[T]`, `DumpYAML[T]` with secret redaction
+- `FindFile`, `FindSource`, `DefaultSearchDirs`, `ErrNotFound`
+- `FromOverlay`, `OverlayPath`
+- `ConfigDelta`, `AddDeltaListener`
+- `(*ErrorReport).FirstError()`
+- `parseMap` quoted values: `KEY="val,with,commas"`
+
+### v0.10.0
+
+- `Load[T]` returns `*T` (breaking, pointer return)
+- Automatic snake_case ↔ CamelCase mapping in YAML/JSON/TOML
+- `FromYAMLOptional()`, `FromJSONFiles()`, `FromTOMLFiles()`, `FromYAMLFiles()`
+- Enhanced error source tracking
+
+### v0.6–v0.9
+
+- 18+ built-in validators (email, url, ip, uuid, hostname, regex, len, contains, alpha, etc.)
+- Prometheus metrics integration
+- OpenTelemetry tracing
+- Multi-file sources
 
 ### v0.5
 
@@ -1442,6 +1516,6 @@ func main() {
 
 ---
 
-**This documentation is complete and current as of the latest development version.** For updates, refer to CHANGELOG.md and GitHub releases.
+**This documentation is complete and current as of v1.0.1.** For updates, refer to CHANGELOG.md and GitHub releases.
 
 **For production deployments, see the examples/ directory for tested configurations matching common use cases.**
