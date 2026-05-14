@@ -3,7 +3,7 @@ module github.com/MimoJanra/confkit/consul
 go 1.25.9
 
 require (
-	github.com/MimoJanra/confkit v1.0.0
+	github.com/MimoJanra/confkit v1.0.1
 	github.com/hashicorp/consul/api v1.34.1
 )
 
@@ -31,4 +31,4 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace github.com/MimoJanra/confkit v1.0.0 => ../
+replace github.com/MimoJanra/confkit v1.0.1 => ../

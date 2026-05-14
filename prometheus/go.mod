@@ -1,9 +1,9 @@
 module github.com/MimoJanra/confkit/prometheus
 
-go 1.25.0
+go 1.25.9
 
 require (
-	github.com/MimoJanra/confkit v1.0.0
+	github.com/MimoJanra/confkit v1.0.1
 	github.com/prometheus/client_golang v1.20.5
 )
 
@@ -21,4 +21,4 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace github.com/MimoJanra/confkit v1.0.0 => ../
+replace github.com/MimoJanra/confkit v1.0.1 => ../
