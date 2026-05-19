@@ -4,8 +4,8 @@ go 1.25.9
 
 require (
 	github.com/MimoJanra/confkit v1.0.1
-	go.opentelemetry.io/otel v1.41.0
-	go.opentelemetry.io/otel/trace v1.41.0
+	go.opentelemetry.io/otel v1.43.0
+	go.opentelemetry.io/otel/trace v1.43.0
 )
 
 require (
