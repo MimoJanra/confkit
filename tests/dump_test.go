@@ -146,7 +146,9 @@ func TestDumpYAML(t *testing.T) {
 
 func TestDumpString(t *testing.T) {
 	t.Run("returns_string", func(t *testing.T) {
-		type cfg struct{ X int `json:"x"` }
+		type cfg struct {
+			X int `json:"x"`
+		}
 		s := confkit.DumpString(cfg{X: 42})
 		if !strings.Contains(s, "42") {
 			t.Errorf("expected 42 in dump string: %s", s)

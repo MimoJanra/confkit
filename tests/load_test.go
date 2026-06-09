@@ -112,7 +112,9 @@ func TestWithContext(t *testing.T) {
 
 func TestMustLoad(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
-		type cfg struct{ X int `default:"42"` }
+		type cfg struct {
+			X int `default:"42"`
+		}
 		c := confkit.MustLoad[cfg]()
 		if c.X != 42 {
 			t.Errorf("expected 42, got %d", c.X)
@@ -132,7 +134,9 @@ func TestMustLoad(t *testing.T) {
 	})
 
 	t.Run("with_context", func(t *testing.T) {
-		type cfg struct{ X int `default:"7"` }
+		type cfg struct {
+			X int `default:"7"`
+		}
 		c := confkit.MustLoadContext[cfg](context.Background())
 		if c.X != 7 {
 			t.Errorf("expected 7, got %d", c.X)
@@ -156,7 +160,9 @@ func TestValidateOnly(t *testing.T) {
 	})
 
 	t.Run("skips_hooks_and_audit", func(t *testing.T) {
-		type cfg struct{ Port int `default:"8080"` }
+		type cfg struct {
+			Port int `default:"8080"`
+		}
 		hookCalled, auditCalled := false, false
 
 		_, err := confkit.ValidateOnly[cfg](context.Background(),
@@ -208,7 +214,9 @@ func TestAuditLogger(t *testing.T) {
 	})
 
 	t.Run("on_source_error", func(t *testing.T) {
-		type cfg struct{ X string `env:"AUDITX"` }
+		type cfg struct {
+			X string `env:"AUDITX"`
+		}
 		var called bool
 		_, _ = confkit.LoadWithOptions[cfg](
 			confkit.WithSource(confkit.NewErrorSource(fmt.Errorf("src err"))),

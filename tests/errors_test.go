@@ -115,7 +115,9 @@ func TestExplain(t *testing.T) {
 
 func TestNewErrorSource(t *testing.T) {
 	t.Run("propagates_error", func(t *testing.T) {
-		type cfg struct{ X string `env:"ERR_X"` }
+		type cfg struct {
+			X string `env:"ERR_X"`
+		}
 		src := confkit.NewErrorSource(fmt.Errorf("intentional failure"))
 		_, err := confkit.Load[cfg](src)
 		if err == nil {
@@ -124,7 +126,9 @@ func TestNewErrorSource(t *testing.T) {
 	})
 
 	t.Run("report_kind", func(t *testing.T) {
-		type cfg struct{ X string `env:"ERR_X2"` }
+		type cfg struct {
+			X string `env:"ERR_X2"`
+		}
 		src := confkit.NewErrorSource(fmt.Errorf("io problem"))
 		_, err := confkit.Load[cfg](src)
 		report, ok := err.(*confkit.ErrorReport)

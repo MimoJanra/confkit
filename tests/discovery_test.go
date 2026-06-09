@@ -77,7 +77,9 @@ func TestFindSource(t *testing.T) {
 	})
 
 	t.Run("not_found_returns_error_source", func(t *testing.T) {
-		type cfg struct{ X string `yaml:"x"` }
+		type cfg struct {
+			X string `yaml:"x"`
+		}
 		src := confkit.FindSource("nonexistent", "/tmp/definitely-not-there-9999/")
 		_, err := confkit.Load[cfg](src)
 		if err == nil {

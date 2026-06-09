@@ -83,7 +83,9 @@ func TestFromJSONFiles(t *testing.T) {
 	})
 
 	t.Run("missing_file_error", func(t *testing.T) {
-		type cfg struct{ X string `json:"x"` }
+		type cfg struct {
+			X string `json:"x"`
+		}
 		src := confkit.FromJSONFiles("/nonexistent.json")
 		_, err := confkit.Load[cfg](src)
 		if err == nil {
@@ -117,7 +119,9 @@ func TestFromTOMLFiles(t *testing.T) {
 	})
 
 	t.Run("missing_file_error", func(t *testing.T) {
-		type cfg struct{ X string `toml:"x"` }
+		type cfg struct {
+			X string `toml:"x"`
+		}
 		src := confkit.FromTOMLFiles("/nonexistent.toml")
 		_, err := confkit.Load[cfg](src)
 		if err == nil {

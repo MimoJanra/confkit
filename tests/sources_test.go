@@ -40,7 +40,9 @@ func TestYAMLSource(t *testing.T) {
 	})
 
 	t.Run("missing_file_returns_error", func(t *testing.T) {
-		type cfg struct{ Host string `yaml:"host"` }
+		type cfg struct {
+			Host string `yaml:"host"`
+		}
 		_, err := confkit.Load[cfg](confkit.FromYAML("/nonexistent/path.yaml"))
 		if err == nil {
 			t.Fatal("expected error for missing required file")
@@ -84,7 +86,9 @@ func TestJSONSource(t *testing.T) {
 	})
 
 	t.Run("missing_file_error", func(t *testing.T) {
-		type cfg struct{ X string `json:"x"` }
+		type cfg struct {
+			X string `json:"x"`
+		}
 		_, err := confkit.Load[cfg](confkit.FromJSON("/nonexistent.json"))
 		if err == nil {
 			t.Fatal("expected error for missing JSON file")
