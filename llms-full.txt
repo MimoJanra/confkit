@@ -20,7 +20,8 @@ confkit is a **production-ready typed configuration loader for Go services**. It
 
 ### 1.2 Status & Versions
 
-- **v1.0.1** — current stable release (2026-05-12)
+- **v1.0.2** — current stable release (2026-06-09)
+- **v1.0.1** — security + reflect fix (2026-05-12)
 - **v1.0.0** — API freeze, DevOps toolkit, production release (2026-05-10)
 - **v0.1–v0.10:** All complete, production-tested
 - **v1.1+:** Planned — config composition, advanced validation, additional cloud integrations
@@ -1425,6 +1426,12 @@ func main() {
 
 ## 18. CHANGELOG
 
+### v1.0.2 (2026-06-09)
+
+- **Security:** GO-2026-5037 (`crypto/x509`) and GO-2026-5039 (`net/textproto`) tracked; fixed in go1.25.11
+- **Deps:** AWS SDK v2 config 1.27→1.32.18, SSM 1.52→1.68.6, presigned-url 1.11→1.13.23; x/tools 0.43→0.45; x/text 0.36→0.37; x/net 0.52→0.54
+- **CI:** `codecov/codecov-action` v5 → v7
+
 ### v1.0.1 (2026-05-12)
 
 - **Security:** replaced `net/mail.ParseAddress` with regex in email validator (fixes GO-2026-4977, GO-2026-4986)
@@ -1516,6 +1523,6 @@ func main() {
 
 ---
 
-**This documentation is complete and current as of v1.0.1.** For updates, refer to CHANGELOG.md and GitHub releases.
+**This documentation is complete and current as of v1.0.2.** For updates, refer to CHANGELOG.md and GitHub releases.
 
 **For production deployments, see the examples/ directory for tested configurations matching common use cases.**

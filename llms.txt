@@ -16,7 +16,7 @@ confkit loads configuration from multiple sources (YAML, JSON, TOML, env, flags,
 - ✅ **Human-readable errors** — Clear messages showing field, source, rule, and value (redacted for secrets)
 - ✅ **Multiple sources** — Explicit precedence for YAML, JSON, TOML, env, flags, K8s, Vault, AWS, Consul, etcd
 - ✅ **Optional cloud integrations** — Cloud sources are separate modules, not bundled (keeps core light)
-- ✅ **Production-ready** — v1.0.0, 80%+ test coverage, API stability guarantee
+- ✅ **Production-ready** — v1.0.2, 80%+ test coverage, API stability guarantee
 
 ## Install
 

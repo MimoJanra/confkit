@@ -5,6 +5,27 @@ All notable changes to confkit are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.2] - 2026-06-09
+
+### Security
+
+- **Stdlib vulnerabilities tracked** — GO-2026-5037 (`crypto/x509` inefficient hostname parsing) and GO-2026-5039 (`net/textproto` MIME header parsing) are identified in `go1.25.10`. Both are fixed in `go1.25.11`; the minimum Go directive will be raised to `go1.25.11` once that release is available.
+
+### Dependencies
+
+- **AWS SDK v2**: bumped `aws-sdk-go-v2/config` 1.27.0 → 1.32.18, `service/ssm` 1.52.0 → 1.68.6, `service/internal/presigned-url` 1.11.0 → 1.13.23, and aligned all related AWS SDK indirect dependencies (`credentials`, `feature/ec2/imds`, `service/internal/accept-encoding`, `service/sso`, `service/ssooidc`, `service/sts`, `internal/v4a`, `service/signin`) to the versions required by the updated SDK.
+- **`golang.org/x/tools`**: bumped 0.43.0 → 0.45.0 across `consul`, `etcd`, `prometheus`, `vault`, and root modules.
+- **`golang.org/x/text`**: bumped 0.36.0 → 0.37.0 across `consul`, `etcd`, `vault`, and root modules.
+- **`golang.org/x/net`**: bumped 0.52.0 → 0.54.0 as a transitive upgrade in `etcd`, `vault`, and root modules.
+- **`golang.org/x/sys`**: bumped 0.42.0 → 0.44.0 across `consul`, `etcd`, and `prometheus` modules.
+- **`google.golang.org/protobuf`**: bumped 1.36.10 → 1.36.11 in `etcd`.
+
+### CI
+
+- **`codecov/codecov-action`**: bumped from v5 to v7.
+
+---
+
 ## [1.0.1] - 2026-05-12
 
 ### Security
