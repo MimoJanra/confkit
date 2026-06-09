@@ -24,7 +24,7 @@ jobs:
           cache: true
 
       - name: Run tests before release
-        run: go test -v -coverprofile=coverage.txt ./...
+        run: go test -v -coverprofile=coverage.txt -coverpkg=github.com/MimoJanra/confkit ./...
 
       - name: Check test coverage
         run: |
