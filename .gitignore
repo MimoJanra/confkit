@@ -33,3 +33,9 @@ claude.md
 Docss/
 data.md
 main.go
+
+# Generated files
+coverage.txt
+coverage.out
+llms.txt
+llms-full.txt
