@@ -197,6 +197,81 @@ func TestValidation(t *testing.T) {
 		}
 	})
 
+	t.Run("required/uint_zero", func(t *testing.T) {
+		type cfg struct {
+			Count uint `env:"TEST_UINT_REQ" validate:"required"`
+		}
+		_, err := confkit.Load[cfg](confkit.FromEnv())
+		if err == nil {
+			t.Fatal("expected validation error for required uint (zero value)")
+		}
+	})
+
+	t.Run("required/uint_nonzero_passes", func(t *testing.T) {
+		type cfg struct {
+			Count uint `env:"TEST_UINT_NZ" validate:"required"`
+		}
+		t.Setenv("TEST_UINT_NZ", "5")
+		_, err := confkit.Load[cfg](confkit.FromEnv())
+		if err != nil {
+			t.Errorf("unexpected error: %v", err)
+		}
+	})
+
+	t.Run("required/float_zero", func(t *testing.T) {
+		type cfg struct {
+			Rate float64 `env:"TEST_FLOAT_REQ" validate:"required"`
+		}
+		_, err := confkit.Load[cfg](confkit.FromEnv())
+		if err == nil {
+			t.Fatal("expected validation error for required float64 (zero value)")
+		}
+	})
+
+	t.Run("min/uint", func(t *testing.T) {
+		type cfg struct {
+			Count uint `env:"TEST_UINT_MIN" validate:"min=5"`
+		}
+		t.Setenv("TEST_UINT_MIN", "2")
+		_, err := confkit.Load[cfg](confkit.FromEnv())
+		if err == nil {
+			t.Fatal("expected validation error for uint below min")
+		}
+	})
+
+	t.Run("max/uint", func(t *testing.T) {
+		type cfg struct {
+			Count uint `env:"TEST_UINT_MAX" validate:"max=10"`
+		}
+		t.Setenv("TEST_UINT_MAX", "20")
+		_, err := confkit.Load[cfg](confkit.FromEnv())
+		if err == nil {
+			t.Fatal("expected validation error for uint above max")
+		}
+	})
+
+	t.Run("min/float", func(t *testing.T) {
+		type cfg struct {
+			Rate float64 `env:"TEST_FLOAT_MIN" validate:"min=1"`
+		}
+		t.Setenv("TEST_FLOAT_MIN", "0.5")
+		_, err := confkit.Load[cfg](confkit.FromEnv())
+		if err == nil {
+			t.Fatal("expected validation error for float below min")
+		}
+	})
+
+	t.Run("max/float", func(t *testing.T) {
+		type cfg struct {
+			Rate float64 `env:"TEST_FLOAT_MAX" validate:"max=10"`
+		}
+		t.Setenv("TEST_FLOAT_MAX", "15.5")
+		_, err := confkit.Load[cfg](confkit.FromEnv())
+		if err == nil {
+			t.Fatal("expected validation error for float above max")
+		}
+	})
+
 	t.Run("parse_error_report", func(t *testing.T) {
 		type cfg struct {
 			Port int `env:"BAD_PORT"`

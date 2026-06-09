@@ -204,6 +204,50 @@ func TestOverlay(t *testing.T) {
 			t.Fatal("expected non-nil source")
 		}
 	})
+
+	t.Run("json_overlay", func(t *testing.T) {
+		type cfg struct {
+			Host string `json:"host"`
+		}
+		base := writeTempJSON(t, `{"host":"base-host"}`)
+		defer func() { _ = os.Remove(base) }()
+
+		overlayPath := confkit.OverlayPath(base, "prod")
+		if err := os.WriteFile(overlayPath, []byte(`{"host":"prod-host"}`), 0644); err != nil {
+			t.Fatalf("failed to write overlay: %v", err)
+		}
+		defer func() { _ = os.Remove(overlayPath) }()
+
+		c, err := confkit.Load[cfg](confkit.FromOverlay(confkit.FromJSON(base), "prod"))
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if c.Host != "prod-host" {
+			t.Errorf("expected 'prod-host', got %q", c.Host)
+		}
+	})
+
+	t.Run("toml_overlay", func(t *testing.T) {
+		type cfg struct {
+			Host string `toml:"host"`
+		}
+		base := writeTempTOML(t, "host = \"base-host\"\n")
+		defer func() { _ = os.Remove(base) }()
+
+		overlayPath := confkit.OverlayPath(base, "prod")
+		if err := os.WriteFile(overlayPath, []byte("host = \"prod-host\"\n"), 0644); err != nil {
+			t.Fatalf("failed to write overlay: %v", err)
+		}
+		defer func() { _ = os.Remove(overlayPath) }()
+
+		c, err := confkit.Load[cfg](confkit.FromOverlay(confkit.FromTOML(base), "prod"))
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if c.Host != "prod-host" {
+			t.Errorf("expected 'prod-host', got %q", c.Host)
+		}
+	})
 }
 
 func TestInterpolation(t *testing.T) {

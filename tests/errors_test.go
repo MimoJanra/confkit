@@ -40,6 +40,10 @@ func TestErrorReport(t *testing.T) {
 		if !errors.Is(errs[0], sentinel) {
 			t.Error("Unwrap should expose the underlying Err")
 		}
+		msg := errs[0].Error()
+		if msg == "" {
+			t.Error("singleFieldError.Error() should return non-empty string")
+		}
 	})
 
 	t.Run("unwrap_empty", func(t *testing.T) {
@@ -109,6 +113,28 @@ func TestExplain(t *testing.T) {
 		}
 		if !strings.Contains(got, "***REDACTED***") {
 			t.Errorf("Explain should show redaction marker: %s", got)
+		}
+	})
+}
+
+func TestFirstError(t *testing.T) {
+	t.Run("nil_on_empty", func(t *testing.T) {
+		report := &confkit.ErrorReport{}
+		if fe := report.FirstError(); fe != nil {
+			t.Errorf("expected nil, got %+v", fe)
+		}
+	})
+
+	t.Run("returns_first", func(t *testing.T) {
+		report := &confkit.ErrorReport{}
+		report.AddError(confkit.FieldError{Path: "Foo", Kind: confkit.ErrorKindValidation, Message: "foo required"})
+		report.AddError(confkit.FieldError{Path: "Bar", Kind: confkit.ErrorKindValidation, Message: "bar required"})
+		fe := report.FirstError()
+		if fe == nil {
+			t.Fatal("expected non-nil FirstError")
+		}
+		if fe.Path != "Foo" {
+			t.Errorf("expected first field 'Foo', got %q", fe.Path)
 		}
 	})
 }

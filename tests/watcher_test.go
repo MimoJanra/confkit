@@ -144,6 +144,49 @@ func TestConfigWatcherStartIdempotent(t *testing.T) {
 	}
 }
 
+func TestLoadWithWatcher(t *testing.T) {
+	type Cfg struct {
+		Port int `yaml:"Port"`
+	}
+	tmpFile := writeTempYAML(t, "Port: 3000")
+	defer func() { _ = os.Remove(tmpFile) }()
+
+	cfg, watcher, err := confkit.LoadWithWatcher[Cfg](tmpFile, confkit.FromYAML(tmpFile))
+	if err != nil {
+		t.Fatalf("LoadWithWatcher failed: %v", err)
+	}
+	if cfg == nil {
+		t.Fatal("expected non-nil config")
+	}
+	if watcher == nil {
+		t.Fatal("expected non-nil watcher")
+	}
+	if cfg.Port != 3000 {
+		t.Errorf("expected Port 3000, got %d", cfg.Port)
+	}
+	// Start then Stop to exercise the full lifecycle without blocking
+	watcher.SetPollInterval(100 * time.Millisecond)
+	watcher.Start()
+	stopped := make(chan struct{})
+	go func() { watcher.Stop(); close(stopped) }()
+	select {
+	case <-stopped:
+	case <-time.After(2 * time.Second):
+		t.Fatal("watcher did not stop cleanly")
+	}
+}
+
+func TestLoadWithWatcherError(t *testing.T) {
+	type Cfg struct {
+		Port int `yaml:"Port"`
+	}
+	// NewConfigWatcher fails for nonexistent file, Load[T] with no sources succeeds
+	_, _, err := confkit.LoadWithWatcher[Cfg]("/nonexistent/path.yaml")
+	if err == nil {
+		t.Fatal("expected error for nonexistent file")
+	}
+}
+
 func TestAddDeltaListener(t *testing.T) {
 	tmpFile := writeTempYAML(t, "port: 8080")
 	defer func() { _ = os.Remove(tmpFile) }()
