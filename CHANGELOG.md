@@ -11,6 +11,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **GO-2026-5037 and GO-2026-5039 fixed** — `crypto/x509` inefficient hostname parsing and `net/textproto` MIME header parsing vulnerabilities patched by raising the minimum Go version to 1.25.11.
 
+### Changed
+
+- **Internal packages** — implementation helpers extracted to unexported packages:
+  - `parser.go` → `internal/parser/parser.go`
+  - `interpolation.go` → `internal/interpolation/interpolation.go`
+- **File consolidation** — root reduced from 20 to 16 `.go` files:
+  - `yaml_source.go`, `json_source.go`, `toml_source.go` merged into `file_sources.go`
+  - `validators_builtin.go` merged into `validation.go`
+- **Tests reorganized** — all tests moved to `tests/` as black-box package (`package confkit_test`); no direct access to unexported symbols.
+
 ### Dependencies
 
 - **Minimum Go raised to 1.25.11** — fixes GO-2026-5037 (`crypto/x509`) and GO-2026-5039 (`net/textproto`); all `go.mod` and `go.work` updated.
