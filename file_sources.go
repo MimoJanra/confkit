@@ -20,6 +20,173 @@ type fileSource interface {
 	sourcePath() string
 }
 
+// --- YAML ---
+
+func FromYAML(path string) Source {
+	source, err := newYAMLSource(path)
+	if err != nil {
+		return &errorSource{err: err}
+	}
+	return source
+}
+
+func FromYAMLOptional(path string) Source {
+	source, err := newYAMLSource(path)
+	if err != nil {
+		var pathErr *os.PathError
+		if errors.As(err, &pathErr) && errors.Is(pathErr.Err, os.ErrNotExist) {
+			return &emptySource{}
+		}
+		return &errorSource{err: err}
+	}
+	return source
+}
+
+type yamlSource struct {
+	path string
+	data map[string]any
+}
+
+func newYAMLSource(path string) (*yamlSource, error) {
+	s := &yamlSource{path: path}
+	data, err := os.ReadFile(path) // #nosec G304
+	if err != nil {
+		return nil, fmt.Errorf("failed to read YAML file: %w", err)
+	}
+	if err := yaml.Unmarshal(data, &s.data); err != nil {
+		return nil, fmt.Errorf("failed to parse YAML: %w", err)
+	}
+	if s.data == nil {
+		s.data = make(map[string]any)
+	}
+	return s, nil
+}
+
+func (y *yamlSource) Name() string       { return "yaml" }
+func (y *yamlSource) sourcePath() string { return y.path }
+
+func (y *yamlSource) Lookup(_ context.Context, field *FieldInfo) (any, bool, error) {
+	tagName := field.Tags["yaml"]
+	if tagName == "" {
+		tagName = field.Tags["json"]
+	}
+	if tagName != "" {
+		if value, ok := lookupNested(y.data, tagName, field.Path, field.AncestorTags, "yaml"); ok {
+			return value, true, nil
+		}
+	}
+	snakeName := structtags.SnakeCase(field.Name)
+	value, ok := lookupNested(y.data, snakeName, field.Path, field.AncestorTags, "yaml")
+	if !ok {
+		return "", false, nil
+	}
+	return value, true, nil
+}
+
+// --- JSON ---
+
+func FromJSON(path string) Source {
+	source, err := newJSONSource(path)
+	if err != nil {
+		return &errorSource{err: err}
+	}
+	return source
+}
+
+type jsonSource struct {
+	path string
+	data map[string]any
+}
+
+func newJSONSource(path string) (*jsonSource, error) {
+	s := &jsonSource{path: path}
+	data, err := os.ReadFile(path) // #nosec G304
+	if err != nil {
+		return nil, fmt.Errorf("failed to read JSON file: %w", err)
+	}
+	if err := json.Unmarshal(data, &s.data); err != nil {
+		return nil, fmt.Errorf("failed to parse JSON: %w", err)
+	}
+	if s.data == nil {
+		s.data = make(map[string]any)
+	}
+	return s, nil
+}
+
+func (j *jsonSource) Name() string       { return "json" }
+func (j *jsonSource) sourcePath() string { return j.path }
+
+func (j *jsonSource) Lookup(_ context.Context, field *FieldInfo) (any, bool, error) {
+	tagName := field.Tags["json"]
+	if tagName == "" {
+		tagName = field.Tags["yaml"]
+	}
+	if tagName != "" {
+		if value, ok := lookupNested(j.data, tagName, field.Path, field.AncestorTags, "json"); ok {
+			return value, true, nil
+		}
+	}
+	snakeName := structtags.SnakeCase(field.Name)
+	value, ok := lookupNested(j.data, snakeName, field.Path, field.AncestorTags, "json")
+	if !ok {
+		return "", false, nil
+	}
+	return value, true, nil
+}
+
+// --- TOML ---
+
+func FromTOML(path string) Source {
+	source, err := newTOMLSource(path)
+	if err != nil {
+		return &errorSource{err: err}
+	}
+	return source
+}
+
+type tomlSource struct {
+	path string
+	data map[string]any
+}
+
+func newTOMLSource(path string) (*tomlSource, error) {
+	s := &tomlSource{path: path, data: make(map[string]any)}
+	data, err := os.ReadFile(path) // #nosec G304
+	if err != nil {
+		return nil, fmt.Errorf("failed to read TOML file: %w", err)
+	}
+	if err := toml.Unmarshal(data, &s.data); err != nil {
+		return nil, fmt.Errorf("failed to parse TOML: %w", err)
+	}
+	return s, nil
+}
+
+func (t *tomlSource) Name() string       { return "toml" }
+func (t *tomlSource) sourcePath() string { return t.path }
+
+func (t *tomlSource) Lookup(_ context.Context, field *FieldInfo) (any, bool, error) {
+	tagName := field.Tags["toml"]
+	if tagName == "" {
+		tagName = field.Tags["json"]
+	}
+	if tagName == "" {
+		tagName = field.Tags["yaml"]
+	}
+	if tagName != "" {
+		if value, ok := lookupNested(t.data, tagName, field.Path, field.AncestorTags, "toml"); ok {
+			return value, true, nil
+		}
+	}
+	snakeName := structtags.SnakeCase(field.Name)
+	value, ok := lookupNested(t.data, snakeName, field.Path, field.AncestorTags, "toml")
+	if !ok {
+		return "", false, nil
+	}
+	return value, true, nil
+}
+
+// --- Multi-file ---
+
 func FromYAMLFiles(paths ...string) Source {
 	merged, err := mergeFiles(paths, func(data []byte) (map[string]any, error) {
 		var m map[string]any
@@ -55,7 +222,6 @@ func FromTOMLFiles(paths ...string) Source {
 
 // OverlayPath computes the overlay file path for a given base path and environment.
 // "config.yaml" + "prod" → "config.prod.yaml"
-// "/etc/app/config.toml" + "staging" → "/etc/app/config.staging.toml"
 func OverlayPath(basePath, env string) string {
 	ext := filepath.Ext(basePath)
 	return strings.TrimSuffix(basePath, ext) + "." + env + ext
@@ -144,16 +310,59 @@ func (m *multiFileSource) Lookup(_ context.Context, field *FieldInfo) (any, bool
 		tagName = field.Tags["json"]
 	}
 	if tagName != "" {
-		value, ok := lookupNested(m.data, tagName, field.Path, field.AncestorTags, m.name)
-		if ok {
+		if value, ok := lookupNested(m.data, tagName, field.Path, field.AncestorTags, m.name); ok {
 			return value, true, nil
 		}
 	}
-
-	snakeCaseTagName := structtags.SnakeCase(field.Name)
-	value, ok := lookupNested(m.data, snakeCaseTagName, field.Path, field.AncestorTags, m.name)
+	snakeName := structtags.SnakeCase(field.Name)
+	value, ok := lookupNested(m.data, snakeName, field.Path, field.AncestorTags, m.name)
 	if !ok {
 		return "", false, nil
 	}
 	return value, true, nil
+}
+
+// --- Shared lookup helpers ---
+
+func lookupNested(data map[string]any, tagName, fieldPath string, ancestorTags []map[string]string, preferredTag string) (any, bool) {
+	parts := strings.Split(fieldPath, ".")
+	current := any(data)
+
+	for i := 0; i < len(parts)-1; i++ {
+		key := ancestorKey(parts[i], i, ancestorTags, preferredTag)
+		m, ok := current.(map[string]any)
+		if !ok {
+			return nil, false
+		}
+		current, ok = m[key]
+		if !ok {
+			return nil, false
+		}
+	}
+
+	if m, ok := current.(map[string]any); ok {
+		if v, found := m[tagName]; found {
+			return v, true
+		}
+	}
+	return nil, false
+}
+
+func ancestorKey(fieldName string, i int, ancestorTags []map[string]string, preferredTag string) string {
+	if i >= len(ancestorTags) || ancestorTags[i] == nil {
+		return structtags.SnakeCase(fieldName)
+	}
+	tags := ancestorTags[i]
+	order := []string{preferredTag}
+	for _, t := range []string{"yaml", "json", "toml"} {
+		if t != preferredTag {
+			order = append(order, t)
+		}
+	}
+	for _, t := range order {
+		if v := tags[t]; v != "" {
+			return v
+		}
+	}
+	return structtags.SnakeCase(fieldName)
 }
