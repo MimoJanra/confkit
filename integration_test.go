@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-func TestV04HotReloadIntegration(t *testing.T) {
+func TestHotReloadIntegration(t *testing.T) {
 	tmpFile := writeTempYAML(t, "Port: 8080\nHost: localhost")
 	defer func() { _ = os.Remove(tmpFile) }()
 
@@ -33,7 +33,7 @@ func TestV04HotReloadIntegration(t *testing.T) {
 	watcher.Stop()
 }
 
-func TestV04MultiSourcePrecedence(t *testing.T) {
+func TestMultiSourcePrecedence(t *testing.T) {
 	type Config struct {
 		Port int `default:"8080"`
 		Host string
@@ -54,7 +54,7 @@ func TestV04MultiSourcePrecedence(t *testing.T) {
 	}
 }
 
-func TestV04ConfigDumpIntegration(t *testing.T) {
+func TestConfigDumpIntegration(t *testing.T) {
 	type Config struct {
 		Port     int
 		Password string `secret:"true"`
@@ -93,7 +93,7 @@ func TestV04ConfigDumpIntegration(t *testing.T) {
 	}
 }
 
-func TestV04ObservabilityMetrics(t *testing.T) {
+func TestObservabilityMetrics(t *testing.T) {
 	startTime := time.Now()
 
 	sources := []string{"yaml", "env"}
@@ -119,7 +119,7 @@ func TestV04ObservabilityMetrics(t *testing.T) {
 	}
 }
 
-func TestV04WatcherIntegration(t *testing.T) {
+func TestWatcherIntegration(t *testing.T) {
 	tmpFile := writeTempYAML(t, "test: value")
 	defer func() { _ = os.Remove(tmpFile) }()
 
@@ -159,7 +159,7 @@ func stringContains(s, substr string) bool {
 	return false
 }
 
-func TestV04FullStack(t *testing.T) {
+func TestFullStack(t *testing.T) {
 	type FullConfig struct {
 		Port     int    `default:"8080"`
 		Host     string `default:"localhost"`

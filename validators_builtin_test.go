@@ -188,7 +188,7 @@ func TestModelValidator(t *testing.T) {
 	})
 }
 
-func TestAuditLogger(t *testing.T) {
+func TestAuditLoggerBasic(t *testing.T) {
 	type Cfg struct {
 		Host string `env:"AUDIT_HOST" default:"localhost"`
 		Port int    `env:"AUDIT_PORT" default:"5432"`

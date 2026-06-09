@@ -6,6 +6,9 @@ import (
 	"reflect"
 	"strings"
 	"time"
+
+	"github.com/MimoJanra/confkit/internal/interpolation"
+	"github.com/MimoJanra/confkit/internal/parser"
 )
 
 func Load[T any](sources ...Source) (*T, error) {
@@ -94,14 +97,14 @@ func loadCore[T any](options ...Option) (*T, error) {
 
 	fields := ScanFields(cfg)
 	report := &ErrorReport{}
-	parser := NewParser()
+	prs := parser.New()
 
 	validator := NewValidator()
 	for name, fn := range config.Validators {
 		validator.LocalValidators[name] = fn
 	}
 
-	resolver := NewInterpolationResolver(config.InterpolationMax)
+	resolver := interpolation.NewResolver(config.InterpolationMax)
 
 	fieldValues := make(map[string]any)
 	fieldSources := make(map[string]string)
@@ -169,7 +172,7 @@ func loadCore[T any](options ...Option) (*T, error) {
 
 	val := reflect.ValueOf(cfg).Elem()
 	initEmbeddedPointers(val, val.Type())
-	setStructFields(val, fields, fieldValues, fieldSources, parser, report)
+	setStructFields(val, fields, fieldValues, fieldSources, prs, report)
 
 	if !report.IsEmpty() {
 		if !config.validateOnlyMode {
@@ -240,7 +243,7 @@ func fireHooks(config *loadConfig, success bool, start time.Time, errCount int) 
 	}
 }
 
-func performInterpolation(fieldValues map[string]any, resolver *InterpolationResolver, report *ErrorReport) bool {
+func performInterpolation(fieldValues map[string]any, resolver *interpolation.Resolver, report *ErrorReport) bool {
 	for path, rawVal := range fieldValues {
 		if rawVal == nil {
 			continue
@@ -276,7 +279,7 @@ func performInterpolation(fieldValues map[string]any, resolver *InterpolationRes
 	return true
 }
 
-func setStructFields(val reflect.Value, fields []FieldInfo, values map[string]any, sources map[string]string, parser *Parser, report *ErrorReport) {
+func setStructFields(val reflect.Value, fields []FieldInfo, values map[string]any, sources map[string]string, prs *parser.Parser, report *ErrorReport) {
 	for _, field := range fields {
 		rawVal, ok := values[field.Path]
 		if !ok {
@@ -284,7 +287,7 @@ func setStructFields(val reflect.Value, fields []FieldInfo, values map[string]an
 		}
 
 		strVal := anyToString(rawVal)
-		parsed, err := parser.Parse(strVal, field.Type)
+		parsed, err := prs.Parse(strVal, field.Type)
 		if err != nil {
 			report.AddError(FieldError{
 				Path:    field.Path,

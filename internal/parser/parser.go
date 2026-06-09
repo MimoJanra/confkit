@@ -1,4 +1,4 @@
-package confkit
+package parser
 
 import (
 	"fmt"
@@ -11,7 +11,7 @@ import (
 
 type Parser struct{}
 
-func NewParser() *Parser {
+func New() *Parser {
 	return &Parser{}
 }
 

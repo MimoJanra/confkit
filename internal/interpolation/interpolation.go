@@ -1,4 +1,4 @@
-package confkit
+package interpolation
 
 import (
 	"fmt"
@@ -7,11 +7,9 @@ import (
 	"strings"
 )
 
-var (
-	interpolationPattern = regexp.MustCompile(`\$\{([^}|]+)(?:\|([^}]*))?\}`)
-)
+var interpolationPattern = regexp.MustCompile(`\$\{([^}|]+)(?:\|([^}]*))?\}`)
 
-type InterpolationResolver struct {
+type Resolver struct {
 	envMap     map[string]string
 	config     map[string]string
 	visited    map[string]bool
@@ -19,7 +17,7 @@ type InterpolationResolver struct {
 	currentKey string
 }
 
-func NewInterpolationResolver(maxDepth int) *InterpolationResolver {
+func NewResolver(maxDepth int) *Resolver {
 	if maxDepth <= 0 {
 		maxDepth = 10
 	}
@@ -32,7 +30,7 @@ func NewInterpolationResolver(maxDepth int) *InterpolationResolver {
 		}
 	}
 
-	return &InterpolationResolver{
+	return &Resolver{
 		envMap:   envMap,
 		config:   make(map[string]string),
 		visited:  make(map[string]bool),
@@ -40,7 +38,7 @@ func NewInterpolationResolver(maxDepth int) *InterpolationResolver {
 	}
 }
 
-func (r *InterpolationResolver) Resolve(value string, fieldPath string) (string, error) {
+func (r *Resolver) Resolve(value string, fieldPath string) (string, error) {
 	if !strings.Contains(value, "${") {
 		return value, nil
 	}
@@ -54,7 +52,7 @@ func (r *InterpolationResolver) Resolve(value string, fieldPath string) (string,
 	return result, nil
 }
 
-func (r *InterpolationResolver) resolve(value string, depth int) (string, error) {
+func (r *Resolver) resolve(value string, depth int) (string, error) {
 	if depth > r.maxDepth {
 		return "", fmt.Errorf("max interpolation depth exceeded")
 	}
@@ -111,6 +109,6 @@ func (r *InterpolationResolver) resolve(value string, depth int) (string, error)
 	return result, nil
 }
 
-func (r *InterpolationResolver) SetConfigValue(key string, value string) {
+func (r *Resolver) SetConfigValue(key string, value string) {
 	r.config[key] = value
 }
