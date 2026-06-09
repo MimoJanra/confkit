@@ -1428,8 +1428,8 @@ func main() {
 
 ### v1.0.2 (2026-06-09)
 
-- **Security:** GO-2026-5037 (`crypto/x509`) and GO-2026-5039 (`net/textproto`) tracked; fixed in go1.25.11
-- **Deps:** AWS SDK v2 config 1.27→1.32.18, SSM 1.52→1.68.6, presigned-url 1.11→1.13.23; x/tools 0.43→0.45; x/text 0.36→0.37; x/net 0.52→0.54
+- **Security:** GO-2026-5037 (`crypto/x509`) and GO-2026-5039 (`net/textproto`) fixed; minimum Go raised to 1.25.11
+- **Deps:** AWS SDK v2 config 1.27→1.32.24, SSM 1.52→1.69.3, presigned-url 1.11→1.13.29; x/tools 0.43→0.45; x/text 0.36→0.38; x/net 0.52→0.54
 - **CI:** `codecov/codecov-action` v5 → v7
 
 ### v1.0.1 (2026-05-12)
