@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
-- **Stdlib vulnerabilities tracked** — GO-2026-5037 (`crypto/x509` inefficient hostname parsing) and GO-2026-5039 (`net/textproto` MIME header parsing) are identified in `go1.25.10`. Both are fixed in `go1.25.11`; the minimum Go directive will be raised to `go1.25.11` once that release is available.
+- **GO-2026-5037 and GO-2026-5039 fixed** — `crypto/x509` inefficient hostname parsing and `net/textproto` MIME header parsing vulnerabilities patched by raising the minimum Go version to 1.25.11.
 
 ### Dependencies
 

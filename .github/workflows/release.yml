@@ -13,12 +13,12 @@ jobs:
       contents: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
       - name: Setup Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v6
         with:
           go-version: "1.25.11"
           cache: true
@@ -38,7 +38,7 @@ jobs:
       - name: Run security checks
         run: |
           go install github.com/securego/gosec/v2/cmd/gosec@latest
-          go install github.com/golang/vuln/cmd/govulncheck@latest
+          go install golang.org/x/vuln/cmd/govulncheck@latest
 
           echo "=== Running gosec ===" >> security-evidence.txt
           gosec -fmt json -out gosec-results.json ./... || true
@@ -49,56 +49,16 @@ jobs:
           echo "=== Test coverage ===" >> security-evidence.txt
           go tool cover -func=coverage.txt >> security-evidence.txt
 
-      - name: Create Release Notes
-        id: release_notes
+      - name: Create GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           VERSION=${GITHUB_REF#refs/tags/}
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
 
           # Extract changelog for this version
-          CHANGELOG=$(sed -n "/## \[$VERSION\]/,/## \[/p" CHANGELOG.md | head -n -1)
-          echo "changelog<<EOF" >> $GITHUB_OUTPUT
-          echo "$CHANGELOG" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          NOTES=$(sed -n "/## \[${VERSION}\]/,/## \[/p" CHANGELOG.md | head -n -1)
 
-      - name: Create GitHub Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ steps.release_notes.outputs.version }}
-          body: ${{ steps.release_notes.outputs.changelog }}
-          draft: false
-          prerelease: ${{ contains(steps.release_notes.outputs.version, 'alpha') || contains(steps.release_notes.outputs.version, 'beta') }}
-
-      - name: Upload security evidence
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./security-evidence.txt
-          asset_name: security-evidence.txt
-          asset_content_type: text/plain
-
-      - name: Upload coverage report
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./coverage.txt
-          asset_name: coverage.txt
-          asset_content_type: text/plain
-
-      - name: Upload gosec results
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./gosec-results.json
-          asset_name: gosec-results.json
-          asset_content_type: application/json
+          gh release create "$VERSION" \
+            --title "Release ${VERSION}" \
+            --notes "$NOTES" \
+            coverage.txt security-evidence.txt gosec-results.json
