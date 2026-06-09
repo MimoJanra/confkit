@@ -1,9 +1,11 @@
-package confkit
+package confkit_test
 
 import (
 	"os"
 	"strings"
 	"testing"
+
+	confkit "github.com/MimoJanra/confkit"
 )
 
 func TestYAMLSource(t *testing.T) {
@@ -12,7 +14,7 @@ func TestYAMLSource(t *testing.T) {
 			Port int    `yaml:"port"`
 			Host string `yaml:"host"`
 		}
-		c, err := Load[cfg](FromYAML("testdata/config.yaml"))
+		c, err := confkit.Load[cfg](confkit.FromYAML("../testdata/config.yaml"))
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -28,7 +30,7 @@ func TestYAMLSource(t *testing.T) {
 		type cfg struct {
 			Port int `yaml:"port" default:"8080"`
 		}
-		c, err := Load[cfg](FromYAMLOptional("/nonexistent/path.yaml"))
+		c, err := confkit.Load[cfg](confkit.FromYAMLOptional("/nonexistent/path.yaml"))
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -39,7 +41,7 @@ func TestYAMLSource(t *testing.T) {
 
 	t.Run("missing_file_returns_error", func(t *testing.T) {
 		type cfg struct{ Host string `yaml:"host"` }
-		_, err := Load[cfg](FromYAML("/nonexistent/path.yaml"))
+		_, err := confkit.Load[cfg](confkit.FromYAML("/nonexistent/path.yaml"))
 		if err == nil {
 			t.Fatal("expected error for missing required file")
 		}
@@ -53,7 +55,7 @@ func TestYAMLSource(t *testing.T) {
 		type cfg struct {
 			DB DB `yaml:"database"`
 		}
-		c, err := Load[cfg](FromYAML("testdata/config.yaml"))
+		c, err := confkit.Load[cfg](confkit.FromYAML("../testdata/config.yaml"))
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -69,7 +71,7 @@ func TestJSONSource(t *testing.T) {
 			Port int    `json:"port"`
 			Host string `json:"host"`
 		}
-		c, err := Load[cfg](FromJSON("testdata/config.json"))
+		c, err := confkit.Load[cfg](confkit.FromJSON("../testdata/config.json"))
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -83,7 +85,7 @@ func TestJSONSource(t *testing.T) {
 
 	t.Run("missing_file_error", func(t *testing.T) {
 		type cfg struct{ X string `json:"x"` }
-		_, err := Load[cfg](FromJSON("/nonexistent.json"))
+		_, err := confkit.Load[cfg](confkit.FromJSON("/nonexistent.json"))
 		if err == nil {
 			t.Fatal("expected error for missing JSON file")
 		}
@@ -97,7 +99,7 @@ func TestJSONSource(t *testing.T) {
 		tmpFile := writeTempJSON(t, `{"name":"test","val":42}`)
 		defer func() { _ = os.Remove(tmpFile) }()
 
-		c, err := Load[cfg](FromJSON(tmpFile))
+		c, err := confkit.Load[cfg](confkit.FromJSON(tmpFile))
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -113,7 +115,7 @@ func TestTOMLSource(t *testing.T) {
 			Port int    `toml:"port"`
 			Host string `toml:"host"`
 		}
-		c, err := Load[cfg](FromTOML("testdata/config.toml"))
+		c, err := confkit.Load[cfg](confkit.FromTOML("../testdata/config.toml"))
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -132,7 +134,7 @@ func TestTOMLSource(t *testing.T) {
 		tmpFile := writeTempTOML(t, "name = \"myapp\"\n")
 		defer func() { _ = os.Remove(tmpFile) }()
 
-		c, err := Load[cfg](FromTOML(tmpFile))
+		c, err := confkit.Load[cfg](confkit.FromTOML(tmpFile))
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -148,8 +150,8 @@ func TestOverlay(t *testing.T) {
 			Port int    `yaml:"port"`
 			Host string `yaml:"host"`
 		}
-		src := FromOverlay(FromYAML("testdata/config.yaml"), "nonexistent-env")
-		c, err := Load[cfg](src)
+		src := confkit.FromOverlay(confkit.FromYAML("../testdata/config.yaml"), "nonexistent-env")
+		c, err := confkit.Load[cfg](src)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -165,14 +167,14 @@ func TestOverlay(t *testing.T) {
 		base := writeTempYAML(t, "host: base-host\n")
 		defer func() { _ = os.Remove(base) }()
 
-		overlayPath := OverlayPath(base, "prod")
+		overlayPath := confkit.OverlayPath(base, "prod")
 		if err := os.WriteFile(overlayPath, []byte("host: prod-host\n"), 0644); err != nil {
 			t.Fatalf("failed to write overlay: %v", err)
 		}
 		defer func() { _ = os.Remove(overlayPath) }()
 
-		src := FromOverlay(FromYAML(base), "prod")
-		c, err := Load[cfg](src)
+		src := confkit.FromOverlay(confkit.FromYAML(base), "prod")
+		c, err := confkit.Load[cfg](src)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -182,18 +184,18 @@ func TestOverlay(t *testing.T) {
 	})
 
 	t.Run("overlay_path_format", func(t *testing.T) {
-		p := OverlayPath("config.yaml", "staging")
+		p := confkit.OverlayPath("config.yaml", "staging")
 		if p != "config.staging.yaml" {
 			t.Errorf("expected 'config.staging.yaml', got %q", p)
 		}
-		p = OverlayPath("/etc/app/config.toml", "prod")
+		p = confkit.OverlayPath("/etc/app/config.toml", "prod")
 		if !strings.HasSuffix(p, "config.prod.toml") {
 			t.Errorf("unexpected overlay path: %q", p)
 		}
 	})
 
 	t.Run("non_file_source_passthrough", func(t *testing.T) {
-		src := FromOverlay(FromEnv(), "prod")
+		src := confkit.FromOverlay(confkit.FromEnv(), "prod")
 		if src == nil {
 			t.Fatal("expected non-nil source")
 		}
@@ -207,7 +209,7 @@ func TestInterpolation(t *testing.T) {
 			Port             int    `yaml:"Port"`
 			ConnectionString string `yaml:"ConnectionString"`
 		}
-		c, err := Load[cfg](FromYAML("testdata/interpolation.yaml"))
+		c, err := confkit.Load[cfg](confkit.FromYAML("../testdata/interpolation.yaml"))
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}

@@ -1,9 +1,11 @@
-package confkit
+package confkit_test
 
 import (
 	"encoding/json"
 	"strings"
 	"testing"
+
+	confkit "github.com/MimoJanra/confkit"
 )
 
 func TestDump(t *testing.T) {
@@ -13,7 +15,7 @@ func TestDump(t *testing.T) {
 			Host string `json:"host"`
 		}
 		c := cfg{Port: 8080, Host: "localhost"}
-		data, err := Dump(c)
+		data, err := confkit.Dump(c)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -35,7 +37,7 @@ func TestDump(t *testing.T) {
 			Password string `json:"password" secret:"true"`
 		}
 		c := cfg{User: "admin", Password: "s3cr3t"}
-		data, err := Dump(c)
+		data, err := confkit.Dump(c)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -53,7 +55,7 @@ func TestDump(t *testing.T) {
 			Password string `json:"password" secret:"true"`
 		}
 		c := cfg{Password: "s3cr3t"}
-		data, err := Dump(c, WithDumpRedactSecrets(false))
+		data, err := confkit.Dump(c, confkit.WithDumpRedactSecrets(false))
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -70,7 +72,7 @@ func TestDump(t *testing.T) {
 			DB DB `json:"db"`
 		}
 		c := cfg{DB: DB{Host: "db.internal"}}
-		data, err := Dump(c)
+		data, err := confkit.Dump(c)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -84,7 +86,7 @@ func TestDump(t *testing.T) {
 			Tags []string `json:"tags"`
 		}
 		c := cfg{Tags: []string{"a", "b", "c"}}
-		data, err := Dump(c)
+		data, err := confkit.Dump(c)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -98,7 +100,7 @@ func TestDump(t *testing.T) {
 			Labels map[string]string `json:"labels"`
 		}
 		c := cfg{Labels: map[string]string{"env": "prod"}}
-		data, err := Dump(c)
+		data, err := confkit.Dump(c)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -115,7 +117,7 @@ func TestDumpYAML(t *testing.T) {
 			Host string `yaml:"host"`
 		}
 		c := cfg{Port: 9090, Host: "example.com"}
-		data, err := DumpYAML(c)
+		data, err := confkit.DumpYAML(c)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -132,7 +134,7 @@ func TestDumpYAML(t *testing.T) {
 		type cfg struct {
 			Token string `yaml:"token" secret:"true"`
 		}
-		data, err := DumpYAML(cfg{Token: "secret-token"})
+		data, err := confkit.DumpYAML(cfg{Token: "secret-token"})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -145,7 +147,7 @@ func TestDumpYAML(t *testing.T) {
 func TestDumpString(t *testing.T) {
 	t.Run("returns_string", func(t *testing.T) {
 		type cfg struct{ X int `json:"x"` }
-		s := DumpString(cfg{X: 42})
+		s := confkit.DumpString(cfg{X: 42})
 		if !strings.Contains(s, "42") {
 			t.Errorf("expected 42 in dump string: %s", s)
 		}

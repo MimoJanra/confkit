@@ -1,12 +1,29 @@
-package confkit
+package confkit_test
 
 import (
+	"fmt"
 	"os"
 	"reflect"
 	"strings"
 	"testing"
 	"time"
+
+	confkit "github.com/MimoJanra/confkit"
 )
+
+type errPortOutOfRange struct{ port int64 }
+
+func (e errPortOutOfRange) Error() string { return fmt.Sprintf("port %d out of range", e.port) }
+
+type errInvalidUser struct{ value string }
+
+func (e errInvalidUser) Error() string { return "invalid username: " + e.value }
+
+type errWeakPassword struct{ length int }
+
+func (e errWeakPassword) Error() string {
+	return fmt.Sprintf("password too weak: %d chars", e.length)
+}
 
 func TestLoadWithOptionsBasic(t *testing.T) {
 	t.Setenv("PORT", "3000")
@@ -14,10 +31,7 @@ func TestLoadWithOptionsBasic(t *testing.T) {
 	type Config struct {
 		Port int `env:"PORT"`
 	}
-
-	cfg, err := LoadWithOptions[Config](
-		WithSource(FromEnv()),
-	)
+	cfg, err := confkit.LoadWithOptions[Config](confkit.WithSource(confkit.FromEnv()))
 	if err != nil {
 		t.Fatalf("LoadWithOptions failed: %v", err)
 	}
@@ -27,10 +41,7 @@ func TestLoadWithOptionsBasic(t *testing.T) {
 }
 
 func TestLoadWithMultipleSources(t *testing.T) {
-	yamlContent := `
-Port: 8080
-Host: localhost
-`
+	yamlContent := "Port: 8080\nHost: localhost\n"
 	tmpFile := writeTempYAML(t, yamlContent)
 	defer func() { _ = os.Remove(tmpFile) }()
 
@@ -40,10 +51,9 @@ Host: localhost
 		Port int    `yaml:"Port" env:"PORT"`
 		Host string `yaml:"Host" env:"HOST"`
 	}
-
-	cfg, err := LoadWithOptions[Config](
-		WithSource(FromEnv()),
-		WithSource(FromYAML(tmpFile)),
+	cfg, err := confkit.LoadWithOptions[Config](
+		confkit.WithSource(confkit.FromEnv()),
+		confkit.WithSource(confkit.FromYAML(tmpFile)),
 	)
 	if err != nil {
 		t.Fatalf("LoadWithOptions failed: %v", err)
@@ -60,10 +70,7 @@ func TestLoadWithInterpolationMaxDepth(t *testing.T) {
 	type Config struct {
 		Value string `default:"${A|fallback}"`
 	}
-
-	cfg, err := LoadWithOptions[Config](
-		WithInterpolationMaxDepth(5),
-	)
+	cfg, err := confkit.LoadWithOptions[Config](confkit.WithInterpolationMaxDepth(5))
 	if err != nil {
 		t.Fatalf("LoadWithOptions failed: %v", err)
 	}
@@ -76,49 +83,23 @@ func TestLoadWithValidator(t *testing.T) {
 	type Config struct {
 		Port int `env:"PORT" validate:"custom_range"`
 	}
-
 	customValidator := func(v reflect.Value) error {
 		if v.Kind() != reflect.Int {
 			return nil
 		}
-		portVal := v.Int()
-		if portVal < 1 || portVal > 65535 {
-			return ErrorPortOutOfRange{portVal}
+		if portVal := v.Int(); portVal < 1 || portVal > 65535 {
+			return errPortOutOfRange{portVal}
 		}
 		return nil
 	}
-
 	t.Setenv("PORT", "99999")
-
-	_, err := LoadWithOptions[Config](
-		WithSource(FromEnv()),
-		WithValidator("custom_range", customValidator),
+	_, err := confkit.LoadWithOptions[Config](
+		confkit.WithSource(confkit.FromEnv()),
+		confkit.WithValidator("custom_range", customValidator),
 	)
 	if err == nil {
 		t.Fatal("Expected validation error for port out of range")
 	}
-}
-
-type ErrorPortOutOfRange struct {
-	port int64
-}
-
-func (e ErrorPortOutOfRange) Error() string {
-	return "port out of range"
-}
-
-func writeTempYAML(t *testing.T, content string) string {
-	f, err := os.CreateTemp("", "test-*.yaml")
-	if err != nil {
-		t.Fatalf("Failed to create temp file: %v", err)
-	}
-	defer func() { _ = f.Close() }()
-
-	if _, err := f.WriteString(content); err != nil {
-		t.Fatalf("Failed to write temp file: %v", err)
-	}
-
-	return f.Name()
 }
 
 func TestLoadWithMiddleware(t *testing.T) {
@@ -127,14 +108,12 @@ func TestLoadWithMiddleware(t *testing.T) {
 	type Config struct {
 		Name string `env:"NAME"`
 	}
-
-	trimMiddleware := func(field FieldInfo, value string) (string, error) {
+	trimMiddleware := func(field confkit.FieldInfo, value string) (string, error) {
 		return strings.TrimSpace(value), nil
 	}
-
-	cfg, err := LoadWithOptions[Config](
-		WithSource(FromEnv()),
-		WithMiddleware(trimMiddleware),
+	cfg, err := confkit.LoadWithOptions[Config](
+		confkit.WithSource(confkit.FromEnv()),
+		confkit.WithMiddleware(trimMiddleware),
 	)
 	if err != nil {
 		t.Fatalf("LoadWithOptions failed: %v", err)
@@ -144,46 +123,16 @@ func TestLoadWithMiddleware(t *testing.T) {
 	}
 }
 
-func writeTempJSON(t *testing.T, content string) string {
-	f, err := os.CreateTemp("", "test-*.json")
-	if err != nil {
-		t.Fatalf("Failed to create temp file: %v", err)
-	}
-	defer func() { _ = f.Close() }()
-
-	if _, err := f.WriteString(content); err != nil {
-		t.Fatalf("Failed to write temp file: %v", err)
-	}
-
-	return f.Name()
-}
-
-func writeTempTOML(t *testing.T, content string) string {
-	f, err := os.CreateTemp("", "test-*.toml")
-	if err != nil {
-		t.Fatalf("Failed to create temp file: %v", err)
-	}
-	defer func() { _ = f.Close() }()
-
-	if _, err := f.WriteString(content); err != nil {
-		t.Fatalf("Failed to write temp file: %v", err)
-	}
-
-	return f.Name()
-}
-
 func TestWithLoadHook(t *testing.T) {
 	type Config struct {
 		Port int `env:"HOOK_PORT" default:"8080"`
 	}
-
-	hookCalled := false
-	hookSuccess := false
+	hookCalled, hookSuccess := false, false
 	var hookDuration time.Duration
 
-	cfg, err := LoadWithOptions[Config](
-		WithSource(FromEnv()),
-		WithLoadHook(func(success bool, duration time.Duration, errCount int) {
+	cfg, err := confkit.LoadWithOptions[Config](
+		confkit.WithSource(confkit.FromEnv()),
+		confkit.WithLoadHook(func(success bool, duration time.Duration, errCount int) {
 			hookCalled = true
 			hookSuccess = success
 			hookDuration = duration
@@ -192,7 +141,6 @@ func TestWithLoadHook(t *testing.T) {
 	if err != nil {
 		t.Fatalf("LoadWithOptions failed: %v", err)
 	}
-
 	if !hookCalled {
 		t.Error("Expected load hook to be called")
 	}
@@ -211,26 +159,21 @@ func TestWithLoadHookOnError(t *testing.T) {
 	type Config struct {
 		Port int `env:"HOOK_ERROR_PORT" validate:"min=1"`
 	}
-
-	hookCalled := false
-	hookSuccess := false
+	hookCalled, hookSuccess := false, false
 	hookErrCount := 0
-
 	t.Setenv("HOOK_ERROR_PORT", "invalid")
 
-	_, err := LoadWithOptions[Config](
-		WithSource(FromEnv()),
-		WithLoadHook(func(success bool, duration time.Duration, errCount int) {
+	_, err := confkit.LoadWithOptions[Config](
+		confkit.WithSource(confkit.FromEnv()),
+		confkit.WithLoadHook(func(success bool, duration time.Duration, errCount int) {
 			hookCalled = true
 			hookSuccess = success
 			hookErrCount = errCount
 		}),
 	)
-
 	if err == nil {
 		t.Fatal("Expected error from invalid port")
 	}
-
 	if !hookCalled {
 		t.Error("Expected load hook to be called even on error")
 	}
@@ -247,18 +190,17 @@ func TestWithModelValidatorSuccess(t *testing.T) {
 		Username string `env:"MODEL_USER"`
 		Password string `env:"MODEL_PASS"`
 	}
-
 	t.Setenv("MODEL_USER", "alice")
 	t.Setenv("MODEL_PASS", "secret123")
 
-	cfg, err := LoadWithOptions[Config](
-		WithSource(FromEnv()),
-		WithModelValidator[Config](func(c *Config) error {
+	cfg, err := confkit.LoadWithOptions[Config](
+		confkit.WithSource(confkit.FromEnv()),
+		confkit.WithModelValidator(func(c *Config) error {
 			if c.Username == "" {
-				return ErrorInvalidUser{"empty"}
+				return errInvalidUser{"empty"}
 			}
 			if len(c.Password) < 8 {
-				return ErrorWeakPassword{len(c.Password)}
+				return errWeakPassword{len(c.Password)}
 			}
 			return nil
 		}),
@@ -276,37 +218,19 @@ func TestWithModelValidatorFails(t *testing.T) {
 		Username string `env:"MODEL_USER2"`
 		Password string `env:"MODEL_PASS2"`
 	}
-
 	t.Setenv("MODEL_USER2", "bob")
 	t.Setenv("MODEL_PASS2", "weak")
 
-	_, err := LoadWithOptions[Config](
-		WithSource(FromEnv()),
-		WithModelValidator[Config](func(c *Config) error {
+	_, err := confkit.LoadWithOptions[Config](
+		confkit.WithSource(confkit.FromEnv()),
+		confkit.WithModelValidator(func(c *Config) error {
 			if len(c.Password) < 8 {
-				return ErrorWeakPassword{len(c.Password)}
+				return errWeakPassword{len(c.Password)}
 			}
 			return nil
 		}),
 	)
-
 	if err == nil {
 		t.Fatal("Expected validation error for weak password")
 	}
-}
-
-type ErrorInvalidUser struct {
-	value string
-}
-
-func (e ErrorInvalidUser) Error() string {
-	return "invalid username: " + e.value
-}
-
-type ErrorWeakPassword struct {
-	length int
-}
-
-func (e ErrorWeakPassword) Error() string {
-	return "password too weak: " + string(rune(e.length)) + " chars"
 }

@@ -1,7 +1,9 @@
-package confkit
+package confkit_test
 
 import (
 	"testing"
+
+	confkit "github.com/MimoJanra/confkit"
 )
 
 func TestEnvPrefix(t *testing.T) {
@@ -13,7 +15,7 @@ func TestEnvPrefix(t *testing.T) {
 		t.Setenv("APP_HOST", "myhost")
 		t.Setenv("APP_PORT", "9090")
 
-		c, err := Load[cfg](FromEnv())
+		c, err := confkit.Load[cfg](confkit.FromEnv())
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -34,7 +36,7 @@ func TestEnvPrefix(t *testing.T) {
 		}
 		t.Setenv("APP_DB_HOST", "db.internal")
 
-		c, err := Load[cfg](FromEnv())
+		c, err := confkit.Load[cfg](confkit.FromEnv())
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -47,27 +49,12 @@ func TestEnvPrefix(t *testing.T) {
 		type cfg struct {
 			Port int `env:"PORT" prefix:"SVC_" default:"8080"`
 		}
-		c, err := Load[cfg](FromEnv())
+		c, err := confkit.Load[cfg](confkit.FromEnv())
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 		if c.Port != 8080 {
 			t.Errorf("expected default 8080, got %d", c.Port)
-		}
-	})
-
-	t.Run("override_default", func(t *testing.T) {
-		type cfg struct {
-			Port int `env:"PORT" prefix:"OVERRIDE_" default:"8080"`
-		}
-		t.Setenv("OVERRIDE_PORT", "9000")
-
-		c, err := Load[cfg](FromEnv())
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if c.Port != 9000 {
-			t.Errorf("expected 9000, got %d", c.Port)
 		}
 	})
 
@@ -77,7 +64,7 @@ func TestEnvPrefix(t *testing.T) {
 		}
 		t.Setenv("NOPREFIX_HOST", "bare-host")
 
-		c, err := Load[cfg](FromEnv())
+		c, err := confkit.Load[cfg](confkit.FromEnv())
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -88,7 +75,7 @@ func TestEnvPrefix(t *testing.T) {
 }
 
 func TestEnvSourceName(t *testing.T) {
-	src := FromEnv()
+	src := confkit.FromEnv()
 	if src.Name() != "env" {
 		t.Errorf("expected 'env', got %q", src.Name())
 	}

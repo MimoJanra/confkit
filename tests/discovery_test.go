@@ -1,4 +1,4 @@
-package confkit
+package confkit_test
 
 import (
 	"errors"
@@ -7,10 +7,12 @@ import (
 	"slices"
 	"strings"
 	"testing"
+
+	confkit "github.com/MimoJanra/confkit"
 )
 
 func TestDefaultSearchDirs(t *testing.T) {
-	dirs := DefaultSearchDirs("myapp")
+	dirs := confkit.DefaultSearchDirs("myapp")
 	if len(dirs) < 3 {
 		t.Errorf("expected at least 3 dirs, got %d", len(dirs))
 	}
@@ -21,7 +23,7 @@ func TestDefaultSearchDirs(t *testing.T) {
 
 func TestFindFile(t *testing.T) {
 	t.Run("finds_by_exact_path", func(t *testing.T) {
-		p, ok := FindFile("config.yaml", "testdata/")
+		p, ok := confkit.FindFile("config.yaml", "../testdata/")
 		if !ok {
 			t.Fatal("expected to find config.yaml in testdata/")
 		}
@@ -31,7 +33,7 @@ func TestFindFile(t *testing.T) {
 	})
 
 	t.Run("finds_by_extension_probe", func(t *testing.T) {
-		p, ok := FindFile("config", "testdata/")
+		p, ok := confkit.FindFile("config", "../testdata/")
 		if !ok {
 			t.Fatal("expected to find config without extension in testdata/")
 		}
@@ -42,7 +44,7 @@ func TestFindFile(t *testing.T) {
 	})
 
 	t.Run("not_found", func(t *testing.T) {
-		_, ok := FindFile("nonexistent", "/tmp/definitely-does-not-exist-9999/")
+		_, ok := confkit.FindFile("nonexistent", "/tmp/definitely-does-not-exist-9999/")
 		if ok {
 			t.Error("expected not found")
 		}
@@ -53,7 +55,7 @@ func TestFindFile(t *testing.T) {
 		f := filepath.Join(tmp, "app.yaml")
 		_ = os.WriteFile(f, []byte("x: 1"), 0644)
 
-		p, ok := FindFile("app.yaml", "/nonexistent/", tmp)
+		p, ok := confkit.FindFile("app.yaml", "/nonexistent/", tmp)
 		if !ok {
 			t.Fatal("expected to find file in second dir")
 		}
@@ -65,7 +67,7 @@ func TestFindFile(t *testing.T) {
 
 func TestFindSource(t *testing.T) {
 	t.Run("returns_yaml_source", func(t *testing.T) {
-		src := FindSource("config.yaml", "testdata/")
+		src := confkit.FindSource("config.yaml", "../testdata/")
 		if src == nil {
 			t.Fatal("expected non-nil source")
 		}
@@ -76,18 +78,18 @@ func TestFindSource(t *testing.T) {
 
 	t.Run("not_found_returns_error_source", func(t *testing.T) {
 		type cfg struct{ X string `yaml:"x"` }
-		src := FindSource("nonexistent", "/tmp/definitely-not-there-9999/")
-		_, err := Load[cfg](src)
+		src := confkit.FindSource("nonexistent", "/tmp/definitely-not-there-9999/")
+		_, err := confkit.Load[cfg](src)
 		if err == nil {
 			t.Fatal("expected error from not-found source")
 		}
-		if !errors.Is(err, ErrNotFound) {
+		if !errors.Is(err, confkit.ErrNotFound) {
 			t.Errorf("expected ErrNotFound, got: %v", err)
 		}
 	})
 
 	t.Run("returns_json_source", func(t *testing.T) {
-		src := FindSource("config.json", "testdata/")
+		src := confkit.FindSource("config.json", "../testdata/")
 		if src == nil {
 			t.Fatal("expected non-nil source")
 		}
@@ -97,7 +99,7 @@ func TestFindSource(t *testing.T) {
 	})
 
 	t.Run("returns_toml_source", func(t *testing.T) {
-		src := FindSource("config.toml", "testdata/")
+		src := confkit.FindSource("config.toml", "../testdata/")
 		if src == nil {
 			t.Fatal("expected non-nil source")
 		}
@@ -119,7 +121,7 @@ func TestOverlayPath(t *testing.T) {
 		{"/etc/app/config.yaml", "prod", "/etc/app/config.prod.yaml"},
 	}
 	for _, tc := range cases {
-		got := OverlayPath(tc.base, tc.env)
+		got := confkit.OverlayPath(tc.base, tc.env)
 		if got != tc.want {
 			t.Errorf("OverlayPath(%q, %q) = %q, want %q", tc.base, tc.env, got, tc.want)
 		}

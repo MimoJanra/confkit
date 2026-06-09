@@ -1,34 +1,34 @@
-package confkit
+package confkit_test
 
 import (
 	"context"
 	"testing"
+
+	confkit "github.com/MimoJanra/confkit"
 )
 
-type MemorySource struct {
+type memorySource struct {
 	data map[string]string
 }
 
-func (m *MemorySource) Name() string {
-	return "memory"
-}
+func (m *memorySource) Name() string { return "memory" }
 
-func (m *MemorySource) Lookup(_ context.Context, field *FieldInfo) (any, bool, error) {
+func (m *memorySource) Lookup(_ context.Context, field *confkit.FieldInfo) (any, bool, error) {
 	v, ok := m.data[field.Name]
 	return v, ok, nil
 }
 
 func TestRegisterSource(t *testing.T) {
-	defer UnregisterSource("test_memory")
+	defer confkit.UnregisterSource("test_memory")
 
-	err := RegisterSource("test_memory", func() Source {
-		return &MemorySource{data: make(map[string]string)}
+	err := confkit.RegisterSource("test_memory", func() confkit.Source {
+		return &memorySource{data: make(map[string]string)}
 	})
 	if err != nil {
 		t.Fatalf("Failed to register source: %v", err)
 	}
 
-	src, err := NewSource("test_memory")
+	src, err := confkit.NewSource("test_memory")
 	if err != nil {
 		t.Fatalf("Failed to get source: %v", err)
 	}
@@ -41,14 +41,13 @@ func TestRegisterSource(t *testing.T) {
 }
 
 func TestRegisterSourceDuplicate(t *testing.T) {
-	defer UnregisterSource("dup_test")
+	defer confkit.UnregisterSource("dup_test")
 
-	_ = RegisterSource("dup_test", func() Source {
-		return &MemorySource{data: make(map[string]string)}
+	_ = confkit.RegisterSource("dup_test", func() confkit.Source {
+		return &memorySource{data: make(map[string]string)}
 	})
-
-	err := RegisterSource("dup_test", func() Source {
-		return &MemorySource{data: make(map[string]string)}
+	err := confkit.RegisterSource("dup_test", func() confkit.Source {
+		return &memorySource{data: make(map[string]string)}
 	})
 	if err == nil {
 		t.Fatal("Expected error for duplicate registration")
@@ -56,35 +55,31 @@ func TestRegisterSourceDuplicate(t *testing.T) {
 }
 
 func TestNewSourceNotFound(t *testing.T) {
-	_, err := NewSource("nonexistent_source")
+	_, err := confkit.NewSource("nonexistent_source")
 	if err == nil {
 		t.Fatal("Expected error for nonexistent source")
 	}
 }
 
 func TestLoadWithCustomSource(t *testing.T) {
-	defer UnregisterSource("test_custom")
+	defer confkit.UnregisterSource("test_custom")
 
-	_ = RegisterSource("test_custom", func() Source {
-		return &MemorySource{
-			data: map[string]string{
-				"Port": "9000",
-				"Host": "custom.local",
-			},
-		}
+	_ = confkit.RegisterSource("test_custom", func() confkit.Source {
+		return &memorySource{data: map[string]string{
+			"Port": "9000",
+			"Host": "custom.local",
+		}}
 	})
 
 	type Config struct {
 		Port int    `custom:"Port"`
 		Host string `custom:"Host"`
 	}
-
-	src, err := NewSource("test_custom")
+	src, err := confkit.NewSource("test_custom")
 	if err != nil {
 		t.Fatalf("Failed to create source: %v", err)
 	}
-
-	cfg, err := Load[Config](src)
+	cfg, err := confkit.Load[Config](src)
 	if err != nil {
 		t.Fatalf("Load failed: %v", err)
 	}
@@ -97,8 +92,8 @@ func TestLoadWithCustomSource(t *testing.T) {
 }
 
 func TestRegisterSourceInvalidName(t *testing.T) {
-	err := RegisterSource("", func() Source {
-		return &MemorySource{data: make(map[string]string)}
+	err := confkit.RegisterSource("", func() confkit.Source {
+		return &memorySource{data: make(map[string]string)}
 	})
 	if err == nil {
 		t.Fatal("Expected error for empty source name")
@@ -106,7 +101,7 @@ func TestRegisterSourceInvalidName(t *testing.T) {
 }
 
 func TestRegisterSourceNilFactory(t *testing.T) {
-	err := RegisterSource("nil_test", nil)
+	err := confkit.RegisterSource("nil_test", nil)
 	if err == nil {
 		t.Fatal("Expected error for nil factory")
 	}
