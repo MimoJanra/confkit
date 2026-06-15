@@ -1,10 +1,10 @@
 module github.com/MimoJanra/confkit/consul
 
-go 1.25.11
+go 1.26
 
 require (
 	github.com/MimoJanra/confkit v1.0.1
-	github.com/hashicorp/consul/api v1.34.1
+	github.com/hashicorp/consul/api v1.34.3
 )
 
 require (

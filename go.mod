@@ -1,6 +1,6 @@
 module github.com/MimoJanra/confkit
 
-go 1.25.11
+go 1.26
 
 require (
 	github.com/MimoJanra/confkit/aws v1.0.0
