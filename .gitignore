@@ -31,7 +31,6 @@ Thumbs.db
 .env.local
 .claude/
 CLAUDE.md
-claude.md
 Docss/
 data.md
 main.go
