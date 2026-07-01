@@ -94,8 +94,10 @@ without assembling multiple libraries by hand.
 | Secret redaction     |    ✅     |    ❌    |     ❌     |    ❌    |
 | Multi-source merging |    ✅     |    ✅    |    ⚠️     |    ✅    |
 | Lightweight core     |    ✅     |    ❌    |     ✅     |    ✅    |
-| Cloud integrations   | optional | bundled |    N/A    | optional |
+| Cloud integrations   | optional | optional¹ |   N/A    | optional |
 | Runtime reloading    |    ✅     |    ✅    |     ❌     |   ⚠️    |
+
+¹ Viper remote requires `import _ "github.com/spf13/viper/remote"` and covers only etcd/Consul/Firebase. confkit cloud modules cover Vault, AWS SSM/Secrets Manager, Consul, etcd, and Kubernetes — each as a separate `go get`.
 
 **confkit shines when:**
 

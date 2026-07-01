@@ -11,7 +11,6 @@
 
 # Go
 vendor/
-go.sum
 
 # IDE
 .idea/
@@ -23,6 +22,9 @@ go.sum
 # OS
 .DS_Store
 Thumbs.db
+
+# Serena MCP
+.serena/
 
 # Local files
 .env
@@ -37,3 +39,13 @@ main.go
 # Generated files
 coverage.txt
 coverage.out
+*.prof
+cpu.out
+mem.out
+block.out
+trace.out
+
+# Build output
+dist/
+bin/
+*.log
