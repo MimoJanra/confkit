@@ -389,6 +389,9 @@ func (v *Validator) validateBuiltin(fieldVal reflect.Value, field FieldInfo, rul
 
 	case "port":
 		return numCheck(fieldVal, field, rule.Name, func(n int64) (bool, string) {
+			if field.IsSecret {
+				return n >= 1 && n <= 65535, "must be a valid port (1-65535)"
+			}
 			return n >= 1 && n <= 65535, fmt.Sprintf("must be a valid port (1-65535), got %d", n)
 		}), true
 
@@ -410,6 +413,9 @@ func (v *Validator) validateBuiltin(fieldVal reflect.Value, field FieldInfo, rul
 			return FieldError{}, true
 		}
 		return strCheck(fieldVal, field, rule.Name, func(s string) (bool, string) {
+			if field.IsSecret {
+				return len([]rune(s)) == n, fmt.Sprintf("must be exactly %d characters", n)
+			}
 			return len([]rune(s)) == n, fmt.Sprintf("must be exactly %d characters, got %d", n, len([]rune(s)))
 		}), true
 

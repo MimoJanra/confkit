@@ -73,12 +73,12 @@ import "github.com/MimoJanra/confkit/aws"
 
 ## Minimum Go Version
 
-confkit requires **Go 1.25.0 or later**.
+confkit requires **Go 1.26.5 or later**.
 
-**Why Go 1.25.0?**
+**Why Go 1.26.5?**
 - Generics for type-safe `Load[T]` API
-- Improved `range` statement (iterate over integers and slices with range-only syntax)
-- Enhanced iteration semantics
+- `github.com/hashicorp/consul/api` (used by the `consul` module) requires Go 1.26 or later
+- The `1.26.5` patch level fixes GO-2026-5856 in `crypto/tls`, which the TLS-based sources (Vault, Consul, etcd, AWS) reach
 
 Check your Go version:
 
@@ -89,8 +89,8 @@ go version
 If you have an older version, update it:
 
 ```bash
-go install golang.org/dl/go1.25@latest
-go1.25 download
+go install golang.org/dl/go1.26.5@latest
+go1.26.5 download
 ```
 
 ## Dependencies

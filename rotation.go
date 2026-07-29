@@ -23,6 +23,7 @@ type RotationEngine struct {
 	stopChan      chan struct{}
 	mu            sync.RWMutex
 	isRotating    atomic.Bool
+	startOnce     sync.Once
 	stopOnce      sync.Once
 }
 
@@ -41,9 +42,13 @@ func (r *RotationEngine) AddCallback(cb RotationCallback) {
 	r.callbacks = append(r.callbacks, cb)
 }
 
+// Start begins the rotation loop. Subsequent calls are no-ops.
+// The loop stops when Stop is called or when ctx is cancelled.
 func (r *RotationEngine) Start(ctx context.Context, interval time.Duration) {
-	r.ticker = time.NewTicker(interval)
-	go r.run(ctx)
+	r.startOnce.Do(func() {
+		r.ticker = time.NewTicker(interval)
+		go r.run(ctx)
+	})
 }
 
 func (r *RotationEngine) Stop() {
@@ -56,9 +61,16 @@ func (r *RotationEngine) Stop() {
 }
 
 func (r *RotationEngine) run(ctx context.Context) {
+	// Also stop the ticker when the loop exits via ctx cancellation, where
+	// Stop() may never be called. Stopping a ticker twice is safe.
+	defer r.ticker.Stop()
+
 	for {
 		select {
 		case <-r.stopChan:
+			r.isRotating.Store(false)
+			return
+		case <-ctx.Done():
 			r.isRotating.Store(false)
 			return
 		case <-r.ticker.C:

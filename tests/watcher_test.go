@@ -216,3 +216,75 @@ func TestAddDeltaListener(t *testing.T) {
 		t.Error("expected delta with changed or added keys")
 	}
 }
+
+func TestConfigWatcherStopWithoutStart(t *testing.T) {
+	tmpFile := writeTempYAML(t, "Port: 8080")
+	defer func() { _ = os.Remove(tmpFile) }()
+
+	watcher, err := confkit.NewConfigWatcher(tmpFile)
+	if err != nil {
+		t.Fatalf("NewConfigWatcher failed: %v", err)
+	}
+
+	done := make(chan struct{})
+	go func() {
+		watcher.Stop()
+		close(done)
+	}()
+
+	select {
+	case <-done:
+	case <-time.After(2 * time.Second):
+		t.Fatal("Stop() on a never-started watcher must not block")
+	}
+}
+
+func TestConfigWatcherDoubleStop(t *testing.T) {
+	tmpFile := writeTempYAML(t, "Port: 8080")
+	defer func() { _ = os.Remove(tmpFile) }()
+
+	watcher, err := confkit.NewConfigWatcher(tmpFile)
+	if err != nil {
+		t.Fatalf("NewConfigWatcher failed: %v", err)
+	}
+	watcher.Start()
+
+	done := make(chan struct{})
+	go func() {
+		watcher.Stop()
+		watcher.Stop()
+		close(done)
+	}()
+
+	select {
+	case <-done:
+	case <-time.After(2 * time.Second):
+		t.Fatal("repeated Stop() must not block")
+	}
+}
+
+func TestLoadWithWatcherStopWithoutStart(t *testing.T) {
+	type Cfg struct {
+		Port int `env:"PORT" default:"8080"`
+	}
+
+	tmpFile := writeTempYAML(t, "Port: 8080")
+	defer func() { _ = os.Remove(tmpFile) }()
+
+	_, watcher, err := confkit.LoadWithWatcher[Cfg](tmpFile, confkit.FromEnv())
+	if err != nil {
+		t.Fatalf("LoadWithWatcher failed: %v", err)
+	}
+
+	done := make(chan struct{})
+	go func() {
+		watcher.Stop()
+		close(done)
+	}()
+
+	select {
+	case <-done:
+	case <-time.After(2 * time.Second):
+		t.Fatal("LoadWithWatcher returns an unstarted watcher, so Stop() must not block")
+	}
+}

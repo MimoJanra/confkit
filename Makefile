@@ -44,7 +44,7 @@ fmt:
 security-install:
 	@echo "Installing security tools..."
 	go install github.com/securego/gosec/v2/cmd/gosec@latest
-	go install github.com/golang/vuln/cmd/govulncheck@latest
+	go install golang.org/x/vuln/cmd/govulncheck@latest
 
 security: vet
 	@echo "Running security checks..."

@@ -1,6 +1,6 @@
 # confkit
 
-[![Go Version](https://img.shields.io/badge/go-1.25%2B-blue)](https://golang.org/doc/devel/release)
+[![Go Version](https://img.shields.io/badge/go-1.26%2B-blue)](https://golang.org/doc/devel/release)
 [![Go Reference](https://pkg.go.dev/badge/github.com/MimoJanra/confkit.svg)](https://pkg.go.dev/github.com/MimoJanra/confkit)
 [![Tests](https://github.com/MimoJanra/confkit/actions/workflows/test.yml/badge.svg)](https://github.com/MimoJanra/confkit/actions/workflows/test.yml)
 [![codecov](https://codecov.io/gh/MimoJanra/confkit/branch/main/graph/badge.svg)](https://codecov.io/gh/MimoJanra/confkit)
@@ -77,7 +77,7 @@ if err != nil {
 }
 ```
 
-**Go 1.25.0+ · zero mandatory dependencies beyond yaml.v3 and go-toml/v2 · MIT**
+**Go 1.26.5+ · zero mandatory dependencies beyond yaml.v3 and go-toml/v2 · MIT**
 
 ---
 

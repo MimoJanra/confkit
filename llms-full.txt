@@ -25,7 +25,7 @@ confkit is a **production-ready typed configuration loader for Go services**. It
 - **v1.0.0** — API freeze, DevOps toolkit, production release (2026-05-10)
 - **v0.1–v0.10:** All complete, production-tested
 - **v1.1+:** Planned — config composition, advanced validation, additional cloud integrations
-- **Go version required:** 1.25.0+
+- **Go version required:** 1.26.5+
 - **License:** MIT
 
 ### 1.3 Getting Started with Examples
@@ -1202,7 +1202,7 @@ go get github.com/MimoJanra/confkit@latest
 **Dependencies:**
 - `gopkg.in/yaml.v3` — YAML parsing
 - `github.com/pelletier/go-toml/v2` — TOML parsing
-- Go 1.25.0+ (for generics)
+- Go 1.26.5+ (for generics)
 
 Binary size impact: ~15KB core library
 

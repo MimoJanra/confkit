@@ -1,0 +1,27 @@
+codecov:
+  require_ci_to_pass: true
+
+coverage:
+  precision: 2
+  round: down
+  range: "75...95"
+  status:
+    project:
+      default:
+        target: 75%
+        threshold: 1%
+    patch:
+      default:
+        target: 75%
+        threshold: 5%
+
+comment:
+  layout: "header, reach, diff, flags, files, sunburst, footer"
+  behavior: default
+  require_changes: false
+
+ignore:
+  - "examples"
+  - "tests"
+  - "docs"
+  - "**/doc.go"

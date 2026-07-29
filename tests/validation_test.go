@@ -287,3 +287,35 @@ func TestValidation(t *testing.T) {
 		}
 	})
 }
+
+func TestSecretValueNotLeakedInValidationMessage(t *testing.T) {
+	t.Run("port", func(t *testing.T) {
+		type Cfg struct {
+			Token int `env:"TEST_SECRET_PORT" secret:"true" validate:"port"`
+		}
+		t.Setenv("TEST_SECRET_PORT", "99999")
+
+		_, err := confkit.Load[Cfg](confkit.FromEnv())
+		if err == nil {
+			t.Fatal("expected a port validation error")
+		}
+		if out := confkit.Explain(err); strings.Contains(out, "99999") {
+			t.Fatalf("secret value leaked into error message:\n%s", out)
+		}
+	})
+
+	t.Run("len", func(t *testing.T) {
+		type Cfg struct {
+			Token string `env:"TEST_SECRET_LEN" secret:"true" validate:"len=5"`
+		}
+		t.Setenv("TEST_SECRET_LEN", "abcdefghij")
+
+		_, err := confkit.Load[Cfg](confkit.FromEnv())
+		if err == nil {
+			t.Fatal("expected a len validation error")
+		}
+		if out := confkit.Explain(err); strings.Contains(out, "got 10") {
+			t.Fatalf("secret length leaked into error message:\n%s", out)
+		}
+	})
+}

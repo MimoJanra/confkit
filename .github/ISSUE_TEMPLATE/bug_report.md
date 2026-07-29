@@ -38,7 +38,7 @@ Invalid configuration:
 
 ## Environment
 
-- Go version: (e.g., 1.25)
+- Go version: (e.g., 1.26)
 - confkit version: (e.g., v0.5.0)
 - Sources used: (e.g., FromEnv, FromYAML, FromVault)
 - OS: (Linux, macOS, Windows)

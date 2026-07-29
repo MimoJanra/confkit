@@ -5,6 +5,37 @@ All notable changes to confkit are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Security
+
+- **GO-2026-5856 fixed** — `crypto/tls` vulnerability patched by raising the minimum Go version to 1.26.5. `govulncheck` now reports no called vulnerabilities.
+- **Secret values no longer leak into validation messages** — the `port` validator embedded the raw value in its message (`must be a valid port (1-65535), got 99999`), which bypassed redaction because only `FieldError.Value` was redacted, not `Message`. The `len` validator similarly disclosed the secret's length. Both now omit the observed value for fields tagged `secret:"true"`.
+
+### Fixed
+
+- **`ConfigWatcher.Stop()` deadlocked when `Start()` was never called** — `Stop()` waited on a channel that only the watch goroutine closes, so it blocked forever. This was reachable through the public `LoadWithWatcher`, which returns an unstarted watcher: the idiomatic `defer watcher.Stop()` hung the caller. `Stop()` is now safe on an unstarted watcher and safe to call repeatedly.
+- **`RotationEngine` ignored context cancellation** — `Start(ctx, interval)` accepted a context but the loop never selected on `ctx.Done()`, so cancelling it left the engine polling indefinitely. The loop now exits on cancellation and stops its ticker.
+- **`RotationEngine.Start()` was not safe to call twice** — a second call overwrote the `ticker` field while the running goroutine was reading it (a data race) and leaked the previous ticker and goroutine. `Start()` is now idempotent.
+- **`make security-install` used a nonexistent module path** — `github.com/golang/vuln/cmd/govulncheck` corrected to `golang.org/x/vuln/cmd/govulncheck`.
+
+### Changed
+
+- **Minimum Go raised to 1.26.5** (from 1.25.11) — required both by the `crypto/tls` fix above and by `github.com/hashicorp/consul/api` v1.34.3, which needs Go 1.26 or later. All `go.mod` files, `go.work`, CI workflows, and docs updated.
+- **CI test matrix** — reduced to a single Go version (`1.26.5`); the previous `1.25.11` entry is no longer buildable.
+- **GitHub Actions** — `actions/checkout` bumped to v7 and `actions/setup-go` to v7 across all workflows.
+- **Codecov** — added `codecov.yml` with project/patch targets at 75%, coverage exclusions, and a PR comment layout that includes the sunburst graph.
+
+### Dependencies
+
+- **`github.com/hashicorp/consul/api`**: bumped 1.34.1 → 1.34.3 in `consul`.
+- **`google.golang.org/grpc`**: bumped 1.81.1 → 1.82.1 in `etcd`.
+- **`go.uber.org/zap`**: bumped 1.27.0 → 1.28.0 in `etcd`.
+- **`golang.org/x/net`**: bumped 0.54.0 → 0.56.0 across root, `etcd`, and `vault` modules.
+- **`github.com/prometheus/procfs`**: bumped 0.16.1 → 0.20.1 in `prometheus`.
+- **`github.com/aws/aws-sdk-go-v2/service/signin`**: bumped 1.1.5 → 1.2.0 in root and `aws` modules.
+- **`golang.org/x/sys`** (0.44.0 → 0.46.0) and **`google.golang.org/genproto/googleapis/{api,rpc}`** bumped transitively in `etcd`.
+
 ## [1.0.2] - 2026-06-09
 
 ### Security

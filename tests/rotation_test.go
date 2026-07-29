@@ -269,3 +269,28 @@ func TestEventRotationStrategy_ShouldRotateOnEvent(t *testing.T) {
 		t.Error("Expected ShouldRotate to be true when event is available")
 	}
 }
+
+type countingRotationStrategy struct{ calls atomic.Int64 }
+
+func (c *countingRotationStrategy) ShouldRotate(_ context.Context, _ time.Time) (bool, error) {
+	c.calls.Add(1)
+	return false, nil
+}
+
+func TestRotationEngineStopsOnContextCancel(t *testing.T) {
+	strategy := &countingRotationStrategy{}
+	engine := confkit.NewRotationEngine(strategy)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer engine.Stop()
+
+	engine.Start(ctx, 10*time.Millisecond)
+	time.Sleep(100 * time.Millisecond)
+	cancel()
+
+	afterCancel := strategy.calls.Load()
+	time.Sleep(200 * time.Millisecond)
+
+	if grew := strategy.calls.Load() - afterCancel; grew > 0 {
+		t.Fatalf("engine kept polling %d times after context cancellation", grew)
+	}
+}

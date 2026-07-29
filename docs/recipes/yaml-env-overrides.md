@@ -132,7 +132,7 @@ go run main.go
 In a Dockerfile:
 
 ```dockerfile
-FROM golang:1.25 AS builder
+FROM golang:1.26 AS builder
 WORKDIR /app
 COPY . .
 RUN go build -o app main.go

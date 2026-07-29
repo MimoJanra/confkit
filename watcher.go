@@ -41,6 +41,7 @@ type ConfigWatcher struct {
 	mu                 sync.RWMutex
 	ticker             *time.Ticker
 	startOnce          sync.Once
+	started            atomic.Bool
 	once               sync.Once
 }
 
@@ -82,14 +83,22 @@ func (cw *ConfigWatcher) AddDeltaListener(listener ConfigChangeListenerWithDelta
 
 func (cw *ConfigWatcher) Start() {
 	cw.startOnce.Do(func() {
+		cw.started.Store(true)
 		go cw.watch()
 	})
 }
 
+// Stop signals the watch loop to exit and waits for it to finish.
+// It is safe to call on a watcher that was never started, and safe to call more than once.
 func (cw *ConfigWatcher) Stop() {
 	cw.once.Do(func() {
 		close(cw.stopChan)
-		<-cw.done
+		// Only wait for `done` if watch() is actually running; otherwise nothing
+		// will ever close it. A Start() racing with this call still terminates,
+		// because watch() returns immediately on the closed stopChan.
+		if cw.started.Load() {
+			<-cw.done
+		}
 	})
 }
 

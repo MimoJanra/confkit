@@ -55,7 +55,7 @@ confkit/
 
 2. **Set up development environment**:
    ```bash
-   # Install required Go version (1.25+)
+   # Install required Go version (1.26+)
    go version
 
    # Install security tools (optional but recommended)
