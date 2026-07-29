@@ -55,8 +55,16 @@ jobs:
         run: |
           VERSION=${GITHUB_REF#refs/tags/}
 
-          # Extract changelog for this version
-          NOTES=$(sed -n "/## \[${VERSION}\]/,/## \[/p" CHANGELOG.md | head -n -1)
+          # Extract changelog for this version. CHANGELOG.md follows Keep a Changelog
+          # and heads sections "## [1.0.3]" without the tag's leading "v", so strip it
+          # here — matching on the raw tag finds nothing and yields empty release notes.
+          CHANGELOG_VERSION=${VERSION#v}
+          NOTES=$(sed -n "/## \[${CHANGELOG_VERSION}\]/,/## \[/p" CHANGELOG.md | head -n -1)
+
+          if [ -z "$NOTES" ]; then
+            echo "ERROR: no CHANGELOG.md section found for [${CHANGELOG_VERSION}]"
+            exit 1
+          fi
 
           if gh release view "$VERSION" &>/dev/null; then
             gh release edit "$VERSION" \
