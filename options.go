@@ -52,7 +52,8 @@ func (f optionFunc) apply(cfg *loadConfig) {
 	f(cfg)
 }
 
-// WithSource appends a Source. Order matters: later sources override earlier ones.
+// WithSource appends a Source. Order matters: the first source holding a field wins,
+// so register them from highest to lowest precedence.
 func WithSource(source Source) Option {
 	return optionFunc(func(cfg *loadConfig) {
 		cfg.Sources = append(cfg.Sources, source)

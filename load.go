@@ -14,8 +14,8 @@ import (
 // Load populates a new T from the given sources and validates the result.
 //
 // Sources are consulted in order and the first one holding a field wins, so pass
-// them from lowest to highest precedence — typically file, then environment, then
-// flags. Fields still unset afterwards fall back to their `default` tag.
+// them from highest to lowest precedence — typically flags, then environment, then
+// file. Fields no source provides fall back to their `default` tag.
 //
 // On failure the error is an *ErrorReport describing every problem found rather
 // than just the first; use Explain to format it for humans. The returned pointer

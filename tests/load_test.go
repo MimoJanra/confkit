@@ -369,3 +369,33 @@ func TestPointerScalarFields(t *testing.T) {
 		}
 	})
 }
+
+func TestSourcePrecedenceFirstWins(t *testing.T) {
+	type Cfg struct {
+		Port int `env:"PREC_PORT" yaml:"port"`
+	}
+
+	path := writeTempYAML(t, "port: 1111\n")
+	defer func() { _ = os.Remove(path) }()
+	t.Setenv("PREC_PORT", "2222")
+
+	t.Run("env_listed_first_wins", func(t *testing.T) {
+		cfg, err := confkit.Load[Cfg](confkit.FromEnv(), confkit.FromYAML(path))
+		if err != nil {
+			t.Fatalf("Load failed: %v", err)
+		}
+		if cfg.Port != 2222 {
+			t.Fatalf("got %d, want 2222 from the first-listed source", cfg.Port)
+		}
+	})
+
+	t.Run("yaml_listed_first_wins", func(t *testing.T) {
+		cfg, err := confkit.Load[Cfg](confkit.FromYAML(path), confkit.FromEnv())
+		if err != nil {
+			t.Fatalf("Load failed: %v", err)
+		}
+		if cfg.Port != 1111 {
+			t.Fatalf("got %d, want 1111 from the first-listed source", cfg.Port)
+		}
+	})
+}
