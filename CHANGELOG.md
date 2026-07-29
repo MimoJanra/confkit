@@ -24,6 +24,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Generated schema did not match the config the loader accepts** — `schema.GenerateSchema` nested embedded structs as their own object (`embedded_section.host`) while the loader flattens them to the parent (`host`), so the emitted JSON Schema rejected valid configuration. Embedded structs are now flattened to match.
+- **Fields tagged `-` appeared in the generated schema** — `json:"-"` produced a property literally named `"-"`. Such fields are now omitted, consistent with `Dump` and with the source change above.
+- **`GenerateSchema` panicked on a non-concrete type** — `GenerateSchema[any]()` dereferenced a nil `reflect.Type`. It now returns an error.
+- **`[]time.Duration` was typed as an integer array in the schema** — durations parse from strings such as `5s`, so the item type is now `string`. `time.Duration` in a slice previously bypassed the special-type check because its kind is `int64`, not `struct`.
+- **Generated Markdown tables broke on pipes** — a regex alternation in a `pattern` rule or a `|` in a `desc` tag split the row into extra columns. Cell values are now escaped.
 - **Possible nil dereference in Vault authentication** — the AppRole and Kubernetes login paths checked `secret.Auth` without first checking `secret`, so a `(nil, nil)` return from the Vault API would panic. The KV read path at the same file already guarded against this.
 - **`TestNewAWSSSMSource` would panic instead of failing** — it used `t.Error` for a nil check and then dereferenced the pointer regardless.
 - **Named scalar types panicked instead of loading** — a field declared with a named type (`type Level string`, `type Port int`) crashed the load with `reflect.Set: value of type string is not assignable to type Level`, because the parser returns the builtin underlying type. Such values are now converted to the field's type when the kinds match.

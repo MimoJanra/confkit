@@ -34,6 +34,10 @@ func GenerateSchema[T any]() (*Schema, error) {
 	var cfg T
 	cfgType := reflect.TypeOf(cfg)
 
+	// T may be an interface (e.g. any), for which the zero value carries no type.
+	if cfgType == nil {
+		return nil, fmt.Errorf("GenerateSchema requires a concrete struct type")
+	}
 	if cfgType.Kind() == reflect.Pointer {
 		cfgType = cfgType.Elem()
 	}
@@ -73,6 +77,20 @@ func walkStruct(typ reflect.Type, parent *Schema) error {
 			continue
 		}
 
+		fieldType := field.Type
+		if fieldType.Kind() == reflect.Pointer {
+			fieldType = fieldType.Elem()
+		}
+
+		// Embedded structs are flattened into the parent by the loader, so the
+		// schema must flatten them too or it will not match the real config shape.
+		if field.Anonymous && fieldType.Kind() == reflect.Struct && !structtags.IsSpecialType(fieldType) {
+			if err := walkStruct(fieldType, parent); err != nil {
+				return err
+			}
+			continue
+		}
+
 		tags := structtags.ParseStructTags(field.Tag)
 		propName := getPropName(field.Name, tags)
 		if propName == "" {
@@ -80,10 +98,6 @@ func walkStruct(typ reflect.Type, parent *Schema) error {
 		}
 
 		fieldSchema := &Schema{}
-		fieldType := field.Type
-		if fieldType.Kind() == reflect.Pointer {
-			fieldType = fieldType.Elem()
-		}
 
 		if structtags.IsSpecialType(fieldType) {
 			fieldSchema.Type = "string"
@@ -129,9 +143,14 @@ func walkStruct(typ reflect.Type, parent *Schema) error {
 	return nil
 }
 
+// getPropName returns the schema property name, or "" for fields the loader
+// skips because the winning tag is "-".
 func getPropName(fieldName string, tags map[string]string) string {
 	for _, tag := range []string{"json", "yaml", "toml"} {
 		if name := tags[tag]; name != "" {
+			if name == "-" {
+				return ""
+			}
 			return name
 		}
 	}
@@ -139,10 +158,12 @@ func getPropName(fieldName string, tags map[string]string) string {
 }
 
 func getTypeString(typ reflect.Type) string {
+	// time.Time and time.Duration are parsed from strings ("2006-01-02T15:04:05Z",
+	// "5s"). Duration's kind is int64, so this must be checked before the switch.
+	if structtags.IsSpecialType(typ) {
+		return "string"
+	}
 	if typ.Kind() == reflect.Struct {
-		if typ.PkgPath() == "time" && (typ.Name() == "Duration" || typ.Name() == "Time") {
-			return "string"
-		}
 		return "object"
 	}
 	switch typ.Kind() {
@@ -328,11 +349,11 @@ func addMarkdownProperties(sb *strings.Builder, props map[string]*Schema, prefix
 			fieldName = prefix + "." + propName
 		}
 		fmt.Fprintf(sb, "| %s | %s | %s | %s | %s |\n",
-			fieldName,
-			getMarkdownType(prop.Type),
-			getMarkdownDefault(prop.Default),
-			getMarkdownRules(prop),
-			prop.Description,
+			escapeMarkdownCell(fieldName),
+			escapeMarkdownCell(getMarkdownType(prop.Type)),
+			escapeMarkdownCell(getMarkdownDefault(prop.Default)),
+			escapeMarkdownCell(getMarkdownRules(prop)),
+			escapeMarkdownCell(prop.Description),
 		)
 		if prop.Type == "object" && prop.Properties != nil {
 			addMarkdownProperties(sb, prop.Properties, fieldName)
@@ -428,6 +449,12 @@ func addCLIHelpOptions(sb *strings.Builder, props map[string]*Schema, prefix str
 
 		sb.WriteString(line + "\n")
 	}
+}
+
+// escapeMarkdownCell escapes pipes so that values such as a regex alternation
+// ("^(dev|prod)$") do not split the surrounding table row into extra columns.
+func escapeMarkdownCell(s string) string {
+	return strings.ReplaceAll(s, "|", "\\|")
 }
 
 func getMarkdownType(schemaType string) string {

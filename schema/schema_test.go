@@ -600,3 +600,90 @@ func TestSchemaMultipleValidationRules(t *testing.T) {
 		t.Errorf("expected 2 required fields, got %d", len(schema.Required))
 	}
 }
+
+type EmbeddedHostSection struct {
+	Host string `json:"host"`
+}
+
+type withEmbeddedSection struct {
+	EmbeddedHostSection
+	Port int `json:"port"`
+}
+
+type skipTaggedConfig struct {
+	Public  string `json:"public"`
+	Omitted string `json:"-"`
+}
+
+type durationSliceConfig struct {
+	Timeouts []time.Duration `json:"timeouts"`
+}
+
+type pipeInRulesConfig struct {
+	Env string `json:"env" validate:"pattern=^(dev|prod)$" desc:"target|environment"`
+}
+
+func schemaPropNames(m map[string]*Schema) []string {
+	out := make([]string, 0, len(m))
+	for k := range m {
+		out = append(out, k)
+	}
+	return out
+}
+
+func TestSchemaSkipsDashTaggedFields(t *testing.T) {
+	s, err := GenerateSchema[skipTaggedConfig]()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, bad := s.Properties["-"]; bad {
+		t.Errorf("schema must not contain a property named \"-\": %v", schemaPropNames(s.Properties))
+	}
+	if len(s.Properties) != 1 {
+		t.Errorf("expected only 'public', got %v", schemaPropNames(s.Properties))
+	}
+}
+
+func TestSchemaFlattensEmbeddedStructs(t *testing.T) {
+	s, err := GenerateSchema[withEmbeddedSection]()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := s.Properties["host"]; !ok {
+		t.Errorf("embedded fields must be flattened like the loader does; got %v", schemaPropNames(s.Properties))
+	}
+	if _, nested := s.Properties["embedded_host_section"]; nested {
+		t.Error("embedded struct must not appear as a nested object")
+	}
+}
+
+func TestGenerateSchemaErrorOnInterfaceType(t *testing.T) {
+	if _, err := GenerateSchema[any](); err == nil {
+		t.Error("expected an error for a type with no concrete struct")
+	}
+}
+
+func TestMarkdownEscapesPipes(t *testing.T) {
+	md, err := GenerateMarkdown[pipeInRulesConfig]()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, line := range strings.Split(strings.TrimSpace(md), "\n") {
+		if !strings.HasPrefix(line, "|") {
+			continue
+		}
+		if n := strings.Count(strings.ReplaceAll(line, "\\|", ""), "|"); n != 6 {
+			t.Errorf("row has %d cell delimiters, want 6:\n%s", n, line)
+		}
+	}
+}
+
+func TestSchemaDurationSliceItemsAreStrings(t *testing.T) {
+	s, err := GenerateSchema[durationSliceConfig]()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := s.Properties["timeouts"].Items.Type; got != "string" {
+		t.Errorf("[]time.Duration items typed as %q, want \"string\"", got)
+	}
+}
