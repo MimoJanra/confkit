@@ -35,17 +35,19 @@ if err != nil {
 }
 ```
 
-On validation error:
+On validation error — note the last line:
 
 ```
 Invalid configuration:
 
   Database
+    source: validation
     error: field is required
-    source: env (DATABASE_URL)
+    got: ***REDACTED***
 ```
 
-No custom error handling. No secret leaks in logs. Types are checked at compile time.
+Every problem is reported at once, not just the first. No custom error handling. No secret leaks in logs — the
+field is tagged `secret:"true"`, so its value is redacted here and in dumps and audit logs too.
 
 ## Why confkit?
 
@@ -55,7 +57,7 @@ No custom error handling. No secret leaks in logs. Types are checked at compile 
 ✅ **Secret redaction** — mark sensitive fields with `secret:"true"`, they're automatically hidden  
 ✅ **Multiple sources** — load from YAML, env, JSON, TOML, Kubernetes, AWS, Vault with explicit precedence  
 ✅ **Lightweight** — only 2 core dependencies, cloud integrations are optional modules  
-✅ **Production-ready** — v1.0.0 with full test coverage and API stability guarantee
+✅ **Production-ready** — v1.0.3, 85% core coverage enforced in CI, documented API stability guarantee
 
 ```go
 type Config struct {
@@ -72,8 +74,9 @@ if err != nil {
     // Invalid configuration:
     //
     //   DSN
-    //     source: env
+    //     source: validation
     //     error: field is required
+    //     got: ***REDACTED***
 }
 ```
 
