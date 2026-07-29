@@ -12,8 +12,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **GO-2026-5856 fixed** — `crypto/tls` vulnerability patched by raising the minimum Go version to 1.26.5. `govulncheck` now reports no called vulnerabilities.
 - **Secret values no longer leak into validation messages** — the `port` validator embedded the raw value in its message (`must be a valid port (1-65535), got 99999`), which bypassed redaction because only `FieldError.Value` was redacted, not `Message`. The `len` validator similarly disclosed the secret's length. Both now omit the observed value for fields tagged `secret:"true"`.
 
+### Added
+
+- **`.yml` is now discovered** — `FindFile`/`FindSource` probe `.yaml`, `.yml`, `.json`, `.toml` in that order, so `FindFile("config")` finds `config.yml`. When both `config.yaml` and `config.yml` exist, `.yaml` wins. Explicitly named `.yml` paths already worked.
+- **Pointer scalar fields** — `*int`, `*string`, `*bool`, `*float64` and named equivalents (`*Level`) are now supported, which lets a config distinguish "unset" (`nil`) from an explicit zero value. Validation dereferences non-nil pointers, and `required` still reports a nil pointer as missing.
+- **`.golangci.yml`** — the repository previously ran `golangci-lint` with only its default linters. Now pins errcheck, govet, staticcheck, unused, ineffassign, unconvert, misspell, revive, gosec and bodyclose. CI also lints the seven submodules, which a root-only run never covered.
+
+### Changed
+
+- **File sources now honour `-` as a skip directive** — a field tagged `yaml:"-"`, `json:"-"` or `toml:"-"` was still populated via the snake_case fallback, even though `Dump` correctly omitted it. Such fields are now skipped by YAML, JSON, TOML and multi-file sources.
+
 ### Fixed
 
+- **Possible nil dereference in Vault authentication** — the AppRole and Kubernetes login paths checked `secret.Auth` without first checking `secret`, so a `(nil, nil)` return from the Vault API would panic. The KV read path at the same file already guarded against this.
+- **`TestNewAWSSSMSource` would panic instead of failing** — it used `t.Error` for a nil check and then dereferenced the pointer regardless.
 - **Named scalar types panicked instead of loading** — a field declared with a named type (`type Level string`, `type Port int`) crashed the load with `reflect.Set: value of type string is not assignable to type Level`, because the parser returns the builtin underlying type. Such values are now converted to the field's type when the kinds match.
 - **`${VAR|}` (explicit empty default) reported a bogus error** — an empty default was indistinguishable from no default, so an undefined variable failed with `circular reference or undefined variable` instead of resolving to an empty string.
 - **`$$` was not unescaped unless the value also contained `${...}`** — `"a$$b"` stayed literal while `"a$$b${X}"` correctly became `"a$b..."`. Escaping is now consistent regardless of whether a placeholder is present.

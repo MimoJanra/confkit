@@ -136,10 +136,10 @@ func (a *vaultAppRoleAuth) Authenticate(ctx context.Context, client *api.Client)
 
 	secret, err := client.Logical().WriteWithContext(ctx, path, data)
 	if err != nil {
-		return "", fmt.Errorf("AppRole authentication failed: %w", err)
+		return "", fmt.Errorf("approle authentication failed: %w", err)
 	}
 
-	if secret.Auth == nil {
+	if secret == nil || secret.Auth == nil {
 		return "", fmt.Errorf("no auth in Vault response")
 	}
 
@@ -164,10 +164,10 @@ func (a *vaultKubernetesAuth) Authenticate(ctx context.Context, client *api.Clie
 
 	secret, err := client.Logical().WriteWithContext(ctx, path, data)
 	if err != nil {
-		return "", fmt.Errorf("Kubernetes authentication failed: %w", err)
+		return "", fmt.Errorf("kubernetes authentication failed: %w", err)
 	}
 
-	if secret.Auth == nil {
+	if secret == nil || secret.Auth == nil {
 		return "", fmt.Errorf("no auth in Vault response")
 	}
 

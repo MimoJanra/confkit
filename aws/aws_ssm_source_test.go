@@ -12,7 +12,7 @@ func TestNewAWSSSMSource(t *testing.T) {
 		return
 	}
 	if src == nil {
-		t.Error("Expected non-nil source")
+		t.Fatal("Expected non-nil source")
 	}
 	if src.pathPrefix != "/myapp/" {
 		t.Errorf("Expected pathPrefix /myapp/, got %s", src.pathPrefix)

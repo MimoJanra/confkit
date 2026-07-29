@@ -45,7 +45,18 @@ func (v *Validator) ValidateConfig(cfg any, fields []FieldInfo) *ErrorReport {
 
 		rules := parseValidationRules(validateTag)
 		for _, rule := range rules {
-			fieldErr := v.validateField(fieldVal, field, rule)
+			// Pointer fields must be dereferenced, or the kind-based rules below
+			// match nothing and silently pass. "required" is the exception: it
+			// needs the pointer itself to detect nil.
+			target := fieldVal
+			if rule.Name != "required" && target.Kind() == reflect.Pointer {
+				if target.IsNil() {
+					continue // an absent value has nothing to check; "required" catches it
+				}
+				target = target.Elem()
+			}
+
+			fieldErr := v.validateField(target, field, rule)
 			if fieldErr.Message != "" {
 				report.AddError(fieldErr)
 				break

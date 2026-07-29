@@ -38,7 +38,7 @@ func TestFindFile(t *testing.T) {
 			t.Fatal("expected to find config without extension in testdata/")
 		}
 		ext := filepath.Ext(p)
-		if ext != ".yaml" && ext != ".json" && ext != ".toml" {
+		if ext != ".yaml" && ext != ".yml" && ext != ".json" && ext != ".toml" {
 			t.Errorf("expected known extension, got %q for %q", ext, p)
 		}
 	})
@@ -127,5 +127,54 @@ func TestOverlayPath(t *testing.T) {
 		if got != tc.want {
 			t.Errorf("OverlayPath(%q, %q) = %q, want %q", tc.base, tc.env, got, tc.want)
 		}
+	}
+}
+
+func TestFindFileYmlExtension(t *testing.T) {
+	dir := t.TempDir()
+
+	t.Run("finds_yml", func(t *testing.T) {
+		if err := os.WriteFile(filepath.Join(dir, "app.yml"), []byte("port: 1\n"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		got, ok := confkit.FindFile("app", dir)
+		if !ok {
+			t.Fatal("expected to find app.yml")
+		}
+		if filepath.Ext(got) != ".yml" {
+			t.Fatalf("got %q, want a .yml file", got)
+		}
+	})
+
+	t.Run("yaml_wins_over_yml", func(t *testing.T) {
+		if err := os.WriteFile(filepath.Join(dir, "app.yaml"), []byte("port: 2\n"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		got, ok := confkit.FindFile("app", dir)
+		if !ok {
+			t.Fatal("expected to find a config file")
+		}
+		if filepath.Ext(got) != ".yaml" {
+			t.Fatalf("got %q, want .yaml to take precedence", got)
+		}
+	})
+}
+
+func TestFindSourceLoadsYml(t *testing.T) {
+	type Cfg struct {
+		Port int `yaml:"port"`
+	}
+
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "svc.yml"), []byte("port: 9090\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg, err := confkit.Load[Cfg](confkit.FindSource("svc", dir))
+	if err != nil {
+		t.Fatalf("Load failed: %v", err)
+	}
+	if cfg.Port != 9090 {
+		t.Fatalf("got %d, want 9090", cfg.Port)
 	}
 }

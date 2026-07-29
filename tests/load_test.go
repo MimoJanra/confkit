@@ -279,3 +279,93 @@ func TestLoadNamedScalarTypes(t *testing.T) {
 		}
 	})
 }
+
+type namedPtrLevel string
+
+func TestPointerScalarFields(t *testing.T) {
+	t.Run("set", func(t *testing.T) {
+		type Cfg struct {
+			Port *int `env:"TEST_PTR_PORT"`
+		}
+		t.Setenv("TEST_PTR_PORT", "8080")
+
+		cfg, err := confkit.Load[Cfg](confkit.FromEnv())
+		if err != nil {
+			t.Fatalf("Load failed: %v", err)
+		}
+		if cfg.Port == nil {
+			t.Fatal("expected non-nil pointer")
+		}
+		if *cfg.Port != 8080 {
+			t.Fatalf("got %d, want 8080", *cfg.Port)
+		}
+	})
+
+	t.Run("unset_stays_nil", func(t *testing.T) {
+		type Cfg struct {
+			Port *int `env:"TEST_PTR_UNSET"`
+		}
+
+		cfg, err := confkit.Load[Cfg](confkit.FromEnv())
+		if err != nil {
+			t.Fatalf("Load failed: %v", err)
+		}
+		if cfg.Port != nil {
+			t.Fatalf("expected nil for an unset pointer, got %d", *cfg.Port)
+		}
+	})
+
+	t.Run("explicit_zero_differs_from_unset", func(t *testing.T) {
+		type Cfg struct {
+			Replicas *int `env:"TEST_PTR_ZERO"`
+		}
+		t.Setenv("TEST_PTR_ZERO", "0")
+
+		cfg, err := confkit.Load[Cfg](confkit.FromEnv())
+		if err != nil {
+			t.Fatalf("Load failed: %v", err)
+		}
+		if cfg.Replicas == nil {
+			t.Fatal("an explicit 0 must not be indistinguishable from unset")
+		}
+		if *cfg.Replicas != 0 {
+			t.Fatalf("got %d, want 0", *cfg.Replicas)
+		}
+	})
+
+	t.Run("named_element_type", func(t *testing.T) {
+		type Cfg struct {
+			Level *namedPtrLevel `env:"TEST_PTR_NAMED"`
+		}
+		t.Setenv("TEST_PTR_NAMED", "warn")
+
+		cfg, err := confkit.Load[Cfg](confkit.FromEnv())
+		if err != nil {
+			t.Fatalf("Load failed: %v", err)
+		}
+		if cfg.Level == nil || *cfg.Level != "warn" {
+			t.Fatalf("got %v, want warn", cfg.Level)
+		}
+	})
+
+	t.Run("validated_when_present", func(t *testing.T) {
+		type Cfg struct {
+			Port *int `env:"TEST_PTR_VALIDATE" validate:"min=1,max=65535"`
+		}
+		t.Setenv("TEST_PTR_VALIDATE", "99999")
+
+		if _, err := confkit.Load[Cfg](confkit.FromEnv()); err == nil {
+			t.Fatal("expected max validation to fire on a pointer field")
+		}
+	})
+
+	t.Run("required_catches_nil", func(t *testing.T) {
+		type Cfg struct {
+			Port *int `env:"TEST_PTR_REQUIRED" validate:"required"`
+		}
+
+		if _, err := confkit.Load[Cfg](confkit.FromEnv()); err == nil {
+			t.Fatal("expected required to fire on a nil pointer")
+		}
+	})
+}

@@ -20,6 +20,25 @@ func (p *Parser) Parse(value string, targetType reflect.Type) (any, error) {
 		return p.zeroValue(targetType), nil
 	}
 
+	// Pointer targets let callers distinguish "unset" (nil) from an explicit zero
+	// value. An empty string is already handled above and yields a typed nil.
+	if targetType.Kind() == reflect.Pointer {
+		elemType := targetType.Elem()
+		elem, err := p.Parse(value, elemType)
+		if err != nil {
+			return nil, err
+		}
+		// Parse yields the builtin underlying type, so a named element type
+		// (e.g. *Level where `type Level string`) needs converting before Set.
+		ev := reflect.ValueOf(elem)
+		if ev.Type() != elemType && ev.Kind() == elemType.Kind() && ev.Type().ConvertibleTo(elemType) {
+			ev = ev.Convert(elemType)
+		}
+		ptr := reflect.New(elemType)
+		ptr.Elem().Set(ev)
+		return ptr.Interface(), nil
+	}
+
 	if targetType.PkgPath() == "time" {
 		if targetType.Name() == "Duration" {
 			return parseDuration(value)

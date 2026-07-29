@@ -266,3 +266,24 @@ func TestInterpolation(t *testing.T) {
 		}
 	})
 }
+
+func TestFileSourceHonoursSkipTag(t *testing.T) {
+	type Cfg struct {
+		Public string `yaml:"public"`
+		Secret string `yaml:"-"`
+	}
+
+	path := writeTempYAML(t, "public: visible\nsecret: leaked\n")
+	defer func() { _ = os.Remove(path) }()
+
+	cfg, err := confkit.Load[Cfg](confkit.FromYAML(path))
+	if err != nil {
+		t.Fatalf("Load failed: %v", err)
+	}
+	if cfg.Public != "visible" {
+		t.Fatalf("got %q, want %q", cfg.Public, "visible")
+	}
+	if cfg.Secret != "" {
+		t.Fatalf("yaml:- field must not be populated, got %q", cfg.Secret)
+	}
+}

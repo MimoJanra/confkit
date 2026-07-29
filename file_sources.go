@@ -70,6 +70,9 @@ func (y *yamlSource) Lookup(_ context.Context, field *FieldInfo) (any, bool, err
 	if tagName == "" {
 		tagName = field.Tags["json"]
 	}
+	if tagName == "-" {
+		return "", false, nil
+	}
 	if tagName != "" {
 		if value, ok := lookupNested(y.data, tagName, field.Path, field.AncestorTags, "yaml"); ok {
 			return value, true, nil
@@ -121,6 +124,9 @@ func (j *jsonSource) Lookup(_ context.Context, field *FieldInfo) (any, bool, err
 	if tagName == "" {
 		tagName = field.Tags["yaml"]
 	}
+	if tagName == "-" {
+		return "", false, nil
+	}
 	if tagName != "" {
 		if value, ok := lookupNested(j.data, tagName, field.Path, field.AncestorTags, "json"); ok {
 			return value, true, nil
@@ -171,6 +177,9 @@ func (t *tomlSource) Lookup(_ context.Context, field *FieldInfo) (any, bool, err
 	}
 	if tagName == "" {
 		tagName = field.Tags["yaml"]
+	}
+	if tagName == "-" {
+		return "", false, nil
 	}
 	if tagName != "" {
 		if value, ok := lookupNested(t.data, tagName, field.Path, field.AncestorTags, "toml"); ok {
@@ -308,6 +317,9 @@ func (m *multiFileSource) Lookup(_ context.Context, field *FieldInfo) (any, bool
 	tagName := field.Tags[m.name]
 	if tagName == "" {
 		tagName = field.Tags["json"]
+	}
+	if tagName == "-" {
+		return "", false, nil
 	}
 	if tagName != "" {
 		if value, ok := lookupNested(m.data, tagName, field.Path, field.AncestorTags, m.name); ok {

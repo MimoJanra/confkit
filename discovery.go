@@ -23,7 +23,8 @@ func DefaultSearchDirs(appName string) []string {
 }
 
 // FindFile returns the first existing path for name in the given dirs.
-// If name has no extension, it tries .yaml, .json, .toml in order.
+// If name has no extension, it tries .yaml, .yml, .json, .toml in order, so a
+// directory holding both config.yaml and config.yml resolves to config.yaml.
 // Returns ("", false) if nothing is found.
 func FindFile(name string, dirs ...string) (string, bool) {
 	hasExt := filepath.Ext(name) != ""
@@ -35,7 +36,7 @@ func FindFile(name string, dirs ...string) (string, bool) {
 				return p, true
 			}
 		} else {
-			for _, ext := range []string{".yaml", ".json", ".toml"} {
+			for _, ext := range []string{".yaml", ".yml", ".json", ".toml"} {
 				p := filepath.Clean(filepath.Join(dir, name+ext))
 				if _, err := os.Stat(p); err == nil {
 					return p, true

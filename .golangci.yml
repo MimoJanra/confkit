@@ -1,0 +1,47 @@
+version: "2"
+
+linters:
+  enable:
+    - errcheck
+    - govet
+    - staticcheck
+    - unused
+    - ineffassign
+    - unconvert
+    - misspell
+    - revive
+    - gosec
+    - bodyclose
+
+  settings:
+    misspell:
+      ignore-rules:
+        # "strat" is an abbreviation of "strategy", not a typo for "start".
+        - strat
+
+  exclusions:
+    rules:
+      # Tests deliberately use fixed permissions and hardcoded fixtures.
+      - path: _test\.go
+        linters:
+          - gosec
+      # Reading a caller-supplied config path is this library's entire purpose.
+      - path: (file_sources|watcher|discovery)\.go
+        linters:
+          - gosec
+        text: "G304"
+      # Documentation debt tracked separately: ~104 exported symbols and 5
+      # packages still lack doc comments. Enable these once that is written,
+      # so the correctness linters above can gate CI in the meantime.
+      - linters:
+          - revive
+        text: "^(exported|package-comments):"
+      # Callback and Source signatures are fixed by their interfaces, so unused
+      # parameters there are structural rather than accidental.
+      - linters:
+          - revive
+        text: "^unused-parameter:"
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
