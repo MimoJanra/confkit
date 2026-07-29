@@ -22,6 +22,12 @@ type fileSource interface {
 
 // --- YAML ---
 
+// FromYAML reads values from a YAML file, matching each field by its `yaml` tag,
+// then its `json` tag, then its snake_cased name. Fields tagged "-" are skipped.
+//
+// A missing or malformed file is not reported here: the returned Source fails every
+// lookup, so the problem surfaces in the load's ErrorReport. Use FromYAMLOptional
+// when absence is acceptable.
 func FromYAML(path string) Source {
 	source, err := newYAMLSource(path)
 	if err != nil {
@@ -30,6 +36,9 @@ func FromYAML(path string) Source {
 	return source
 }
 
+// FromYAMLOptional is FromYAML but treats a missing file as simply having no
+// values, which suits an optional local override layered under environment
+// variables. A file that exists but fails to parse is still an error.
 func FromYAMLOptional(path string) Source {
 	source, err := newYAMLSource(path)
 	if err != nil {
@@ -88,6 +97,8 @@ func (y *yamlSource) Lookup(_ context.Context, field *FieldInfo) (any, bool, err
 
 // --- JSON ---
 
+// FromJSON reads values from a JSON file, matching each field by its `json` tag,
+// then its `yaml` tag, then its snake_cased name. Fields tagged "-" are skipped.
 func FromJSON(path string) Source {
 	source, err := newJSONSource(path)
 	if err != nil {
@@ -142,6 +153,9 @@ func (j *jsonSource) Lookup(_ context.Context, field *FieldInfo) (any, bool, err
 
 // --- TOML ---
 
+// FromTOML reads values from a TOML file, matching each field by its `toml` tag,
+// then `json`, then `yaml`, then its snake_cased name. Fields tagged "-" are
+// skipped.
 func FromTOML(path string) Source {
 	source, err := newTOMLSource(path)
 	if err != nil {
@@ -196,6 +210,9 @@ func (t *tomlSource) Lookup(_ context.Context, field *FieldInfo) (any, bool, err
 
 // --- Multi-file ---
 
+// FromYAMLFiles merges several YAML files into one Source. Later paths win, and
+// nested maps are merged key by key rather than replaced wholesale, so a file may
+// override a single leaf without restating its siblings. Every path must exist.
 func FromYAMLFiles(paths ...string) Source {
 	merged, err := mergeFiles(paths, func(data []byte) (map[string]any, error) {
 		var m map[string]any
@@ -207,6 +224,8 @@ func FromYAMLFiles(paths ...string) Source {
 	return &multiFileSource{name: "yaml", data: merged}
 }
 
+// FromJSONFiles merges several JSON files into one Source, with the same precedence
+// and deep-merge rules as FromYAMLFiles.
 func FromJSONFiles(paths ...string) Source {
 	merged, err := mergeFiles(paths, func(data []byte) (map[string]any, error) {
 		var m map[string]any
@@ -218,6 +237,8 @@ func FromJSONFiles(paths ...string) Source {
 	return &multiFileSource{name: "json", data: merged}
 }
 
+// FromTOMLFiles merges several TOML files into one Source, with the same precedence
+// and deep-merge rules as FromYAMLFiles.
 func FromTOMLFiles(paths ...string) Source {
 	merged, err := mergeFiles(paths, func(data []byte) (map[string]any, error) {
 		var m map[string]any

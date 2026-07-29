@@ -7,12 +7,16 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+// Metrics holds the Prometheus collectors confkit exports: confkit_loads_total,
+// confkit_load_duration_seconds and confkit_errors_total.
 type Metrics struct {
 	loadsTotal   *prometheus.CounterVec
 	loadDuration prometheus.Histogram
 	errorsTotal  *prometheus.CounterVec
 }
 
+// NewMetrics creates the collectors and registers them with reg, panicking if any is
+// already registered. Pass DefaultRegisterer for the default registry.
 func NewMetrics(reg prometheus.Registerer) *Metrics {
 	m := &Metrics{
 		loadsTotal: prometheus.NewCounterVec(prometheus.CounterOpts{
@@ -33,8 +37,12 @@ func NewMetrics(reg prometheus.Registerer) *Metrics {
 	return m
 }
 
+// DefaultRegisterer is the default Prometheus registry, re-exported so callers need not
+// import the client library themselves.
 var DefaultRegisterer = prometheus.DefaultRegisterer
 
+// Hook returns a confkit.Option that records each load into these collectors. Pass it
+// to confkit.LoadWithOptions.
 func (m *Metrics) Hook() confkit.Option {
 	return confkit.WithLoadHook(func(success bool, d time.Duration, errCount int) {
 		if success {

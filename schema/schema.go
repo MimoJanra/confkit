@@ -1,3 +1,10 @@
+// Package schema derives documentation and machine-readable schemas from a config
+// struct, so that the struct definition stays the single source of truth.
+//
+// GenerateSchema and GenerateSchemaJSON emit JSON Schema for editor completion and
+// CI validation, GenerateMarkdown emits a reference table, and GenerateCLIHelp emits
+// an options listing. All four read the same `validate`, `default`, `desc`, `secret`,
+// `short` and `hidden` tags that confkit uses when loading.
 package schema
 
 import (
@@ -11,6 +18,11 @@ import (
 	"github.com/MimoJanra/confkit/structtags"
 )
 
+// Schema is a JSON Schema document, or one property within it.
+//
+// Secret, Short and Hidden are confkit extensions rather than standard JSON Schema
+// keywords: they carry the `secret`, `short` and `hidden` tags through to the
+// Markdown and CLI-help generators, and are omitted when unset.
 type Schema struct {
 	Title       string             `json:"title,omitempty"`
 	Description string             `json:"description,omitempty"`
@@ -30,6 +42,12 @@ type Schema struct {
 	Hidden      bool               `json:"hidden,omitempty"`
 }
 
+// GenerateSchema builds a JSON Schema for T, which must be a struct or a pointer to
+// one; anything else, including an interface such as any, is an error.
+//
+// Property names follow the `json`, `yaml` or `toml` tag and otherwise the
+// snake_cased field name. Embedded structs are flattened and fields tagged "-" are
+// omitted, so the schema describes the same shape the loader accepts.
 func GenerateSchema[T any]() (*Schema, error) {
 	var cfg T
 	cfgType := reflect.TypeOf(cfg)
@@ -62,6 +80,8 @@ func GenerateSchema[T any]() (*Schema, error) {
 	return s, nil
 }
 
+// GenerateSchemaJSON is GenerateSchema marshalled to indented JSON, suitable for
+// writing to a schema file that editors and CI can consume.
 func GenerateSchemaJSON[T any]() ([]byte, error) {
 	s, err := GenerateSchema[T]()
 	if err != nil {
@@ -321,6 +341,9 @@ func parseDefaultValue(defStr string, typ reflect.Type) interface{} {
 	return defStr
 }
 
+// GenerateMarkdown renders T as a Markdown table of fields, types, defaults, rules
+// and descriptions, for pasting into a README. Rows are sorted by field name, nested
+// structs follow their parent with dotted names, and cell values are escaped.
 func GenerateMarkdown[T any]() (string, error) {
 	s, err := GenerateSchema[T]()
 	if err != nil {
@@ -361,6 +384,11 @@ func addMarkdownProperties(sb *strings.Builder, props map[string]*Schema, prefix
 	}
 }
 
+// GenerateCLIHelp renders T as a --help style options listing.
+//
+// Flags are kebab-cased and nested structs contribute dash-joined names
+// ("--db-host"). A `short` tag adds a single-letter alias, `hidden:"true"` omits the
+// field, and defaults, bounds and required markers are appended.
 func GenerateCLIHelp[T any]() (string, error) {
 	s, err := GenerateSchema[T]()
 	if err != nil {

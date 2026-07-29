@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 )
 
+// ErrNotFound is reported by the Source returned from FindSource when no config
+// file could be located. Test for it with errors.Is.
 var ErrNotFound = errors.New("confkit: config file not found")
 
 // DefaultSearchDirs returns the standard config search directories for appName.

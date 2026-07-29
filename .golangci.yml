@@ -30,12 +30,17 @@ linters:
         linters:
           - gosec
         text: "G304"
-      # Documentation debt tracked separately: ~104 exported symbols and 5
-      # packages still lack doc comments. Enable these once that is written,
-      # so the correctness linters above can gate CI in the meantime.
-      - linters:
+      # Test files and examples are not part of the published API surface.
+      - path: (_test\.go|examples/)
+        linters:
           - revive
         text: "^(exported|package-comments):"
+      # Names such as vault.VaultTokenAuth and aws.AWSSSMSource do stutter, but they
+      # are frozen exported API (see STABLE.md): renaming them needs a deprecation
+      # notice and a major release, so it is a v2.0 candidate rather than a lint fix.
+      - linters:
+          - revive
+        text: "stutters; consider calling this"
       # Callback and Source signatures are fixed by their interfaces, so unused
       # parameters there are structural rather than accidental.
       - linters:

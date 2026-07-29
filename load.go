@@ -11,10 +11,21 @@ import (
 	"github.com/MimoJanra/confkit/internal/parser"
 )
 
+// Load populates a new T from the given sources and validates the result.
+//
+// Sources are consulted in order and the first one holding a field wins, so pass
+// them from lowest to highest precedence — typically file, then environment, then
+// flags. Fields still unset afterwards fall back to their `default` tag.
+//
+// On failure the error is an *ErrorReport describing every problem found rather
+// than just the first; use Explain to format it for humans. The returned pointer
+// is non-nil even on failure, but only partially populated.
 func Load[T any](sources ...Source) (*T, error) {
 	return LoadContext[T](context.Background(), sources...)
 }
 
+// LoadContext is Load with a context, which is passed to each Source. Use it when
+// a source performs I/O, such as the Vault, Consul, etcd and AWS sources.
 func LoadContext[T any](ctx context.Context, sources ...Source) (*T, error) {
 	opts := make([]Option, 0, len(sources)+1)
 	opts = append(opts, WithContext(ctx))
@@ -24,10 +35,15 @@ func LoadContext[T any](ctx context.Context, sources ...Source) (*T, error) {
 	return loadCore[T](opts...)
 }
 
+// LoadWithOptions populates a new T using functional options, which extend Load
+// with custom validators, middleware, audit logging and load hooks. Sources are
+// supplied through WithSource.
 func LoadWithOptions[T any](options ...Option) (*T, error) {
 	return LoadWithOptionsContext[T](context.Background(), options...)
 }
 
+// LoadWithOptionsContext is LoadWithOptions with a context. An explicit
+// WithContext option, if given, takes precedence over ctx.
 func LoadWithOptionsContext[T any](ctx context.Context, options ...Option) (*T, error) {
 	opts := make([]Option, 0, len(options)+1)
 	opts = append(opts, WithContext(ctx))
@@ -44,6 +60,8 @@ func ValidateOnly[T any](ctx context.Context, options ...Option) (*T, error) {
 	return loadCore[T](opts...)
 }
 
+// MustLoad is Load but panics on failure. Intended for package-level variables
+// and program start-up, where a bad configuration should stop the process.
 func MustLoad[T any](sources ...Source) *T {
 	cfg, err := Load[T](sources...)
 	if err != nil {
@@ -52,6 +70,7 @@ func MustLoad[T any](sources ...Source) *T {
 	return cfg
 }
 
+// MustLoadContext is LoadContext but panics on failure.
 func MustLoadContext[T any](ctx context.Context, sources ...Source) *T {
 	cfg, err := LoadContext[T](ctx, sources...)
 	if err != nil {
@@ -60,6 +79,11 @@ func MustLoadContext[T any](ctx context.Context, sources ...Source) *T {
 	return cfg
 }
 
+// LoadWithWatcher loads a config from sources and also returns a ConfigWatcher for
+// filePath.
+//
+// The watcher is returned stopped: call Start to begin polling, and Stop when
+// finished. Stop is safe even if Start was never called.
 func LoadWithWatcher[T any](filePath string, sources ...Source) (*T, *ConfigWatcher, error) {
 	cfg, err := Load[T](sources...)
 	if err != nil {

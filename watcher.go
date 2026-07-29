@@ -16,16 +16,31 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// ConfigDelta lists which configuration keys appeared, disappeared or changed
+// between two reads of the watched file. Keys are dotted paths flattened from the
+// file's nesting ("db.host"), and each list is sorted.
 type ConfigDelta struct {
 	Added   []string
 	Removed []string
 	Changed []string
 }
 
+// ConfigChangeListener is notified that the watched file changed, or that it could
+// not be read. It reports no values: reload the config yourself in response. Use
+// ConfigChangeListenerWithDelta to learn what changed.
 type ConfigChangeListener func(oldCfg, newCfg any, err error)
 
+// ConfigChangeListenerWithDelta is notified of a change together with the previous
+// and current flattened snapshots and the delta between them. On a read or parse
+// failure err is set and newSnap is nil.
 type ConfigChangeListenerWithDelta func(delta ConfigDelta, oldSnap, newSnap map[string]any, err error)
 
+// ConfigWatcher polls a configuration file and notifies listeners when it changes.
+//
+// Changes are detected by modification time, then the file is re-read to compute a
+// delta. Register listeners, call Start to begin polling, and Stop when finished.
+// Listeners run on the watcher's own goroutine, so a slow listener delays later
+// notifications.
 type ConfigWatcher struct {
 	filePath           string
 	lastModTime        time.Time
@@ -45,6 +60,11 @@ type ConfigWatcher struct {
 	once               sync.Once
 }
 
+// NewConfigWatcher returns a watcher for filePath, which must already exist. The
+// format is taken from the extension: .json, .toml, or YAML for anything else.
+//
+// The returned watcher is not running; call Start. The poll interval defaults to
+// 500ms and can be changed with SetPollInterval.
 func NewConfigWatcher(filePath string) (*ConfigWatcher, error) {
 	fileInfo, err := os.Stat(filePath)
 	if err != nil {
@@ -69,18 +89,24 @@ func NewConfigWatcher(filePath string) (*ConfigWatcher, error) {
 	return watcher, nil
 }
 
+// AddListener registers a change listener. It is safe to call while the watcher is
+// running.
 func (cw *ConfigWatcher) AddListener(listener ConfigChangeListener) {
 	cw.listenerMutex.Lock()
 	defer cw.listenerMutex.Unlock()
 	cw.listeners = append(cw.listeners, listener)
 }
 
+// AddDeltaListener registers a listener that also receives the computed delta. It
+// is safe to call while the watcher is running.
 func (cw *ConfigWatcher) AddDeltaListener(listener ConfigChangeListenerWithDelta) {
 	cw.deltaListenerMutex.Lock()
 	defer cw.deltaListenerMutex.Unlock()
 	cw.deltaListeners = append(cw.deltaListeners, listener)
 }
 
+// Start begins polling in a background goroutine. Calls after the first are
+// no-ops, so a watcher cannot be restarted once stopped.
 func (cw *ConfigWatcher) Start() {
 	cw.startOnce.Do(func() {
 		cw.started.Store(true)
@@ -102,6 +128,9 @@ func (cw *ConfigWatcher) Stop() {
 	})
 }
 
+// SetPollInterval changes how often the file is checked. It may be called while the
+// watcher is running and takes effect on the next tick. Values of zero or less are
+// ignored.
 func (cw *ConfigWatcher) SetPollInterval(interval time.Duration) {
 	if interval <= 0 {
 		return

@@ -1,3 +1,8 @@
+// Package parser converts the raw strings produced by configuration sources into
+// typed Go values.
+//
+// It is internal: the conversion rules are an implementation detail of confkit and
+// are not part of its public API.
 package parser
 
 import (
@@ -9,12 +14,26 @@ import (
 	"time"
 )
 
+// Parser converts strings to typed values. It holds no state and is safe for
+// concurrent use.
 type Parser struct{}
 
+// New returns a Parser.
 func New() *Parser {
 	return &Parser{}
 }
 
+// Parse converts value to targetType.
+//
+// Supported targets are strings, bools, sized integers and floats, time.Duration,
+// time.Time in RFC 3339, slices, string-keyed maps, and pointers to any of these.
+// Slices split on commas and maps take comma-separated key=value pairs, where a
+// quoted value may itself contain commas.
+//
+// An empty value yields the zero value of targetType, which for a pointer is nil, so
+// callers can distinguish an absent value from an explicit zero. Numeric conversions
+// are range-checked. The returned value has the underlying builtin type, so a named
+// target type may need converting before assignment.
 func (p *Parser) Parse(value string, targetType reflect.Type) (any, error) {
 	if value == "" {
 		return p.zeroValue(targetType), nil

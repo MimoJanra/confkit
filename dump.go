@@ -10,13 +10,18 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// DumpFormat selects the serialization used by Dump.
 type DumpFormat int
 
+// The formats Dump can emit.
 const (
+	// FormatJSON emits indented JSON. This is the default.
 	FormatJSON DumpFormat = iota
+	// FormatYAML emits YAML.
 	FormatYAML
 )
 
+// DumpOption configures Dump.
 type DumpOption func(*dumpOptions)
 
 type dumpOptions struct {
@@ -24,14 +29,23 @@ type dumpOptions struct {
 	redactSecret bool
 }
 
+// WithDumpFormat sets the output format.
 func WithDumpFormat(f DumpFormat) DumpOption {
 	return func(o *dumpOptions) { o.format = f }
 }
 
+// WithDumpRedactSecrets controls redaction of fields tagged `secret:"true"`.
+// Redaction is on by default; pass false only when the output stays local, since it
+// writes secrets in the clear.
 func WithDumpRedactSecrets(redact bool) DumpOption {
 	return func(o *dumpOptions) { o.redactSecret = redact }
 }
 
+// Dump serializes cfg for display, redacting secret fields by default.
+//
+// Keys come from the `json`, `yaml` or `toml` tag — preferring the one matching the
+// output format — and otherwise from the snake_cased field name. Fields tagged "-"
+// are omitted, and nested structs stay nested.
 func Dump[T any](cfg T, opts ...DumpOption) ([]byte, error) {
 	o := &dumpOptions{format: FormatJSON, redactSecret: true}
 	for _, opt := range opts {
@@ -44,6 +58,9 @@ func Dump[T any](cfg T, opts ...DumpOption) ([]byte, error) {
 	return json.MarshalIndent(m, "", "  ")
 }
 
+// DumpString is Dump returning a string, with any failure rendered inline as
+// "<dump error: ...>". Convenient for logging, where a second error value is
+// awkward.
 func DumpString[T any](cfg T, opts ...DumpOption) string {
 	b, err := Dump(cfg, opts...)
 	if err != nil {
@@ -52,6 +69,7 @@ func DumpString[T any](cfg T, opts ...DumpOption) string {
 	return string(b)
 }
 
+// DumpYAML is Dump with YAML output. A later WithDumpFormat option still wins.
 func DumpYAML[T any](cfg T, opts ...DumpOption) ([]byte, error) {
 	allOpts := make([]DumpOption, 0, len(opts)+1)
 	allOpts = append(allOpts, WithDumpFormat(FormatYAML))

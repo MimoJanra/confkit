@@ -9,10 +9,18 @@ import (
 	"github.com/MimoJanra/confkit/structtags"
 )
 
+// FromFlags reads values from the command line (os.Args[1:]).
+//
+// A field is matched by its `flag` tag, or failing that by its kebab-cased name,
+// its snake_cased name, or its `short` tag. Both --name=value and --name value
+// are accepted, a flag with no value becomes "true", and a repeated flag is
+// joined with commas so it can populate a slice.
 func FromFlags() Source {
 	return &flagsSource{args: os.Args[1:]}
 }
 
+// FromFlagsWithArgs behaves like FromFlags but parses the supplied arguments,
+// which is useful in tests and for wrapping a subcommand's own argument list.
 func FromFlagsWithArgs(args []string) Source {
 	return &flagsSource{args: args}
 }

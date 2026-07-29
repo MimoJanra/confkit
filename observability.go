@@ -8,6 +8,8 @@ import (
 	"time"
 )
 
+// LoadMetrics holds timing and error counts for a single load, for callers that
+// record their own metrics.
 type LoadMetrics struct {
 	TotalTime      time.Duration
 	SourceTimes    map[string]time.Duration
@@ -15,6 +17,12 @@ type LoadMetrics struct {
 	ErrorCount     int
 }
 
+// DumpConfig serializes cfg as flat JSON keyed by Go field path ("DB.Host"),
+// redacting fields tagged `secret:"true"`. It requires the FieldInfo slice from
+// ScanFields.
+//
+// Prefer Dump, DumpString or DumpYAML, which need no FieldInfo and emit nested
+// keys named after the struct tags.
 func DumpConfig(cfg any, fields []FieldInfo) ([]byte, error) {
 	dump := make(map[string]any)
 	val := reflect.ValueOf(cfg)
@@ -61,6 +69,8 @@ func getFieldValue(val reflect.Value, path string) any {
 	return nil
 }
 
+// LogLoadStart returns a one-line JSON event naming the sources about to be read,
+// ready to write to a structured log.
 func LogLoadStart(sources []string) string {
 	payload := map[string]any{
 		"event":     "config_load_start",
@@ -70,6 +80,8 @@ func LogLoadStart(sources []string) string {
 	return toJSON(payload)
 }
 
+// LogLoadComplete returns a one-line JSON event summarising a finished load. It
+// records counts and timing only, never field values.
 func LogLoadComplete(duration time.Duration, fieldCount int, errorCount int) string {
 	return fmt.Sprintf(`{"event":"config_load_complete","duration_ms":%d,"fields_loaded":%d,"validation_errors":%d}`,
 		duration.Milliseconds(), fieldCount, errorCount)

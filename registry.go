@@ -5,6 +5,8 @@ import (
 	"sync"
 )
 
+// SourceFactory constructs a Source on demand. It is called afresh by every
+// NewSource, so each caller receives an independent instance.
 type SourceFactory func() Source
 
 var (
@@ -12,6 +14,11 @@ var (
 	registryMutex  sync.RWMutex
 )
 
+// RegisterSource registers factory under name in the process-wide registry, so a
+// source can be selected by a string from configuration or a CLI flag.
+//
+// It returns an error if name is empty, factory is nil, or name is already taken;
+// re-registering requires UnregisterSource first. Safe for concurrent use.
 func RegisterSource(name string, factory SourceFactory) error {
 	if name == "" {
 		return fmt.Errorf("source name cannot be empty")
@@ -31,6 +38,8 @@ func RegisterSource(name string, factory SourceFactory) error {
 	return nil
 }
 
+// NewSource builds the Source registered under name, or reports an error if no such
+// name is registered. Safe for concurrent use.
 func NewSource(name string) (Source, error) {
 	registryMutex.RLock()
 	factory, exists := sourceRegistry[name]
@@ -43,6 +52,8 @@ func NewSource(name string) (Source, error) {
 	return factory(), nil
 }
 
+// UnregisterSource removes name from the registry. Unregistering a name that was
+// never registered is not an error. Safe for concurrent use.
 func UnregisterSource(name string) {
 	registryMutex.Lock()
 	defer registryMutex.Unlock()

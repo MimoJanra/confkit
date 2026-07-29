@@ -6,6 +6,13 @@ import (
 	"github.com/MimoJanra/confkit/structtags"
 )
 
+// FieldInfo describes a single configuration field discovered by reflection.
+//
+// Struct tags are parsed once into FieldInfo and then reused by every Source, so
+// sources need no knowledge of tag syntax. Path is the dotted Go field path
+// ("DB.Host") and is the key used throughout loading, validation and errors.
+// AncestorTags holds the tags of each enclosing struct, which is how env
+// prefixes accumulate.
 type FieldInfo struct {
 	Name         string
 	Type         reflect.Type
@@ -18,6 +25,12 @@ type FieldInfo struct {
 	IsNested     bool
 }
 
+// ScanFields walks v, which must be a struct or a pointer to one, and returns a
+// FieldInfo for every exported leaf field.
+//
+// Nested structs contribute their fields with a dotted Path and are not returned
+// themselves; embedded structs are flattened into the enclosing struct, matching
+// the way encoding/json promotes them.
 func ScanFields(v any) []FieldInfo {
 	val := reflect.ValueOf(v)
 	if val.Kind() == reflect.Pointer {

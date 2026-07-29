@@ -13,6 +13,12 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ssm"
 )
 
+// AWSSSMSource reads configuration values from AWS SSM Parameter Store.
+//
+// All parameters below the path prefix are fetched recursively in one pass and cached for
+// the configured TTL, so a load performs a handful of API calls rather than one per
+// field. SecureString parameters are decrypted. Field paths become parameter paths:
+// DB.Host under prefix "/myapp/" reads "/myapp/db/host".
 type AWSSSMSource struct {
 	pathPrefix  string
 	client      *ssm.Client
@@ -22,10 +28,16 @@ type AWSSSMSource struct {
 	lastCacheAt time.Time
 }
 
+// NewAWSSSMSource returns a source using the region from the ambient AWS configuration.
 func NewAWSSSMSource(pathPrefix string, cacheTTL time.Duration) (*AWSSSMSource, error) {
 	return NewAWSSSMSourceWithRegion(pathPrefix, cacheTTL, "")
 }
 
+// NewAWSSSMSourceWithRegion returns a source pinned to region. An empty region falls back
+// to the ambient AWS configuration.
+//
+// Credentials are resolved by the AWS SDK's default chain and are not verified here, so an
+// authentication problem surfaces on the first lookup.
 func NewAWSSSMSourceWithRegion(pathPrefix string, cacheTTL time.Duration, region string) (*AWSSSMSource, error) {
 	opts := []func(*config.LoadOptions) error{}
 	if region != "" {
@@ -45,10 +57,13 @@ func NewAWSSSMSourceWithRegion(pathPrefix string, cacheTTL time.Duration, region
 	}, nil
 }
 
+// Name returns "aws-ssm".
 func (a *AWSSSMSource) Name() string {
 	return "aws-ssm"
 }
 
+// Lookup refreshes the parameter cache if it has expired, then returns the value for
+// field. A parameter that is absent means not found rather than an error.
 func (a *AWSSSMSource) Lookup(ctx context.Context, field *confkit.FieldInfo) (any, bool, error) {
 	if err := a.ensureCached(ctx); err != nil {
 		return "", false, err
@@ -117,10 +132,16 @@ func (a *AWSSSMSource) parameterPathToFieldPath(paramPath string) string {
 	return strings.Join(parts, ".")
 }
 
+// FromAWSSSMParameterStore reads parameters under pathPrefix with a five-minute cache.
 func FromAWSSSMParameterStore(pathPrefix string) confkit.Source {
 	return FromAWSSSMParameterStoreWithTTL(pathPrefix, 5*time.Minute)
 }
 
+// FromAWSSSMParameterStoreWithTTL reads parameters under pathPrefix, caching them for
+// cacheTTL and appending a trailing slash to the prefix if absent.
+//
+// A configuration failure is not reported here: the returned Source fails every lookup, so
+// the problem appears in the load's ErrorReport.
 func FromAWSSSMParameterStoreWithTTL(pathPrefix string, cacheTTL time.Duration) confkit.Source {
 	if !strings.HasSuffix(pathPrefix, "/") {
 		pathPrefix += "/"

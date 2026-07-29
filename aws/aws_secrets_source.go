@@ -13,6 +13,12 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
 )
 
+// AWSSecretsManagerSource reads configuration values from a single AWS Secrets Manager
+// secret.
+//
+// The secret is fetched once and cached for the configured TTL. Its value is expected to be
+// a JSON object whose keys are field paths; if it is not valid JSON, the whole payload is
+// stored under the key "_raw", as is a binary secret.
 type AWSSecretsManagerSource struct {
 	secretName  string
 	region      string
@@ -23,6 +29,11 @@ type AWSSecretsManagerSource struct {
 	lastCacheAt time.Time
 }
 
+// NewAWSSecretsManagerSource returns a source reading secretName. An empty region keeps the
+// region from the ambient AWS configuration.
+//
+// Credentials are resolved by the AWS SDK's default chain and are not verified here, so an
+// authentication problem surfaces on the first lookup.
 func NewAWSSecretsManagerSource(secretName string, region string, cacheTTL time.Duration) (*AWSSecretsManagerSource, error) {
 	ctx := context.Background()
 	cfg, err := config.LoadDefaultConfig(ctx)
@@ -43,10 +54,13 @@ func NewAWSSecretsManagerSource(secretName string, region string, cacheTTL time.
 	}, nil
 }
 
+// Name returns "aws-secrets-manager".
 func (a *AWSSecretsManagerSource) Name() string {
 	return "aws-secrets-manager"
 }
 
+// Lookup refreshes the secret if the cache has expired, then returns the entry whose key
+// equals the field's dotted path. A key that is absent means not found rather than an error.
 func (a *AWSSecretsManagerSource) Lookup(ctx context.Context, field *confkit.FieldInfo) (any, bool, error) {
 	if err := a.ensureCached(ctx); err != nil {
 		return "", false, err
@@ -90,14 +104,22 @@ func (a *AWSSecretsManagerSource) ensureCached(ctx context.Context) error {
 	return nil
 }
 
+// FromAWSSecretsManager reads secretName using the ambient region and a five-minute cache.
 func FromAWSSecretsManager(secretName string) confkit.Source {
 	return FromAWSSecretsManagerWithRegion(secretName, "")
 }
 
+// FromAWSSecretsManagerWithRegion reads secretName from a specific region with a five-minute
+// cache.
 func FromAWSSecretsManagerWithRegion(secretName string, region string) confkit.Source {
 	return FromAWSSecretsManagerWithOptions(secretName, region, 5*time.Minute)
 }
 
+// FromAWSSecretsManagerWithOptions reads secretName from a specific region, caching it for
+// cacheTTL.
+//
+// A configuration failure is not reported here: the returned Source fails every lookup, so
+// the problem appears in the load's ErrorReport.
 func FromAWSSecretsManagerWithOptions(secretName string, region string, cacheTTL time.Duration) confkit.Source {
 	src, err := NewAWSSecretsManagerSource(secretName, region, cacheTTL)
 	if err != nil {

@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`.yml` is now discovered** — `FindFile`/`FindSource` probe `.yaml`, `.yml`, `.json`, `.toml` in that order, so `FindFile("config")` finds `config.yml`. When both `config.yaml` and `config.yml` exist, `.yaml` wins. Explicitly named `.yml` paths already worked.
 - **Pointer scalar fields** — `*int`, `*string`, `*bool`, `*float64` and named equivalents (`*Level`) are now supported, which lets a config distinguish "unset" (`nil`) from an explicit zero value. Validation dereferences non-nil pointers, and `required` still reports a nil pointer as missing.
 - **`.golangci.yml`** — the repository previously ran `golangci-lint` with only its default linters. Now pins errcheck, govet, staticcheck, unused, ineffassign, unconvert, misspell, revive, gosec and bodyclose. CI also lints the seven submodules, which a root-only run never covered.
+- **Doc comments on the whole public API** — 163 exported symbols and every package now carry godoc comments, so pkg.go.dev documents the library rather than listing bare signatures. revive's `exported` and `package-comments` rules are enforced in CI to keep it that way.
 
 ### Changed
 

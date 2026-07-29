@@ -12,18 +12,31 @@ import (
 	"unicode"
 )
 
+// CustomValidatorFunc checks one field value and returns nil if it is acceptable.
+// The returned error message is shown to the user verbatim, so it should read as
+// advice; it must not include the value itself when the field may be secret.
 type CustomValidatorFunc func(reflect.Value) error
 
+// Validator applies `validate` tag rules to a loaded config. LocalValidators holds
+// rules registered for a single load via WithValidator, and shadows built-ins of the
+// same name.
 type Validator struct {
 	LocalValidators map[string]CustomValidatorFunc
 }
 
+// NewValidator returns a Validator with no custom rules registered.
 func NewValidator() *Validator {
 	return &Validator{
 		LocalValidators: make(map[string]CustomValidatorFunc),
 	}
 }
 
+// ValidateConfig applies every field's `validate` rules to cfg and returns a report
+// of all failures. Only the first failing rule per field is reported, so the message
+// stays focused on one problem at a time.
+//
+// Non-nil pointer fields are validated by their pointee; a nil pointer is reported
+// only by the "required" rule.
 func (v *Validator) ValidateConfig(cfg any, fields []FieldInfo) *ErrorReport {
 	report := &ErrorReport{}
 
@@ -67,6 +80,9 @@ func (v *Validator) ValidateConfig(cfg any, fields []FieldInfo) *ErrorReport {
 	return report
 }
 
+// ValidationRule is one parsed rule from a `validate` tag: Name is the rule and
+// Value its argument, so `min=1` becomes {Name: "min", Value: "1"} and `required`
+// leaves Value empty.
 type ValidationRule struct {
 	Name  string
 	Value string
