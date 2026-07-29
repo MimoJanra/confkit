@@ -227,3 +227,55 @@ func TestAuditLogger(t *testing.T) {
 		}
 	})
 }
+
+type namedLogLevel string
+
+type namedPortNumber int
+
+// Named scalar types must not panic in reflect.Set: the parser yields the
+// builtin underlying type, which is not directly assignable to the named type.
+func TestLoadNamedScalarTypes(t *testing.T) {
+	t.Run("string", func(t *testing.T) {
+		type Cfg struct {
+			Level namedLogLevel `env:"TEST_NAMED_LEVEL"`
+		}
+		t.Setenv("TEST_NAMED_LEVEL", "debug")
+
+		cfg, err := confkit.Load[Cfg](confkit.FromEnv())
+		if err != nil {
+			t.Fatalf("Load failed: %v", err)
+		}
+		if cfg.Level != "debug" {
+			t.Fatalf("got %q, want %q", cfg.Level, "debug")
+		}
+	})
+
+	t.Run("int", func(t *testing.T) {
+		type Cfg struct {
+			Port namedPortNumber `env:"TEST_NAMED_PORT"`
+		}
+		t.Setenv("TEST_NAMED_PORT", "8080")
+
+		cfg, err := confkit.Load[Cfg](confkit.FromEnv())
+		if err != nil {
+			t.Fatalf("Load failed: %v", err)
+		}
+		if cfg.Port != 8080 {
+			t.Fatalf("got %d, want 8080", cfg.Port)
+		}
+	})
+
+	t.Run("named_type_with_default", func(t *testing.T) {
+		type Cfg struct {
+			Level namedLogLevel `env:"TEST_NAMED_UNSET" default:"info"`
+		}
+
+		cfg, err := confkit.Load[Cfg](confkit.FromEnv())
+		if err != nil {
+			t.Fatalf("Load failed: %v", err)
+		}
+		if cfg.Level != "info" {
+			t.Fatalf("got %q, want %q", cfg.Level, "info")
+		}
+	})
+}

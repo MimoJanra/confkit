@@ -108,3 +108,25 @@ func TestResolve(t *testing.T) {
 		}
 	})
 }
+
+func TestResolveEmptyDefault(t *testing.T) {
+	r := NewResolver(10)
+	got, err := r.Resolve("prefix-${UNDEFINED_VAR_FOR_TEST|}-suffix", "Field")
+	if err != nil {
+		t.Fatalf("explicit empty default must not error: %v", err)
+	}
+	if want := "prefix--suffix"; got != want {
+		t.Fatalf("got %q, want %q", got, want)
+	}
+}
+
+func TestResolveEscapedDollarWithoutPlaceholder(t *testing.T) {
+	r := NewResolver(10)
+	got, err := r.Resolve("a$$b", "Field")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if want := "a$b"; got != want {
+		t.Fatalf("got %q, want %q", got, want)
+	}
+}

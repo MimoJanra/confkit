@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Named scalar types panicked instead of loading** — a field declared with a named type (`type Level string`, `type Port int`) crashed the load with `reflect.Set: value of type string is not assignable to type Level`, because the parser returns the builtin underlying type. Such values are now converted to the field's type when the kinds match.
+- **`${VAR|}` (explicit empty default) reported a bogus error** — an empty default was indistinguishable from no default, so an undefined variable failed with `circular reference or undefined variable` instead of resolving to an empty string.
+- **`$$` was not unescaped unless the value also contained `${...}`** — `"a$$b"` stayed literal while `"a$$b${X}"` correctly became `"a$b..."`. Escaping is now consistent regardless of whether a placeholder is present.
 - **`ConfigWatcher.Stop()` deadlocked when `Start()` was never called** — `Stop()` waited on a channel that only the watch goroutine closes, so it blocked forever. This was reachable through the public `LoadWithWatcher`, which returns an unstarted watcher: the idiomatic `defer watcher.Stop()` hung the caller. `Stop()` is now safe on an unstarted watcher and safe to call repeatedly.
 - **`RotationEngine` ignored context cancellation** — `Start(ctx, interval)` accepted a context but the loop never selected on `ctx.Done()`, so cancelling it left the engine polling indefinitely. The loop now exits on cancellation and stops its ticker.
 - **`RotationEngine.Start()` was not safe to call twice** — a second call overwrote the `ticker` field while the running goroutine was reading it (a data race) and leaked the previous ticker and goroutine. `Start()` is now idempotent.

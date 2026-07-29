@@ -10,11 +10,10 @@ import (
 var interpolationPattern = regexp.MustCompile(`\$\{([^}|]+)(?:\|([^}]*))?\}`)
 
 type Resolver struct {
-	envMap     map[string]string
-	config     map[string]string
-	visited    map[string]bool
-	maxDepth   int
-	currentKey string
+	envMap   map[string]string
+	config   map[string]string
+	visited  map[string]bool
+	maxDepth int
 }
 
 func NewResolver(maxDepth int) *Resolver {
@@ -39,11 +38,11 @@ func NewResolver(maxDepth int) *Resolver {
 }
 
 func (r *Resolver) Resolve(value string, fieldPath string) (string, error) {
-	if !strings.Contains(value, "${") {
+	// "$$" must be unescaped even when the value contains no ${...} placeholder.
+	if !strings.Contains(value, "${") && !strings.Contains(value, "$$") {
 		return value, nil
 	}
 
-	r.currentKey = fieldPath
 	r.visited = make(map[string]bool)
 	result, err := r.resolve(value, 0)
 	if err != nil {
@@ -71,6 +70,9 @@ func (r *Resolver) resolve(value string, depth int) (string, error) {
 		if len(parts) > 2 {
 			defaultVal = parts[2]
 		}
+		// A "|" in the match means a default was supplied, possibly an empty one
+		// ("${VAR|}"), which is distinct from no default at all ("${VAR}").
+		hasDefault := strings.Contains(match, "|")
 
 		if r.visited[varName] {
 			return match
@@ -89,7 +91,7 @@ func (r *Resolver) resolve(value string, depth int) (string, error) {
 			}
 		}
 
-		if defaultVal != "" {
+		if hasDefault {
 			return defaultVal
 		}
 		return match

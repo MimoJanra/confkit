@@ -287,9 +287,13 @@ func TestRotationEngineStopsOnContextCancel(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 	cancel()
 
+	// A tick already selected before cancel may still complete, so let the loop
+	// settle before sampling. The invariant is that polling stops, not that it
+	// stops instantly.
+	time.Sleep(50 * time.Millisecond)
 	afterCancel := strategy.calls.Load()
-	time.Sleep(200 * time.Millisecond)
 
+	time.Sleep(200 * time.Millisecond) // ~20 further tick periods
 	if grew := strategy.calls.Load() - afterCancel; grew > 0 {
 		t.Fatalf("engine kept polling %d times after context cancellation", grew)
 	}

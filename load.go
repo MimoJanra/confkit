@@ -336,5 +336,13 @@ func setFieldValue(val reflect.Value, fieldPath string, value any) {
 	if !field.IsValid() {
 		return
 	}
-	field.Set(reflect.ValueOf(value))
+
+	v := reflect.ValueOf(value)
+	// The parser returns the builtin underlying type (e.g. string for a field
+	// declared as `type Level string`), which reflect.Set would reject outright.
+	// Convert when the kinds already match, which the parser guarantees.
+	if ft := field.Type(); v.Type() != ft && v.Kind() == ft.Kind() && v.Type().ConvertibleTo(ft) {
+		v = v.Convert(ft)
+	}
+	field.Set(v)
 }
